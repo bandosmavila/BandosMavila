@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peña Bandosmávila</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --verde:    #1a6b3c;
+    --verde-claro: #2d9e5f;
+    --crema:    #f5f0e8;
+    --tinta:    #1a1a1a;
+    --gris:     #6b6b6b;
+    --borde:    #ddd8cc;
+    --rojo:     #c0392b;
+    --amarillo: #f39c12;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--crema);
+    color: var(--tinta);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--verde);
+    color: white;
+    padding: 0;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+  .logo span {
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    letter-spacing: 1px;
+    display: block;
+    opacity: 0.8;
+    margin-top: 2px;
+  }
+  .temporada-badge {
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* NAV */
+  nav {
+    display: flex;
+    overflow-x: auto;
+    border-top: 1px solid rgba(255,255,255,0.15);
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  nav button {
+    flex: 0 0 auto;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    padding: 10px 18px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  nav button.active, nav button:hover {
+    color: white;
+    border-bottom-color: white;
+  }
+
+  /* MAIN */
+  main {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+  }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* CARD */
+  .card {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid var(--borde);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 12px 16px;
+    background: var(--verde);
+    color: white;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 1px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .card-header .badge {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.2);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .card-body { padding: 0; }
+
+  /* LOADING */
+  .loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--gris);
+    font-size: 14px;
+  }
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--borde);
+    border-top-color: var(--verde);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* TABLA CLASIFICACION */
+  .tabla-clasif {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .tabla-clasif th {
+    background: #f5f5f0;
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--borde);
+  }
+  .tabla-clasif td {
+    padding: 10px 10px;
+    border-bottom: 1px solid #f0ede6;
+  }
+  .tabla-clasif tr:last-child td { border-bottom: none; }
+  .tabla-clasif tr:hover td { background: #fafaf7; }
+  .pos-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: var(--gris);
+    width: 28px;
+    text-align: center;
+  }
+  .pos-1 { color: #c9a227; }
+  .pos-2 { color: #7d7d7d; }
+  .pos-3 { color: #a05c2c; }
+  .nombre-jugador { font-weight: 600; }
+  .eliminado { color: var(--gris); text-decoration: line-through; font-weight: 400; }
+  .num-stat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    text-align: right;
+  }
+  .estado-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+  .estado-activo { background: #d4edda; color: #1a6b3c; }
+  .estado-eliminado { background: #f8d7da; color: #c0392b; }
+
+  /* PARTIDOS */
+  .partido-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f0ede6;
+    gap: 8px;
+  }
+  .partido-row:last-child { border-bottom: none; }
+  .partido-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--gris);
+    width: 20px;
+    flex-shrink: 0;
+  }
+  .partido-equipos {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .partido-resultado {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--verde);
+    min-width: 20px;
+    text-align: center;
+  }
+  .partido-p15 {
+    font-size: 11px;
+    color: var(--gris);
+    background: #f0ede6;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* PRONOSTICOS */
+  .pronos-scroll {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .tabla-pronos {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    min-width: 500px;
+  }
+  .tabla-pronos th {
+    background: #f5f5f0;
+    padding: 6px 8px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--gris);
+    border-bottom: 1px solid var(--borde);
+  }
+  .tabla-pronos th.partido-col { text-align: left; min-width: 120px; }
+  .tabla-pronos td {
+    padding: 7px 8px;
+    border-bottom: 1px solid #f0ede6;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+  .tabla-pronos td.partido-col { text-align: left; font-family: 'Inter', sans-serif; font-size: 11px; }
+  .tabla-pronos tr:last-child td { border-bottom: none; }
+  .acertado { color: var(--verde); font-weight: 700; }
+  .fallado { color: var(--gris); }
+
+  /* ECONOMICO */
+  .resumen-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--borde);
+  }
+  .resumen-item {
+    background: white;
+    padding: 16px 12px;
+    text-align: center;
+  }
+  .resumen-label {
+    font-size: 10px;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .resumen-valor {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .valor-positivo { color: var(--verde); }
+  .valor-negativo { color: var(--rojo); }
+
+  .tabla-juegos {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .tabla-juegos th {
+    background: #f5f5f0;
+    padding: 8px 12px;
+    text-align: right;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--gris);
+    text-transform: uppercase;
+  }
+  .tabla-juegos th:first-child { text-align: left; }
+  .tabla-juegos td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #f0ede6;
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .tabla-juegos td:first-child {
+    text-align: left;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+  }
+  .tabla-juegos tr:last-child td { border-bottom: none; font-weight: 700; }
+
+  /* HISTORICO */
+  .historico-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0ede6;
+    gap: 12px;
+  }
+  .historico-item:last-child { border-bottom: none; }
+  .historico-year {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--verde);
+    width: 50px;
+    flex-shrink: 0;
+  }
+  .historico-campeon {
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .historico-sub {
+    font-size: 11px;
+    color: var(--gris);
+    margin-top: 2px;
+  }
+  .trofeo { font-size: 20px; margin-left: auto; }
+
+  /* ESTATUTOS */
+  .estatutos-content {
+    padding: 16px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #333;
+  }
+  .estatutos-content h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--verde);
+    margin: 16px 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .estatutos-content h3:first-child { margin-top: 0; }
+  .estatutos-content p { margin-bottom: 8px; }
+
+  /* PROGRESO */
+  .progreso-bar {
+    height: 6px;
+    background: var(--borde);
+    border-radius: 3px;
+    margin: 8px 16px 16px;
+    overflow: hidden;
+  }
+  .progreso-fill {
+    height: 100%;
+    background: var(--verde-claro);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+  .progreso-info {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 16px 0;
+    font-size: 12px;
+    color: var(--gris);
+  }
+  .progreso-info strong { color: var(--tinta); }
+
+  /* JORNADA ACTUAL INFO */
+  .jornada-info {
+    padding: 12px 16px;
+    background: #f5f5f0;
+    font-size: 12px;
+    color: var(--gris);
+    border-bottom: 1px solid var(--borde);
+    display: flex;
+    justify-content: space-between;
+  }
+  .jornada-info strong { color: var(--tinta); }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 11px;
+    color: var(--gris);
+    border-top: 1px solid var(--borde);
+    margin-top: 20px;
+  }
+
+  /* ERROR */
+  .error-msg {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--rojo);
+    font-size: 13px;
+  }
+
+  @media (max-width: 400px) {
+    .logo { font-size: 22px; }
+    .resumen-grid { grid-template-columns: 1fr 1fr; }
+    .resumen-valor { font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="logo">
+      Bandosmávila
+      <span>Peña de Quiniela</span>
+    </div>
+    <div class="temporada-badge" id="temporada-badge">...</div>
+  </div>
+  <nav>
+    <button class="active" onclick="mostrarSeccion('inicio')">Inicio</button>
+    <button onclick="mostrarSeccion('jornada')">Jornada</button>
+    <button onclick="mostrarSeccion('clasificacion')">Clasificación</button>
+    <button onclick="mostrarSeccion('economico')">Económico</button>
+    <button onclick="mostrarSeccion('historico')">Histórico</button>
+    <button onclick="mostrarSeccion('estatutos')">Estatutos</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- INICIO -->
+  <div id="sec-inicio" class="section active">
+    <div class="card">
+      <div class="card-header">
+        Estado de la temporada
+      </div>
+      <div class="card-body">
+        <div class="progreso-info">
+          <span>Jornada <strong id="ini-jornada">-</strong></span>
+          <span><strong id="ini-pct">-</strong>% completado</span>
+        </div>
+        <div class="progreso-bar">
+          <div class="progreso-fill" id="ini-barra" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Clasificación actual <span class="badge">Top 5</span></div>
+      <div class="card-body">
+        <table class="tabla-clasif" id="ini-top5">
+          <tr><td colspan="5" class="loading"><div class="spinner"></div>Cargando...</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Próxima jornada</div>
+      <div class="card-body" id="ini-proxima">
+        <div class="loading"><div class="spinner"></div>Cargando...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JORNADA -->
+  <div id="sec-jornada" class="section">
+    <div class="card">
+      <div class="card-header">
+        Partidos <span class="badge" id="jor-badge">Jornada -</span>
+      </div>
+      <div class="jornada-info">
+        <span id="jor-competicion">-</span>
+        <span id="jor-fecha">-</span>
+      </div>
+      <div class="card-body" id="jor-partidos">
+        <div class="loading"><div class="spinner"></div>Cargando...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Pronósticos</div>
+      <div class="card-body pronos-scroll" id="jor-pronos">
+        <div class="loading"><div class="spinner"></div>Cargando...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLASIFICACION -->
+  <div id="sec-clasificacion" class="section">
+    <div class="card">
+      <div class="card-header">Clasificación general</div>
+      <div class="card-body">
+        <table class="tabla-clasif" id="tabla-clasif-completa">
+          <tr><td colspan="5" class="loading"><div class="spinner"></div>Cargando...</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ECONOMICO -->
+  <div id="sec-economico" class="section">
+    <div class="card">
+      <div class="card-header">Balance de temporada</div>
+      <div class="card-body">
+        <div class="resumen-grid" id="eco-resumen">
+          <div class="resumen-item">
+            <div class="resumen-label">Gastado</div>
+            <div class="resumen-valor" id="eco-gastado">-</div>
+          </div>
+          <div class="resumen-item">
+            <div class="resumen-label">Ganado</div>
+            <div class="resumen-valor valor-positivo" id="eco-ganado">-</div>
+          </div>
+          <div class="resumen-item">
+            <div class="resumen-label">Balance</div>
+            <div class="resumen-valor" id="eco-balance">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Por juego</div>
+      <div class="card-body">
+        <table class="tabla-juegos" id="eco-juegos">
+          <tr><th>Juego</th><th>Gastado</th><th>Ganado</th><th>Balance</th></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORICO -->
+  <div id="sec-historico" class="section">
+    <div class="card">
+      <div class="card-header">Campeones históricos</div>
+      <div class="card-body" id="historico-lista">
+        <div class="loading"><div class="spinner"></div>Cargando...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESTATUTOS -->
+  <div id="sec-estatutos" class="section">
+    <div class="card">
+      <div class="card-header">Estatutos Peña Bandosmávila</div>
+      <div class="card-body">
+        <div class="estatutos-content" id="estatutos-content">
+          <div class="loading"><div class="spinner"></div>Cargando...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Peña Bandosmávila · Datos actualizados desde Google Sheets
+</footer>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN — solo cambia esto
+// ============================================================
+const SHEET_ID = '1Gcbt0ND0K1fmBdqwf55DuoGKakrZR9s7eP2r0RIG9hY';
+const API_KEY  = 'AIzaSyA6zHLUiBURBem0lVORI8X1y-ovSGg2UXs'; // Se añadirá después
+
+// ============================================================
+// NAVEGACIÓN
+// ============================================================
+function mostrarSeccion(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ============================================================
+// LEER DATOS DE GOOGLE SHEETS
+// ============================================================
+async function leerHoja(nombre) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${nombre}?key=${API_KEY}`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    return data.values || [];
+  } catch(e) {
+    console.error('Error leyendo hoja:', nombre, e);
+    return [];
+  }
+}
+
+// ============================================================
+// PARSEAR CONFIG
+// ============================================================
+function parsearConfig(rows) {
+  const config = {};
+  const jugadores = [];
+  let enJugadores = false;
+  rows.forEach(row => {
+    if (!row[0]) return;
+    if (row[0] === 'JUGADORES') { enJugadores = true; return; }
+    if (enJugadores) {
+      if (row[0]) jugadores.push(row[0]);
+    } else {
+      config[row[0]] = row[1] || '';
+    }
+  });
+  config.jugadores = jugadores;
+  return config;
+}
+
+// ============================================================
+// CARGAR INICIO
+// ============================================================
+async function cargarInicio(config, clasif) {
+  // Badge temporada
+  document.getElementById('temporada-badge').textContent = config['Temporada'] || '';
+
+  // Progreso
+  const jActual = parseInt(config['Jornada actual']) || 0;
+  const jTotal  = 17; // aproximado segunda vuelta
+  const pct = Math.round((jActual / jTotal) * 100);
+  document.getElementById('ini-jornada').textContent = jActual;
+  document.getElementById('ini-pct').textContent = pct;
+  document.getElementById('ini-barra').style.width = pct + '%';
+
+  // Top 5
+  const top5 = clasif.slice(0, 5);
+  let html = '<thead><tr><th>Pos</th><th>Jugador</th><th style="text-align:right">Ac</th><th style="text-align:right">P15</th><th style="text-align:right">€</th></tr></thead><tbody>';
+  top5.forEach((row, i) => {
+    const pos = i + 1;
+    const nombre = row[1] || '';
+    const estado = (row[5] || '').toLowerCase();
+    const eliminado = estado === 'eliminado';
+    const cls = eliminado ? 'eliminado' : 'nombre-jugador';
+    const posCls = pos <= 3 ? `pos-${pos}` : '';
+    html += `<tr>
+      <td class="pos-num ${posCls}">${pos}</td>
+      <td><span class="${cls}">${nombre}</span></td>
+      <td class="num-stat">${row[2] || 0}</td>
+      <td class="num-stat">${row[3] || 0}</td>
+      <td class="num-stat">${row[4] ? parseFloat(row[4]).toFixed(0)+'€' : '0€'}</td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('ini-top5').innerHTML = html;
+}
+
+// ============================================================
+// CARGAR CLASIFICACION
+// ============================================================
+function cargarClasificacion(clasif) {
+  let html = '<thead><tr><th>Pos</th><th>Jugador</th><th style="text-align:right">Aciertos</th><th style="text-align:right">Pleno15</th><th style="text-align:right">Premios</th><th>Estado</th></tr></thead><tbody>';
+  clasif.forEach((row, i) => {
+    const pos = i + 1;
+    const nombre = row[1] || '';
+    const estado = (row[5] || 'activo').toLowerCase();
+    const eliminado = estado === 'eliminado';
+    const cls = eliminado ? 'eliminado' : 'nombre-jugador';
+    const posCls = pos <= 3 ? `pos-${pos}` : '';
+    const estadoBadge = eliminado
+      ? '<span class="estado-badge estado-eliminado">Eliminado</span>'
+      : '<span class="estado-badge estado-activo">Activo</span>';
+    html += `<tr>
+      <td class="pos-num ${posCls}">${pos}</td>
+      <td><span class="${cls}">${nombre}</span></td>
+      <td class="num-stat">${row[2] || 0}</td>
+      <td class="num-stat">${row[3] || 0}</td>
+      <td class="num-stat">${row[4] ? parseFloat(row[4]).toFixed(0)+'€' : '0€'}</td>
+      <td>${estadoBadge}</td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('tabla-clasif-completa').innerHTML = html;
+}
+
+// ============================================================
+// CARGAR JORNADA
+// ============================================================
+function cargarJornada(jornadas, config) {
+  const jornadaActual = parseInt(config['Jornada actual']) || 1;
+  // Filtrar filas de la jornada actual
+  const filas = jornadas.filter(r => parseInt(r[0]) === jornadaActual);
+
+  document.getElementById('jor-badge').textContent = 'Jornada ' + jornadaActual;
+
+  if (filas.length === 0) {
+    document.getElementById('jor-partidos').innerHTML = '<div class="loading">Sin datos de jornada</div>';
+    return;
+  }
+
+  // Partidos
+  let htmlPartidos = '';
+  filas.forEach((row, i) => {
+    const num = i + 1;
+    const local = row[2] || '';
+    const visitante = row[3] || '';
+    const resultado = row[4] || '';
+    const esP15 = num === 15;
+    htmlPartidos += `<div class="partido-row">
+      <span class="partido-num">${num}</span>
+      <span class="partido-equipos">${local} — ${visitante}</span>
+      ${esP15 ? '<span class="partido-p15">P15</span>' : ''}
+      <span class="partido-resultado">${resultado}</span>
+    </div>`;
+  });
+  document.getElementById('jor-partidos').innerHTML = htmlPartidos;
+
+  // Pronósticos
+  const jugadores = config.jugadores || [];
+  let htmlPronos = '<table class="tabla-pronos"><thead><tr><th class="partido-col">Partido</th>';
+  jugadores.forEach(j => { htmlPronos += `<th>${j.substring(0,4)}</th>`; });
+  htmlPronos += '</tr></thead><tbody>';
+
+  filas.forEach((row, i) => {
+    const num = i + 1;
+    const local = row[2] || '';
+    const visitante = row[3] || '';
+    const resultado = row[4] || '';
+    htmlPronos += `<tr><td class="partido-col">${local} — ${visitante}</td>`;
+    jugadores.forEach((j, ji) => {
+      const prono = row[5 + ji] || '';
+      let cls = '';
+      if (resultado && prono) {
+        cls = (prono === resultado || resultado.includes(prono) || prono.includes(resultado)) ? 'acertado' : 'fallado';
+      }
+      htmlPronos += `<td class="${cls}">${prono}</td>`;
+    });
+    htmlPronos += '</tr>';
+  });
+  htmlPronos += '</tbody></table>';
+  document.getElementById('jor-pronos').innerHTML = htmlPronos;
+}
+
+// ============================================================
+// CARGAR ECONOMICO
+// ============================================================
+function cargarEconomico(resumen) {
+  const datos = {};
+  resumen.forEach(row => {
+    if (row[0]) datos[row[0]] = row[1] || '0';
+  });
+
+  const gastado  = parseFloat(datos['Total gastado']) || 0;
+  const ganado   = parseFloat(datos['Total premios']) || 0;
+  const balance  = ganado - gastado;
+
+  document.getElementById('eco-gastado').textContent = gastado.toFixed(0) + '€';
+  document.getElementById('eco-ganado').textContent  = ganado.toFixed(0) + '€';
+  const balEl = document.getElementById('eco-balance');
+  balEl.textContent = (balance >= 0 ? '+' : '') + balance.toFixed(0) + '€';
+  balEl.className = 'resumen-valor ' + (balance >= 0 ? 'valor-positivo' : 'valor-negativo');
+
+  const juegos = ['Bonoloto','Primitiva','Euromillon','Loteria','Quiniela'];
+  let html = '<thead><tr><th>Juego</th><th>Gastado</th><th>Ganado</th><th>Balance</th></tr></thead><tbody>';
+  juegos.forEach(j => {
+    const g = parseFloat(datos[j + ' gastado']) || 0;
+    const p = parseFloat(datos[j + ' premios']) || 0;
+    const b = p - g;
+    const bCls = b >= 0 ? 'valor-positivo' : 'valor-negativo';
+    html += `<tr>
+      <td>${j}</td>
+      <td>${g.toFixed(0)}€</td>
+      <td>${p.toFixed(0)}€</td>
+      <td class="${bCls}">${(b >= 0 ? '+' : '') + b.toFixed(0)}€</td>
+    </tr>`;
+  });
+  const tb = gastado > 0 ? ((ganado/gastado)*100).toFixed(0)+'%' : '-';
+  html += `<tr><td>TOTAL</td><td>${gastado.toFixed(0)}€</td><td>${ganado.toFixed(0)}€</td><td>${(balance >= 0 ? '+' : '') + balance.toFixed(0)}€</td></tr>`;
+  html += '</tbody>';
+  document.getElementById('eco-juegos').innerHTML = html;
+}
+
+// ============================================================
+// CARGAR HISTORICO
+// ============================================================
+function cargarHistorico(historico) {
+  let html = '';
+  const filas = [...historico].reverse(); // más reciente primero
+  filas.forEach(row => {
+    if (!row[0] || row[0] === 'Año') return;
+    const año = row[0];
+    const campeon = row[1] || '-';
+    const v1 = row[2] || '';
+    const v2 = row[3] || '';
+    const sub = [v1 ? '1ª: ' + v1 : '', v2 ? '2ª: ' + v2 : ''].filter(Boolean).join(' · ');
+    html += `<div class="historico-item">
+      <div class="historico-year">${año}</div>
+      <div>
+        <div class="historico-campeon">${campeon}</div>
+        ${sub ? `<div class="historico-sub">${sub}</div>` : ''}
+      </div>
+      <div class="trofeo">🏆</div>
+    </div>`;
+  });
+  document.getElementById('historico-lista').innerHTML = html || '<div class="loading">Sin datos</div>';
+}
+
+// ============================================================
+// CARGAR ESTATUTOS
+// ============================================================
+function cargarEstatutos(estatutos) {
+  let html = '';
+  estatutos.forEach(row => {
+    if (!row[0]) { html += '<br>'; return; }
+    const texto = row[0];
+    if (texto.startsWith('CAPÍTULO') || texto === 'PREÁMBULO') {
+      html += `<h3>${texto}</h3>`;
+    } else if (texto === 'ESTATUTOS PEÑA BANDOSMÁVILA') {
+      // título ya en header
+    } else {
+      html += `<p>${texto}</p>`;
+    }
+  });
+  document.getElementById('estatutos-content').innerHTML = html;
+}
+
+// ============================================================
+// MAIN — cargar todo
+// ============================================================
+async function init() {
+  try {
+    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows] = await Promise.all([
+      leerHoja('Config'),
+      leerHoja('Clasificacion'),
+      leerHoja('Jornadas'),
+      leerHoja('Resumen'),
+      leerHoja('Historico'),
+      leerHoja('Estatutos'),
+    ]);
+
+    const config = parsearConfig(configRows);
+    const clasif = clasificRows.slice(1).filter(r => r[1]); // sin cabecera
+
+    cargarInicio(config, clasif);
+    cargarClasificacion(clasif);
+    cargarJornada(jornadasRows.slice(1), config);
+    cargarEconomico(resumenRows.slice(1));
+    cargarHistorico(historicoRows.slice(1));
+    cargarEstatutos(estatutosRows.slice(1));
+
+  } catch(e) {
+    console.error('Error general:', e);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
