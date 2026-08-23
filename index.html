@@ -266,62 +266,24 @@
   .acertado { color: var(--verde); font-weight: 700; }
   .fallado { color: var(--gris); }
 
-  /* ECONOMICO */
-  .resumen-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 1px;
-    background: var(--borde);
-  }
-  .resumen-item {
-    background: white;
-    padding: 16px 12px;
-    text-align: center;
-  }
-  .resumen-label {
-    font-size: 10px;
-    color: var(--gris);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-  .resumen-valor {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 18px;
-    font-weight: 600;
-  }
-  .valor-positivo { color: var(--verde); }
-  .valor-negativo { color: var(--rojo); }
+   <!-- ECONOMICO -->
+  <div id="sec-economico" class="section">
+    <div class="card">
+      <div class="card-header">Saldo de la Peña <span class="badge" id="eco-temporada-badge">-</span></div>
+      <div class="card-body" style="text-align:center; padding: 28px 16px;">
+        <div class="resumen-valor" id="eco-saldo" style="font-size:36px;">-</div>
+      </div>
+    </div>
 
-  .tabla-juegos {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 12px;
-  }
-  .tabla-juegos th {
-    background: #f5f5f0;
-    padding: 8px 12px;
-    text-align: right;
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--gris);
-    text-transform: uppercase;
-  }
-  .tabla-juegos th:first-child { text-align: left; }
-  .tabla-juegos td {
-    padding: 9px 12px;
-    border-bottom: 1px solid #f0ede6;
-    text-align: right;
-    font-family: 'JetBrains Mono', monospace;
-  }
-  .tabla-juegos td:first-child {
-    text-align: left;
-    font-family: 'Inter', sans-serif;
-    font-weight: 500;
-  }
-  .tabla-juegos tr:last-child td { border-bottom: none; font-weight: 700; }
-
+    <div class="card">
+      <div class="card-header">Detalle</div>
+      <div class="card-body">
+        <table class="tabla-juegos" id="eco-detalle">
+          <tr><th>Concepto</th><th>Importe</th></tr>
+        </table>
+      </div>
+    </div>
+  </div>
   /* HISTORICO */
   .historico-item {
     display: flex;
@@ -761,37 +723,43 @@ function cargarJornada(jornadas, config) {
 function cargarEconomico(resumen) {
   const datos = {};
   resumen.forEach(row => {
-    if (row[0]) datos[row[0]] = row[1] || '0';
+    if (row[0]) datos[row[0]] = row[1];
   });
 
-  const gastado  = parseFloat(datos['Total gastado']) || 0;
-  const ganado   = parseFloat(datos['Total premios']) || 0;
-  const balance  = ganado - gastado;
+  const num = (k) => {
+    const v = datos[k];
+    if (v === undefined || v === '') return null;
+    return parseFloat(String(v).replace(',', '.'));
+  };
 
-  document.getElementById('eco-gastado').textContent = gastado.toFixed(0) + '€';
-  document.getElementById('eco-ganado').textContent  = ganado.toFixed(0) + '€';
-  const balEl = document.getElementById('eco-balance');
-  balEl.textContent = (balance >= 0 ? '+' : '') + balance.toFixed(0) + '€';
-  balEl.className = 'resumen-valor ' + (balance >= 0 ? 'valor-positivo' : 'valor-negativo');
+  document.getElementById('eco-temporada-badge').textContent = datos['Temporada'] || '-';
 
-  const juegos = ['Bonoloto','Primitiva','Euromillon','Loteria','Quiniela'];
-  let html = '<thead><tr><th>Juego</th><th>Gastado</th><th>Ganado</th><th>Balance</th></tr></thead><tbody>';
-  juegos.forEach(j => {
-    const g = parseFloat(datos[j + ' gastado']) || 0;
-    const p = parseFloat(datos[j + ' premios']) || 0;
-    const b = p - g;
-    const bCls = b >= 0 ? 'valor-positivo' : 'valor-negativo';
-    html += `<tr>
-      <td>${j}</td>
-      <td>${g.toFixed(0)}€</td>
-      <td>${p.toFixed(0)}€</td>
-      <td class="${bCls}">${(b >= 0 ? '+' : '') + b.toFixed(0)}€</td>
-    </tr>`;
+  const saldo = num('SALDO');
+  const saldoEl = document.getElementById('eco-saldo');
+  if (saldo === null) {
+    saldoEl.textContent = '-';
+  } else {
+    saldoEl.textContent = (saldo >= 0 ? '+' : '') + saldo.toFixed(2) + '€';
+    saldoEl.className = 'resumen-valor ' + (saldo >= 0 ? 'valor-positivo' : 'valor-negativo');
+  }
+
+  const filas = [
+    ['Saldo anterior', 'Saldo anterior'],
+    ['Aportaciones', 'Aportaciones'],
+    ['Premios', 'Premios'],
+    ['Total Ingresos', 'Total Ingresos'],
+    ['Juegos', 'Juegos'],
+    ['Otros', 'Otros'],
+    ['Total Gastos', 'Total Gastos'],
+  ];
+
+  let html = '<thead><tr><th>Concepto</th><th>Importe</th></tr></thead><tbody>';
+  filas.forEach(([label, key]) => {
+    const v = num(key);
+    html += `<tr><td>${label}</td><td>${v === null ? '-' : v.toFixed(2) + '€'}</td></tr>`;
   });
-  const tb = gastado > 0 ? ((ganado/gastado)*100).toFixed(0)+'%' : '-';
-  html += `<tr><td>TOTAL</td><td>${gastado.toFixed(0)}€</td><td>${ganado.toFixed(0)}€</td><td>${(balance >= 0 ? '+' : '') + balance.toFixed(0)}€</td></tr>`;
   html += '</tbody>';
-  document.getElementById('eco-juegos').innerHTML = html;
+  document.getElementById('eco-detalle').innerHTML = html;
 }
 
 // ============================================================
