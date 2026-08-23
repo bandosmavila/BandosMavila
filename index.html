@@ -699,7 +699,9 @@ function cargarClasificacion(clasif) {
 // CARGAR JORNADA
 // ============================================================
 function cargarJornada(jornadas, config) {
-  const jornadaActual = parseInt(config['Jornada actual']) || 1;
+  let jornadaActual = 0;
+  jornadas.forEach(r => { const j = parseInt(r[0]); if (j > jornadaActual) jornadaActual = j; });
+  if (!jornadaActual) jornadaActual = parseInt(config['Jornada actual']) || 1;
   // Filtrar filas de la jornada actual
   const filas = jornadas.filter(r => parseInt(r[0]) === jornadaActual);
 
