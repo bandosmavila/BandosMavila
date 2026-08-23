@@ -483,30 +483,17 @@
   <!-- ECONOMICO -->
   <div id="sec-economico" class="section">
     <div class="card">
-      <div class="card-header">Balance de temporada</div>
-      <div class="card-body">
-        <div class="resumen-grid" id="eco-resumen">
-          <div class="resumen-item">
-            <div class="resumen-label">Gastado</div>
-            <div class="resumen-valor" id="eco-gastado">-</div>
-          </div>
-          <div class="resumen-item">
-            <div class="resumen-label">Ganado</div>
-            <div class="resumen-valor valor-positivo" id="eco-ganado">-</div>
-          </div>
-          <div class="resumen-item">
-            <div class="resumen-label">Balance</div>
-            <div class="resumen-valor" id="eco-balance">-</div>
-          </div>
-        </div>
+      <div class="card-header">Saldo de la Peña <span class="badge" id="eco-temporada-badge">-</span></div>
+      <div class="card-body" style="text-align:center; padding: 28px 16px;">
+        <div class="resumen-valor" id="eco-saldo" style="font-size:36px;">-</div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header">Por juego</div>
+      <div class="card-header">Detalle</div>
       <div class="card-body">
-        <table class="tabla-juegos" id="eco-juegos">
-          <tr><th>Juego</th><th>Gastado</th><th>Ganado</th><th>Balance</th></tr>
+        <table class="tabla-juegos" id="eco-detalle">
+          <tr><th>Concepto</th><th>Importe</th></tr>
         </table>
       </div>
     </div>
@@ -761,7 +748,6 @@ function cargarEconomico(resumen) {
   html += '</tbody>';
   document.getElementById('eco-detalle').innerHTML = html;
 }
-
 // ============================================================
 // CARGAR HISTORICO
 // ============================================================
