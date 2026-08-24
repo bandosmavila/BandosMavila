@@ -684,12 +684,18 @@ function cargarClasificacion(clasif) {
 // ============================================================
 function cargarJornada(jornadas, config) {
   let jornadaActual = 0;
-  jornadas.forEach(r => { const j = parseInt(r[0]); if (j > jornadaActual) jornadaActual = j; });
-  if (!jornadaActual) jornadaActual = parseInt(config['Jornada actual']) || 1;
-  // Filtrar filas de la jornada actual
+  jornadas.forEach(r => {
+    const j = parseInt(r[0]);
+    if (j > jornadaActual) jornadaActual = j;
+  });
+  if (!jornadaActual) jornadaActual = parseInt(config['Jornada Actual']) || 1;
+
+  const jInicio = parseInt(config['Jornada Inicio']) || 0;
+  const jornadaRel = jInicio ? (jornadaActual - jInicio + 1) : jornadaActual;
+
   const filas = jornadas.filter(r => parseInt(r[0]) === jornadaActual);
 
-  document.getElementById('jor-badge').textContent = 'Jornada ' + jornadaActual;
+  document.getElementById('jor-badge').textContent = 'Jornada ' + jornadaRel;
 
   if (filas.length === 0) {
     document.getElementById('jor-partidos').innerHTML = '<div class="loading">Sin datos de jornada</div>';
@@ -720,7 +726,6 @@ function cargarJornada(jornadas, config) {
   htmlPronos += '</tr></thead><tbody>';
 
   filas.forEach((row, i) => {
-    const num = i + 1;
     const local = row[2] || '';
     const visitante = row[3] || '';
     const resultado = row[4] || '';
@@ -738,7 +743,6 @@ function cargarJornada(jornadas, config) {
   htmlPronos += '</tbody></table>';
   document.getElementById('jor-pronos').innerHTML = htmlPronos;
 }
-
 // ============================================================
 // CARGAR ECONOMICO
 // ============================================================
