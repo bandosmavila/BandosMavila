@@ -608,23 +608,11 @@ async function cargarInicio(config, clasif, jornadas) {
 
   const jInicio = parseInt(config['Jornada Inicio']) || 0;
   const jTotal = parseInt(config['Total jornadas']) || 0;
+  const jActualAbs = parseInt(config['Jornada Actual']) || 0;
 
-  const porJornada = {};
-  jornadas.forEach(r => {
-    const j = parseInt(r[0]);
-    if (!j) return;
-    if (!porJornada[j]) porJornada[j] = { total: 0, conResultado: 0 };
-    porJornada[j].total++;
-    if (r[4]) porJornada[j].conResultado++;
-  });
-  let jugadas = 0;
-  Object.keys(porJornada).forEach(j => {
-    if (porJornada[j].total >= 15 && porJornada[j].conResultado >= 15) jugadas++;
-  });
-
-  const jActualRel = jInicio ? jugadas + 1 : null;
-  const jActualAbs = jInicio ? jInicio + jugadas : null;
-  const jProximaAbs = jActualAbs !== null ? jActualAbs + 1 : null;
+  const jActualRel = (jInicio && jActualAbs) ? (jActualAbs - jInicio + 1) : null;
+  const jugadas = (jInicio && jActualAbs) ? Math.max(0, jActualAbs - jInicio) : 0;
+  const jProximaAbs = jActualAbs ? jActualAbs + 1 : null;
 
   const pct = jTotal ? Math.round((jugadas / jTotal) * 100) : 0;
   document.getElementById('ini-jornada').textContent = jActualRel !== null ? jActualRel : '-';
