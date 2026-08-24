@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Peña Bandosmávila</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a6b3c">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bandosmávila">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
 
@@ -413,6 +419,10 @@
 
   <!-- INICIO -->
   <div id="sec-inicio" class="section active">
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLScNXD4tKmsnLFBA58UNGwWVxvX05_zVhs11Yz5ZOlYgZtf6pA/viewform" target="_blank" rel="noopener" style="display:block; background:var(--verde-claro); color:white; text-align:center; padding:14px; border-radius:10px; margin-bottom:16px; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1px; text-decoration:none;">
+      📝 RELLENAR PRONÓSTICOS
+    </a>
+
     <div class="card">
       <div class="card-header">
         Estado de la temporada
@@ -822,6 +832,10 @@ async function init() {
 }
 
 init();
+  
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 </script>
 </body>
 </html>
