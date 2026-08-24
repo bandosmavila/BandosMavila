@@ -603,19 +603,22 @@ function parsearConfig(rows) {
 // ============================================================
 // CARGAR INICIO
 // ============================================================
-async function cargarInicio(config, clasif) {
-  // Badge temporada
+async function cargarInicio(config, clasif, jornadas) {
   document.getElementById('temporada-badge').textContent = config['Temporada'] || '';
 
-  // Progreso
-  const jActual = parseInt(config['Jornada actual']) || 0;
-  const jTotal  = 17; // aproximado segunda vuelta
-  const pct = Math.round((jActual / jTotal) * 100);
-  document.getElementById('ini-jornada').textContent = jActual;
+  let jActual = 0;
+  jornadas.forEach(r => {
+    const j = parseInt(r[0]);
+    if (j > jActual) jActual = j;
+  });
+  if (!jActual) jActual = parseInt(config['Jornada actual']) || 0;
+
+  const jTotal  = 17;
+  const pct = jActual ? Math.round((jActual / jTotal) * 100) : 0;
+  document.getElementById('ini-jornada').textContent = jActual || '-';
   document.getElementById('ini-pct').textContent = pct;
   document.getElementById('ini-barra').style.width = pct + '%';
 
-  // Top 5
   const top5 = clasif.slice(0, 5);
   let html = '<thead><tr><th>Pos</th><th>Jugador</th><th style="text-align:right">Ac</th><th style="text-align:right">P15</th><th style="text-align:right">€</th></tr></thead><tbody>';
   top5.forEach((row, i) => {
@@ -635,8 +638,18 @@ async function cargarInicio(config, clasif) {
   });
   html += '</tbody>';
   document.getElementById('ini-top5').innerHTML = html;
-}
 
+  const filasJornada = jornadas.filter(r => parseInt(r[0]) === jActual);
+  if (filasJornada.length === 0) {
+    document.getElementById('ini-proxima').innerHTML = '<div class="loading">Sin datos de jornada</div>';
+  } else {
+    let htmlProxima = `<div class="jornada-info"><span>Jornada ${jActual}</span><span>${filasJornada.length} partidos</span></div>`;
+    filasJornada.slice(0, 3).forEach(row => {
+      htmlProxima += `<div class="partido-row"><span class="partido-equipos">${row[2] || ''} — ${row[3] || ''}</span></div>`;
+    });
+    document.getElementById('ini-proxima').innerHTML = htmlProxima;
+  }
+}
 // ============================================================
 // CARGAR CLASIFICACION
 // ============================================================
@@ -830,7 +843,7 @@ async function init() {
     const config = parsearConfig(configRows);
     const clasif = clasificRows.slice(1).filter(r => r[1]); // sin cabecera
 
-    cargarInicio(config, clasif);
+    cargarInicio(config, clasif, jornadasRows.slice(1));
     cargarClasificacion(clasif);
     cargarJornada(jornadasRows.slice(1), config);
     cargarEconomico(resumenRows.slice(1));
