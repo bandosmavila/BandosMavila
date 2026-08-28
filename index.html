@@ -309,7 +309,8 @@
   }
   .ranking-item {
     display: flex;
-    align-items: center;
+    justify-content: center;
+    align-items: baseline;
     gap: 10px;
     padding: 4px 0;
   }
@@ -317,17 +318,20 @@
     font-family: 'Bebas Neue', sans-serif;
     font-size: 16px;
     color: var(--verde);
-    width: 20px;
-    flex-shrink: 0;
+    min-width: 16px;
+    text-align: right;
   }
   .ranking-nombre {
-    flex: 1;
     font-weight: 600;
     font-size: 13px;
+    min-width: 90px;
+    text-align: left;
   }
   .ranking-titulos {
     font-size: 12px;
     color: var(--gris);
+    min-width: 60px;
+    text-align: left;
   }
 
   /* ESTATUTOS */
