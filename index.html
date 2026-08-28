@@ -306,6 +306,10 @@
     width: 50px;
     flex-shrink: 0;
   }
+  .historico-info {
+    flex: 1;
+    text-align: center;
+  }
   .historico-campeon {
     font-weight: 600;
     font-size: 14px;
@@ -836,7 +840,7 @@ function cargarHistorico(historico) {
     const sub = [v1 ? '1ª: ' + v1 : '', v2 ? '2ª: ' + v2 : ''].filter(Boolean).join(' · ');
     html += `<div class="historico-item">
       <div class="historico-year">${año}</div>
-      <div>
+      <div class="historico-info">
         <div class="historico-campeon">${campeon}</div>
         ${sub ? `<div class="historico-sub">${sub}</div>` : ''}
       </div>
