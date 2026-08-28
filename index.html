@@ -259,7 +259,7 @@
     color: var(--gris);
     border-bottom: 1px solid var(--borde);
   }
-  .tabla-pronos th.partido-col { text-align: left; min-width: 120px; }
+  .tabla-pronos th.partido-col { text-align: center; width: 28px; }
   .tabla-pronos td {
     padding: 7px 8px;
     border-bottom: 1px solid #f0ede6;
@@ -267,7 +267,7 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
   }
-  .tabla-pronos td.partido-col { text-align: left; font-family: 'Inter', sans-serif; font-size: 11px; }
+  .tabla-pronos td.partido-col { text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--gris); }
   .tabla-pronos tr:last-child td { border-bottom: none; }
   .acertado { color: var(--verde); font-weight: 700; }
   .fallado { color: var(--gris); }
@@ -743,7 +743,7 @@ function cargarJornada(jornadas, calendario, config) {
 
   // Pronósticos
   const jugadores = config.jugadores || [];
-  let htmlPronos = '<table class="tabla-pronos"><thead><tr><th class="partido-col">Partido</th>';
+  let htmlPronos = '<table class="tabla-pronos"><thead><tr><th class="partido-col">Nº</th>';
   jugadores.forEach(j => { htmlPronos += `<th>${j.substring(0,4)}</th>`; });
   htmlPronos += '</tr></thead><tbody>';
 
@@ -751,7 +751,7 @@ function cargarJornada(jornadas, calendario, config) {
     const local = row[2] || '';
     const visitante = row[3] || '';
     const resultado = row[4] || '';
-    htmlPronos += `<tr><td class="partido-col">${local} — ${visitante}</td>`;
+    htmlPronos += `<tr><td class="partido-col">${i + 1}</td>`;
     jugadores.forEach((j, ji) => {
       const prono = row[5 + ji] || '';
       let cls = '';
