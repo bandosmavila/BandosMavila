@@ -870,21 +870,23 @@ function cargarEstatutos(estatutos) {
 // ============================================================
 async function init() {
   try {
-    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows] = await Promise.all([
+    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows] = await Promise.all([
       leerHoja('Config'),
       leerHoja('Clasificacion'),
       leerHoja('Jornadas'),
       leerHoja('Resumen'),
       leerHoja('Historico'),
       leerHoja('Estatutos'),
+      leerHoja('CalendarioQuiniela'),
     ]);
 
     const config = parsearConfig(configRows);
     const clasif = clasificRows.slice(1).filter(r => r[1]); // sin cabecera
+    const calendario = calendarioRows.slice(1); // sin cabecera
 
-    cargarInicio(config, clasif, jornadasRows.slice(1));
+    cargarInicio(config, clasif, jornadasRows.slice(1), calendario);
     cargarClasificacion(clasif);
-    cargarJornada(jornadasRows.slice(1), config);
+    cargarJornada(jornadasRows.slice(1), calendario, config);
     cargarEconomico(resumenRows.slice(1));
     cargarHistorico(historicoRows.slice(1));
     cargarEstatutos(estatutosRows.slice(1));
