@@ -302,6 +302,33 @@
     margin-top: 2px;
   }
   .trofeo { font-size: 20px; margin-left: auto; }
+  .historico-ranking {
+    padding: 12px 16px;
+    border-bottom: 2px solid var(--verde);
+    background: #f7f5ef;
+  }
+  .ranking-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0;
+  }
+  .ranking-pos {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    color: var(--verde);
+    width: 20px;
+    flex-shrink: 0;
+  }
+  .ranking-nombre {
+    flex: 1;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .ranking-titulos {
+    font-size: 12px;
+    color: var(--gris);
+  }
 
   /* ESTATUTOS */
   .estatutos-content {
@@ -813,7 +840,29 @@ function cargarEconomico(resumen) {
 // CARGAR HISTORICO
 // ============================================================
 function cargarHistorico(historico) {
+  // Ranking: cuántas veces ha sido campeón cada uno, contando todas las filas
+  const conteo = {};
+  historico.forEach(row => {
+    if (!row[0] || row[0] === 'Año') return;
+    const nombre = row[1] || '';
+    if (!nombre) return;
+    conteo[nombre] = (conteo[nombre] || 0) + 1;
+  });
+  const ranking = Object.entries(conteo).sort((a, b) => b[1] - a[1]);
+
   let html = '';
+  if (ranking.length) {
+    html += '<div class="historico-ranking">';
+    ranking.forEach(([nombre, titulos], i) => {
+      html += `<div class="ranking-item">
+        <span class="ranking-pos">${i + 1}</span>
+        <span class="ranking-nombre">${nombre}</span>
+        <span class="ranking-titulos">${titulos} ${titulos === 1 ? 'título' : 'títulos'}</span>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
   const filas = [...historico].reverse(); // más reciente primero
   filas.forEach(row => {
     if (!row[0] || row[0] === 'Año') return;
