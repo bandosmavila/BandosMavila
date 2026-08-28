@@ -601,18 +601,45 @@ function parsearConfig(rows) {
 }
 
 // ============================================================
-// CARGAR INICIO
+// JORNADAS QUE SE JUEGAN, Y CUÁL TOCA AHORA (sin depender de Config)
 // ============================================================
-async function cargarInicio(config, clasif, jornadas) {
+function calendarioActivo(calendario) {
+  // Solo las jornadas de CalendarioQuiniela que incluyen Primera, ordenadas
+  return calendario
+    .filter(r => String(r[3]).toUpperCase() === 'TRUE')
+    .map(r => ({ jornada: parseInt(r[0]), ligaPrimera: r[2] || '' }))
+    .sort((a, b) => a.jornada - b.jornada);
+}
+
+function calcularJornadaActual(jornadas) {
+  // La primera (más baja) jornada con partidos pero sin sus 15 resultados aún
+  const porJornada = {};
+  jornadas.forEach(r => {
+    const j = parseInt(r[0]);
+    if (!j) return;
+    if (!porJornada[j]) porJornada[j] = { total: 0, conResultado: 0 };
+    porJornada[j].total++;
+    if (r[4]) porJornada[j].conResultado++;
+  });
+  const nums = Object.keys(porJornada).map(Number).sort((a, b) => a - b);
+  for (const j of nums) {
+    if (porJornada[j].conResultado < 15) return j;
+  }
+  return nums.length ? nums[nums.length - 1] : null;
+}
+// ============================================================
+// CARGAR INICIO (QUITAR ESTE COMENTARIO??)
+// ============================================================
+async function cargarInicio(config, clasif, jornadas, calendario) {
   document.getElementById('temporada-badge').textContent = config['Temporada'] || '';
 
-  const jInicio = parseInt(config['Jornada Inicio']) || 0;
-  const jTotal = parseInt(config['Total jornadas']) || 0;
-  const jActualAbs = parseInt(config['Jornada Actual']) || 0;
-
-  const jActualRel = (jInicio && jActualAbs) ? (jActualAbs - jInicio + 1) : null;
-  const jugadas = (jInicio && jActualAbs) ? Math.max(0, jActualAbs - jInicio) : 0;
-  const jProximaAbs = jActualAbs ? jActualAbs + 1 : null;
+  const activas = calendarioActivo(calendario);
+  const jornadaActual = calcularJornadaActual(jornadas);
+  const posActual = jornadaActual !== null ? activas.findIndex(a => a.jornada === jornadaActual) : -1;
+  const jActualRel = posActual >= 0 ? posActual + 1 : null;
+  const jugadas = posActual >= 0 ? posActual : 0;
+  const jTotal = activas.length;
+  const proxima = posActual >= 0 && posActual + 1 < activas.length ? activas[posActual + 1] : null;
 
   const pct = jTotal ? Math.round((jugadas / jTotal) * 100) : 0;
   document.getElementById('ini-jornada').textContent = jActualRel !== null ? jActualRel : '-';
@@ -640,11 +667,13 @@ async function cargarInicio(config, clasif, jornadas) {
   html += '</tbody>';
   document.getElementById('ini-top5').innerHTML = html;
 
-  const filasJornada = jProximaAbs !== null ? jornadas.filter(r => parseInt(r[0]) === jProximaAbs) : [];
+  const filasJornada = proxima ? jornadas.filter(r => parseInt(r[0]) === proxima.jornada) : [];
   if (filasJornada.length === 0) {
     document.getElementById('ini-proxima').innerHTML = '<div class="loading">Sin datos de jornada</div>';
   } else {
-    let htmlProxima = `<div class="jornada-info"><span>Jornada ${jActualRel !== null ? jActualRel + 1 : jProximaAbs}</span><span>${filasJornada.length} partidos</span></div>`;
+    const etiqueta = 'Jornada ' + (jActualRel !== null ? jActualRel + 1 : proxima.jornada) +
+      (proxima.ligaPrimera ? ' (Liga 1ª: Jornada ' + proxima.ligaPrimera + ')' : '');
+    let htmlProxima = `<div class="jornada-info"><span>${etiqueta}</span><span>${filasJornada.length} partidos</span></div>`;
     filasJornada.forEach(row => {
       htmlProxima += `<div class="partido-row"><span class="partido-equipos">${row[2] || ''} — ${row[3] || ''}</span></div>`;
     });
@@ -682,20 +711,25 @@ function cargarClasificacion(clasif) {
 // ============================================================
 // CARGAR JORNADA
 // ============================================================
-function cargarJornada(jornadas, config) {
-  let jornadaActual = 0;
-  jornadas.forEach(r => {
-    const j = parseInt(r[0]);
-    if (j > jornadaActual) jornadaActual = j;
-  });
-  if (!jornadaActual) jornadaActual = parseInt(config['Jornada Actual']) || 1;
 
-  const jInicio = parseInt(config['Jornada Inicio']) || 0;
-  const jornadaRel = jInicio ? (jornadaActual - jInicio + 1) : jornadaActual;
+function cargarJornada(jornadas, calendario, config) {
+  const activas = calendarioActivo(calendario);
+  const jornadaActual = calcularJornadaActual(jornadas);
+
+  if (jornadaActual === null) {
+    document.getElementById('jor-badge').textContent = 'Jornada -';
+    document.getElementById('jor-partidos').innerHTML = '<div class="loading">Sin datos de jornada</div>';
+    return;
+  }
+
+  const posActual = activas.findIndex(a => a.jornada === jornadaActual);
+  const jornadaRel = posActual >= 0 ? posActual + 1 : jornadaActual;
+  const ligaPrimera = posActual >= 0 ? activas[posActual].ligaPrimera : '';
 
   const filas = jornadas.filter(r => parseInt(r[0]) === jornadaActual);
 
-  document.getElementById('jor-badge').textContent = 'Jornada ' + jornadaRel;
+  document.getElementById('jor-badge').textContent = 'Jornada ' + jornadaRel +
+    (ligaPrimera ? ' (Liga 1ª: Jornada ' + ligaPrimera + ')' : '');
 
   if (filas.length === 0) {
     document.getElementById('jor-partidos').innerHTML = '<div class="loading">Sin datos de jornada</div>';
