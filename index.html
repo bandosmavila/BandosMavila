@@ -593,7 +593,7 @@ function calendarioActivo(calendario) {
   // Solo las jornadas de CalendarioQuiniela que incluyen Primera, ordenadas
   return calendario
     .filter(r => String(r[3]).toUpperCase() === 'TRUE')
-    .map(r => ({ jornada: parseInt(r[0]), ligaPrimera: r[2] || '' }))
+    .map(r => ({ jornada: parseInt(r[0]), ligaPrimera: r[2] || '', dobles: r[4] !== '' && r[4] !== undefined ? r[4] : null }))
     .sort((a, b) => a.jornada - b.jornada);
 }
 
@@ -714,8 +714,10 @@ function cargarJornada(jornadas, calendario, config) {
 
   const filas = jornadas.filter(r => parseInt(r[0]) === jornadaActual);
 
+  const dobles = posActual >= 0 ? activas[posActual].dobles : null;
+  const textoDobles = dobles !== null ? (' · ' + dobles + (dobles === 1 ? ' doble' : ' dobles')) : '';
   document.getElementById('jor-badge').textContent = 'Jornada ' + jornadaRel +
-    (ligaPrimera ? ' (Liga 1ª: Jornada ' + ligaPrimera + ')' : '');
+    (ligaPrimera ? ' (Liga 1ª: Jornada ' + ligaPrimera + ')' : '') + textoDobles;
 
   if (filas.length === 0) {
     document.getElementById('jor-partidos').innerHTML = '<div class="loading">Sin datos de jornada</div>';
