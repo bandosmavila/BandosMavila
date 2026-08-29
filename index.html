@@ -589,6 +589,14 @@
       <div class="card-header">Saldo de la Peña <span class="badge" id="eco-temporada-badge">-</span></div>
       <div class="card-body" style="text-align:center; padding: 28px 16px;">
         <div class="resumen-valor" id="eco-saldo" style="font-size:36px;">-</div>
+        <div class="saldo-barra" id="eco-saldo-barra">
+          <div class="saldo-barra-ingresos" id="eco-barra-ingresos" style="width:50%;"></div>
+          <div class="saldo-barra-gastos" id="eco-barra-gastos" style="width:50%;"></div>
+        </div>
+        <div class="saldo-leyenda">
+          <span><i class="dot dot-verde"></i>Ingresos <b id="eco-total-ingresos">-</b></span>
+          <span><i class="dot dot-rojo"></i>Gastos <b id="eco-total-gastos">-</b></span>
+        </div>
       </div>
     </div>
 
@@ -916,21 +924,37 @@ function cargarEconomico(resumen, operaciones) {
     saldoEl.className = 'resumen-valor ' + (saldo >= 0 ? 'valor-positivo' : 'valor-negativo');
   }
 
-  const filas = [
+  // Barra Ingresos vs Gastos
+  const totalIngresos = num('Total Ingresos') || 0;
+  const totalGastos = num('Total Gastos') || 0;
+  const sumaTotal = totalIngresos + totalGastos;
+  const pctIngresos = sumaTotal > 0 ? (totalIngresos / sumaTotal * 100) : 50;
+  document.getElementById('eco-barra-ingresos').style.width = pctIngresos + '%';
+  document.getElementById('eco-barra-gastos').style.width = (100 - pctIngresos) + '%';
+  document.getElementById('eco-total-ingresos').textContent = totalIngresos.toFixed(2) + '€';
+  document.getElementById('eco-total-gastos').textContent = totalGastos.toFixed(2) + '€';
+
+  const filasIngresos = [
     ['Saldo anterior', 'Saldo anterior'],
     ['Aportaciones', 'Aportaciones'],
     ['Premios', 'Premios'],
-    ['Total Ingresos', 'Total Ingresos'],
+  ];
+  const filasGastos = [
     ['Juegos', 'Juegos'],
     ['Otros', 'Otros'],
-    ['Total Gastos', 'Total Gastos'],
   ];
 
   let html = '<thead><tr><th>Concepto</th><th>Importe</th></tr></thead><tbody>';
-  filas.forEach(([label, key]) => {
+  filasIngresos.forEach(([label, key]) => {
     const v = num(key);
-    html += `<tr><td>${label}</td><td>${v === null ? '-' : v.toFixed(2) + '€'}</td></tr>`;
+    html += `<tr><td>${label}</td><td class="importe-positivo">${v === null ? '-' : '+' + v.toFixed(2) + '€'}</td></tr>`;
   });
+  html += `<tr class="fila-total"><td>Total Ingresos</td><td class="importe-positivo">${totalIngresos.toFixed(2)}€</td></tr>`;
+  filasGastos.forEach(([label, key]) => {
+    const v = num(key);
+    html += `<tr><td>${label}</td><td class="importe-negativo">${v === null ? '-' : '-' + v.toFixed(2) + '€'}</td></tr>`;
+  });
+  html += `<tr class="fila-total"><td>Total Gastos</td><td class="importe-negativo">-${totalGastos.toFixed(2)}€</td></tr>`;
   html += '</tbody>';
   document.getElementById('eco-detalle').innerHTML = html;
 
@@ -943,11 +967,15 @@ function cargarEconomico(resumen, operaciones) {
     porJuego[juego].coste += parseFloat(row[3]) || 0;
     porJuego[juego].premio += parseFloat(row[4]) || 0;
   });
+  let totalCoste = 0, totalPremio = 0;
   let htmlJuego = '<thead><tr><th>Juego</th><th>Gastado</th><th>Premiado</th></tr></thead><tbody>';
   Object.keys(porJuego).forEach(juego => {
     const d = porJuego[juego];
-    htmlJuego += `<tr><td>${juego}</td><td>${d.coste.toFixed(2)}€</td><td>${d.premio.toFixed(2)}€</td></tr>`;
+    totalCoste += d.coste;
+    totalPremio += d.premio;
+    htmlJuego += `<tr><td>${juego}</td><td class="importe-negativo">${d.coste.toFixed(2)}€</td><td class="${d.premio > 0 ? 'importe-positivo' : ''}">${d.premio.toFixed(2)}€</td></tr>`;
   });
+  htmlJuego += `<tr class="fila-total"><td>Total</td><td class="importe-negativo">${totalCoste.toFixed(2)}€</td><td class="importe-positivo">${totalPremio.toFixed(2)}€</td></tr>`;
   htmlJuego += '</tbody>';
   document.getElementById('eco-resumen-juego').innerHTML = htmlJuego;
 
@@ -956,7 +984,7 @@ function cargarEconomico(resumen, operaciones) {
   operaciones.forEach(row => {
     const coste = parseFloat(row[3]) || 0;
     const premio = parseFloat(row[4]) || 0;
-    htmlDetalle += `<tr><td>${row[0] || ''}</td><td>${row[1] || ''}</td><td>${row[2] || ''}</td><td>${coste.toFixed(2)}€</td><td>${premio.toFixed(2)}€</td></tr>`;
+    htmlDetalle += `<tr><td>${row[0] || ''}</td><td>${row[1] || ''}</td><td>${row[2] || ''}</td><td class="importe-negativo">${coste.toFixed(2)}€</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio.toFixed(2)}€</td></tr>`;
   });
   htmlDetalle += '</tbody>';
   document.getElementById('eco-detalle-semanal').innerHTML = htmlDetalle;
