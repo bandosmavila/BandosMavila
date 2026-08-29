@@ -272,6 +272,70 @@
   .acertado { color: var(--verde); font-weight: 700; }
   .fallado { color: var(--gris); }
 
+  /* TABLAS ECONOMICO */
+  .tabla-juegos {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .tabla-juegos th {
+    background: #f5f5f0;
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--borde);
+  }
+  .tabla-juegos th:not(:first-child),
+  .tabla-juegos td:not(:first-child) { text-align: right; }
+  .tabla-juegos td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #f0ede6;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+  }
+  .tabla-juegos td:first-child {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    color: var(--tinta);
+  }
+  .tabla-juegos tr:last-child td { border-bottom: none; }
+  .tabla-juegos tr:hover td { background: #fafaf7; }
+  .tabla-juegos tr.fila-total td {
+    font-weight: 700;
+    border-top: 2px solid var(--verde);
+    background: #f7f5ef;
+  }
+  .importe-positivo { color: var(--verde-claro); }
+  .importe-negativo { color: var(--rojo); }
+  .valor-positivo { color: var(--verde-claro); }
+  .valor-negativo { color: var(--rojo); }
+
+  /* BARRA SALDO */
+  .saldo-barra {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #f0ede6;
+    margin-top: 16px;
+  }
+  .saldo-barra-ingresos { background: var(--verde-claro); }
+  .saldo-barra-gastos { background: var(--rojo); }
+  .saldo-leyenda {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--gris);
+  }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+  .dot-verde { background: var(--verde-claro); }
+  .dot-rojo { background: var(--rojo); }
   /* HISTORICO */
   .historico-item {
     display: flex;
