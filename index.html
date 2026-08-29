@@ -535,6 +535,26 @@
         </table>
       </div>
     </div>
+
+    <div class="card">
+      <div class="card-header">Resumen por juego</div>
+      <div class="card-body">
+        <table class="tabla-juegos" id="eco-resumen-juego">
+          <tr><th>Juego</th><th>Gastado</th><th>Premiado</th></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" style="cursor:pointer;" onclick="toggleDetalleSemanal()">
+        Detalle semanal (auditoría) <span id="eco-toggle-icono">▼</span>
+      </div>
+      <div class="card-body" id="eco-detalle-semanal-body" style="display:none; max-height:400px; overflow-y:auto; padding:0;">
+        <table class="tabla-juegos" id="eco-detalle-semanal">
+          <tr><th>Sem.</th><th>Fecha</th><th>Juego</th><th>Coste</th><th>Premio</th></tr>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- HISTORICO -->
@@ -800,7 +820,15 @@ function cargarJornada(jornadas, calendario, config) {
 // ============================================================
 // CARGAR ECONOMICO
 // ============================================================
-function cargarEconomico(resumen) {
+function toggleDetalleSemanal() {
+  const body = document.getElementById('eco-detalle-semanal-body');
+  const icono = document.getElementById('eco-toggle-icono');
+  const abierto = body.style.display !== 'none';
+  body.style.display = abierto ? 'none' : 'block';
+  icono.textContent = abierto ? '▼' : '▲';
+}
+
+function cargarEconomico(resumen, operaciones) {
   const datos = {};
   resumen.forEach(row => {
     if (row[0]) datos[row[0]] = row[1];
@@ -832,15 +860,36 @@ function cargarEconomico(resumen) {
     ['Otros', 'Otros'],
     ['Total Gastos', 'Total Gastos'],
   ];
+async function init() {
+  try {
+    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows] = await Promise.all([
+      leerHoja('Config'),
+      leerHoja('Clasificacion'),
+      leerHoja('Jornadas'),
+      leerHoja('Resumen'),
+      leerHoja('Historico'),
+      leerHoja('Estatutos'),
+      leerHoja('CalendarioQuiniela'),
+    ]);
 
-  let html = '<thead><tr><th>Concepto</th><th>Importe</th></tr></thead><tbody>';
-  filas.forEach(([label, key]) => {
-    const v = num(key);
-    html += `<tr><td>${label}</td><td>${v === null ? '-' : v.toFixed(2) + '€'}</td></tr>`;
-  });
-  html += '</tbody>';
-  document.getElementById('eco-detalle').innerHTML = html;
+    const config = parsearConfig(configRows);
+    const clasif = clasificRows.slice(1).filter(r => r[1]);
+    const calendario = calendarioRows.slice(1);
+
+    cargarInicio(config, clasif, jornadasRows.slice(1), calendario);
+    cargarClasificacion(clasif);
+    cargarJornada(jornadasRows.slice(1), calendario, config);
+    cargarEconomico(resumenRows.slice(1));
+    cargarHistorico(historicoRows.slice(1));
+    cargarEstatutos(estatutosRows.slice(1));
+
+  } catch(e) {
+    console.error('Error general:', e);
+  }
 }
+
+init();
+
 // ============================================================
 // CARGAR HISTORICO
 // ============================================================
@@ -920,6 +969,7 @@ async function init() {
       leerHoja('Historico'),
       leerHoja('Estatutos'),
       leerHoja('CalendarioQuiniela'),
+      leerHoja('Operaciones'),
     ]);
 
     const config = parsearConfig(configRows);
@@ -929,7 +979,7 @@ async function init() {
     cargarInicio(config, clasif, jornadasRows.slice(1), calendario);
     cargarClasificacion(clasif);
     cargarJornada(jornadasRows.slice(1), calendario, config);
-    cargarEconomico(resumenRows.slice(1));
+    cargarEconomico(resumenRows.slice(1), operacionesRows.slice(1));
     cargarHistorico(historicoRows.slice(1));
     cargarEstatutos(estatutosRows.slice(1));
 
