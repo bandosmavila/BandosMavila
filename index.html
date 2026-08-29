@@ -436,6 +436,7 @@
 
   <!-- INICIO -->
   <div id="sec-inicio" class="section active">
+    <div id="trono-container"></div>
     <a id="link-pronosticos" href="https://docs.google.com/forms/d/e/1FAIpQLScNXD4tKmsnLFBA58UNGwWVxvX05_zVhs11Yz5ZOlYgZtf6pA/viewform" style="display:block; background:var(--verde-claro); color:white; text-align:center; padding:14px; border-radius:10px; margin-bottom:16px; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1px; text-decoration:none;">
       📝 RELLENAR PRONÓSTICOS
     </a>
@@ -966,7 +967,41 @@ function cargarEstatutos(estatutos) {
 // ============================================================
 // MAIN — cargar todo
 // ============================================================
-async function init() {
+function cargarTrono(campeones) {
+  const cont = document.getElementById('trono-container');
+  const ahora = new Date();
+
+  function diasDesde(fecha) {
+    return (ahora - new Date(fecha)) / (1000 * 60 * 60 * 24);
+  }
+
+  // Última fila de cada tipo (por si hay varias temporadas, coger la más reciente)
+  const granFinal = [...campeones].reverse().find(r => r[1] === 'GranFinal');
+  const vuelta2 = [...campeones].reverse().find(r => r[1] === '2');
+  const vuelta1 = [...campeones].reverse().find(r => r[1] === '1');
+
+  let html = '';
+
+  if (granFinal && diasDesde(granFinal[3]) <= 15) {
+    html = `<div class="card" style="background:linear-gradient(135deg,#c9a227,#f0d878); text-align:center; padding:24px;">
+      <div style="font-size:13px; letter-spacing:1px; opacity:0.8;">GRAN CAMPEÓN DE LA TEMPORADA</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:32px; margin-top:4px;">${granFinal[2]}</div>
+    </div>`;
+  } else if (vuelta2 && !granFinal) {
+    html = `<div class="card" style="background:var(--verde); color:#fff; text-align:center; padding:20px;">
+      <div style="font-size:12px; letter-spacing:1px; opacity:0.85;">CAMPEÓN VUELTA 2</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:26px; margin-top:2px;">${vuelta2[2]}</div>
+    </div>`;
+  } else if (vuelta1 && diasDesde(vuelta1[3]) <= 7) {
+    html = `<div class="card" style="background:var(--verde); color:#fff; text-align:center; padding:20px;">
+      <div style="font-size:12px; letter-spacing:1px; opacity:0.85;">CAMPEÓN VUELTA 1</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:26px; margin-top:2px;">${vuelta1[2]}</div>
+    </div>`;
+  }
+
+  cont.innerHTML = html;
+}
+  async function init() {
   try {
     const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows] = await Promise.all([
       leerHoja('Config'),
@@ -977,6 +1012,7 @@ async function init() {
       leerHoja('Estatutos'),
       leerHoja('CalendarioQuiniela'),
       leerHoja('Operaciones'),
+      leerHoja('Campeones'),
     ]);
 
     const config = parsearConfig(configRows);
@@ -984,6 +1020,7 @@ async function init() {
     const calendario = calendarioRows.slice(1); // sin cabecera
 
     cargarInicio(config, clasif, jornadasRows.slice(1), calendario);
+    cargarTrono(campeonesRows.slice(1));
     cargarClasificacion(clasif);
     cargarJornada(jornadasRows.slice(1), calendario, config);
     cargarEconomico(resumenRows.slice(1), operacionesRows.slice(1));
