@@ -789,7 +789,8 @@ function cargarJornada(jornadas, calendario, config) {
       if (resultado && prono) {
         cls = (prono === resultado || resultado.includes(prono) || prono.includes(resultado)) ? 'acertado' : 'fallado';
       }
-      htmlPronos += `<td class="${cls}">${prono}</td>`;
+      const pronoMostrado = prono.replace(/\s/g, ''); // solo visual: quita espacios de "M - 0" -> "M-0"
+      htmlPronos += `<td class="${cls}">${pronoMostrado}</td>`;
     });
     htmlPronos += '</tr>';
   });
