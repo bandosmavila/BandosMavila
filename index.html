@@ -698,7 +698,7 @@ const API_KEY  = 'AIzaSyA6zHLUiBURBem0lVORI8X1y-ovSGg2UXs'; // Se añadirá desp
 
 function cargarLoteria(rows) {
   let total = 0;
-  let html = '<thead><tr><th>Nombre</th><th>Número</th><th>Lugar</th><th>Premio</th></tr></thead><tbody>';
+  let html = '<thead><tr><th>Nombre</th><th>Número</th><th style="text-align:center">Observaciones</th><th>Premio</th></tr></thead><tbody>';
   rows.forEach(row => {
     const nombre = row[0] || '';
     if (!nombre || nombre.toUpperCase() === 'TOTAL') return;
@@ -707,7 +707,7 @@ function cargarLoteria(rows) {
     const premio = parseFloat(row[3]) || 0;
     total += premio;
     const esPena = nombre.toUpperCase() === 'PEÑA';
-    html += `<tr class="${esPena ? 'fila-pena' : ''}"><td>${nombre}</td><td>${numero}</td><td>${lugar}</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio > 0 ? premio.toFixed(2) + '€' : '-'}</td></tr>`;
+    html += `<tr class="${esPena ? 'fila-pena' : ''}"><td>${nombre}</td><td>${numero}</td><td style="text-align:center">${lugar}</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio > 0 ? premio.toFixed(2) + '€' : '-'}</td></tr>`;
   });
   html += `<tr class="fila-total"><td colspan="3">Total premios</td><td class="importe-positivo">${total.toFixed(2)}€</td></tr>`;
   html += '</tbody>';
