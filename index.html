@@ -314,6 +314,11 @@
   }
   .tabla-juegos tr:last-child td { border-bottom: none; }
   .tabla-juegos tr:hover td { background: #fafaf7; }
+  .tabla-juegos tr.fila-pena td {
+    background: var(--verde);
+    color: white;
+    font-weight: 700;
+  }
   .tabla-juegos tr.fila-total td {
     font-weight: 700;
     border-top: 2px solid var(--verde);
@@ -502,6 +507,7 @@
     <button onclick="mostrarSeccion('clasificacion')">Clasificación</button>
     <button onclick="mostrarSeccion('economico')">Económico</button>
     <button onclick="mostrarSeccion('historico')">Histórico</button>
+    <button onclick="mostrarSeccion('loteria')">Lotería</button>
     <button onclick="mostrarSeccion('estatutos')">Estatutos</button>
   </nav>
 </header>
@@ -650,6 +656,21 @@
     </div>
   </div>
 
+  <!-- LOTERIA -->
+  <div id="sec-loteria" class="section">
+    <div class="card">
+      <div class="card-header">Lotería de Navidad</div>
+      <div class="card-body" style="padding: 0 16px 16px;">
+        <a id="link-loteria" href="PENDIENTE_URL_FORMULARIO" target="_blank" style="display:block; background:var(--verde-claro); color:white; text-align:center; padding:14px; border-radius:10px; margin:16px 0; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1px; text-decoration:none;">
+          🎄 APORTAR MI DÉCIMO
+        </a>
+        <table class="tabla-juegos" id="loteria-tabla">
+          <tr><th>Nombre</th><th>Número</th><th>Lugar</th><th>Premio</th></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- ESTATUTOS -->
   <div id="sec-estatutos" class="section">
     <div class="card">
@@ -675,6 +696,24 @@
 const SHEET_ID = '1Gcbt0ND0K1fmBdqwf55DuoGKakrZR9s7eP2r0RIG9hY';
 const API_KEY  = 'AIzaSyA6zHLUiBURBem0lVORI8X1y-ovSGg2UXs'; // Se añadirá después
 
+function cargarLoteria(rows) {
+  let total = 0;
+  let html = '<thead><tr><th>Nombre</th><th>Número</th><th>Lugar</th><th>Premio</th></tr></thead><tbody>';
+  rows.forEach(row => {
+    const nombre = row[0] || '';
+    if (!nombre || nombre.toUpperCase() === 'TOTAL') return;
+    const numero = row[1] || '-';
+    const lugar = row[2] || '';
+    const premio = parseFloat(row[3]) || 0;
+    total += premio;
+    const esPena = nombre.toUpperCase() === 'PEÑA';
+    html += `<tr class="${esPena ? 'fila-pena' : ''}"><td>${nombre}</td><td>${numero}</td><td>${lugar}</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio > 0 ? premio.toFixed(2) + '€' : '-'}</td></tr>`;
+  });
+  html += `<tr class="fila-total"><td colspan="3">Total premios</td><td class="importe-positivo">${total.toFixed(2)}€</td></tr>`;
+  html += '</tbody>';
+  document.getElementById('loteria-tabla').innerHTML = html;
+}
+  
 // ============================================================
 // NAVEGACIÓN
 // ============================================================
@@ -1120,7 +1159,7 @@ function cargarTrono(campeones) {
 }
   async function init() {
   try {
-    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows] = await Promise.all([
+    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows] = await Promise.all([
       leerHoja('Config'),
       leerHoja('Clasificacion'),
       leerHoja('Jornadas'),
@@ -1131,6 +1170,7 @@ function cargarTrono(campeones) {
       leerHoja('Operaciones'),
       leerHoja('Campeones'),
       leerHoja('MarcadoresPartidos'),
+      leerHoja('Loteria'),
     ]);
 
     const config = parsearConfig(configRows);
@@ -1144,6 +1184,7 @@ function cargarTrono(campeones) {
     cargarEconomico(resumenRows.slice(1), operacionesRows.slice(1));
     cargarHistorico(historicoRows.slice(1));
     cargarEstatutos(estatutosRows.slice(1));
+    cargarLoteria(loteriaRows.slice(1));
 
   } catch(e) {
     console.error('Error general:', e);
