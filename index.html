@@ -244,6 +244,7 @@
     overflow-x: auto;
     scrollbar-width: thin;
   }
+  .partido-marcador { font-size: 12px; color: var(--gris); margin-right: 6px; font-family: 'JetBrains Mono', monospace; }
   .tabla-pronos {
     width: 100%;
     border-collapse: collapse;
@@ -831,7 +832,7 @@ function cargarClasificacion(clasif) {
 // CARGAR JORNADA
 // ============================================================
 
-function cargarJornada(jornadas, calendario, config) {
+function cargarJornada(jornadas, calendario, config, marcadores) {
   const activas = calendarioActivo(calendario);
   const jornadaActual = calcularJornadaActual(jornadas);
 
@@ -857,6 +858,14 @@ function cargarJornada(jornadas, calendario, config) {
     return;
   }
 
+  // Marcadores reales (marcador -> partido), solo de la jornada actual
+  const marcadorPorPartido = {};
+  marcadores.forEach(row => {
+    if (parseInt(row[0]) === jornadaActual) {
+      marcadorPorPartido[row[1]] = row[2] || '';
+    }
+  });
+
   // Partidos
   let htmlPartidos = '';
   filas.forEach((row, i) => {
@@ -864,11 +873,13 @@ function cargarJornada(jornadas, calendario, config) {
     const local = row[2] || '';
     const visitante = row[3] || '';
     const resultado = row[4] || '';
+    const marcador = marcadorPorPartido[num] || '';
     const esP15 = num === 15;
     htmlPartidos += `<div class="partido-row">
       <span class="partido-num">${num}</span>
       <span class="partido-equipos">${local} — ${visitante}</span>
       ${esP15 ? '<span class="partido-p15">P15</span>' : ''}
+      ${marcador ? `<span class="partido-marcador">${marcador}</span>` : ''}
       <span class="partido-resultado">${resultado}</span>
     </div>`;
   });
@@ -1129,7 +1140,7 @@ function cargarTrono(campeones) {
     cargarInicio(config, clasif, jornadasRows.slice(1), calendario);
     cargarTrono(campeonesRows.slice(1));
     cargarClasificacion(clasif);
-    cargarJornada(jornadasRows.slice(1), calendario, config);
+    cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1));
     cargarEconomico(resumenRows.slice(1), operacionesRows.slice(1));
     cargarHistorico(historicoRows.slice(1));
     cargarEstatutos(estatutosRows.slice(1));
