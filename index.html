@@ -1109,7 +1109,7 @@ function cargarTrono(campeones) {
 }
   async function init() {
   try {
-    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows] = await Promise.all([
+    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows] = await Promise.all([
       leerHoja('Config'),
       leerHoja('Clasificacion'),
       leerHoja('Jornadas'),
@@ -1119,6 +1119,7 @@ function cargarTrono(campeones) {
       leerHoja('CalendarioQuiniela'),
       leerHoja('Operaciones'),
       leerHoja('Campeones'),
+      leerHoja('MarcadoresPartidos'),
     ]);
 
     const config = parsearConfig(configRows);
