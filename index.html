@@ -804,7 +804,7 @@ async function cargarInicio(config, clasif, jornadas, calendario) {
   const proxima = posActual >= 0 && posActual + 1 < activas.length ? activas[posActual + 1] : null;
 
   const pct = jTotal ? Math.round((jugadas / jTotal) * 100) : 0;
-  document.getElementById('ini-jornada').textContent = jActualRel !== null ? jActualRel : '-';
+  document.getElementById('ini-jornada').textContent = jornadaActual !== null ? jornadaActual : '-';
   document.getElementById('ini-jugadas').textContent = jugadas;
   document.getElementById('ini-total').textContent = jTotal || '-';
   document.getElementById('ini-barra').style.width = pct + '%';
@@ -833,7 +833,7 @@ async function cargarInicio(config, clasif, jornadas, calendario) {
   if (filasJornada.length === 0) {
     document.getElementById('ini-proxima').innerHTML = '<div class="loading">Sin datos de jornada</div>';
   } else {
-    const etiqueta = 'Jornada ' + (jActualRel !== null ? jActualRel + 1 : proxima.jornada) +
+    const etiqueta = 'Jornada ' + proxima.jornada +
       (proxima.ligaPrimera ? ' (Liga 1ª: Jornada ' + proxima.ligaPrimera + ')' : '');
     let htmlProxima = `<div class="jornada-info"><span>${etiqueta}</span><span>${filasJornada.length} partidos</span></div>`;
     filasJornada.forEach(row => {
