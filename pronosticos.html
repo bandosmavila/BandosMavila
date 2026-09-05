@@ -154,14 +154,48 @@ const API_URL = 'https://script.google.com/macros/s/AKfycby1Kj3flwsFSYUe6-T6iYFh
 const CLAVE = 'Ad0lf013';
 
 const params = new URLSearchParams(window.location.search);
-const JUGADOR = (params.get('jugador') || '').toUpperCase();
+let JUGADOR = (params.get('jugador') || localStorage.getItem('bandosmavila_jugador') || '').toUpperCase();
 
 let datosJornada = null;
 let seleccion = {}; // { numPartido: ['1'] o ['1','X'] }
 
+function elegirJugador(nombre) {
+  JUGADOR = nombre;
+  localStorage.setItem('bandosmavila_jugador', nombre);
+  cargarDatos();
+}
+
+function cambiarJugador() {
+  localStorage.removeItem('bandosmavila_jugador');
+  JUGADOR = '';
+  mostrarSelector();
+}
+
+async function mostrarSelector() {
+  document.getElementById('subtitulo').textContent = 'Elige tu nombre';
+  document.getElementById('contenido').innerHTML = '<div class="loading">Cargando lista de jugadores...</div>';
+  try {
+    const url = `${API_URL}?clave=${CLAVE}&accion=jugadoresActivos`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (!data.ok) {
+      document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">Error cargando la lista de jugadores.</div>';
+      return;
+    }
+    let html = '<div class="card"><div class="card-header"><span>¿QUIÉN ERES?</span></div>';
+    data.jugadores.forEach(nombre => {
+      html += `<div class="partido"><div class="opcion" style="width:100%" onclick="elegirJugador('${nombre}')">${nombre}</div></div>`;
+    });
+    html += '</div>';
+    document.getElementById('contenido').innerHTML = html;
+  } catch (e) {
+    document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">Error de conexión. Recarga la página.</div>';
+  }
+}
+
 async function cargarDatos() {
   if (!JUGADOR) {
-    document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">Enlace incorrecto: falta el nombre de jugador.</div>';
+    mostrarSelector();
     return;
   }
   try {
@@ -173,7 +207,7 @@ async function cargarDatos() {
       return;
     }
     datosJornada = data;
-    document.getElementById('subtitulo').textContent = JUGADOR + ' · Jornada ' + data.jornada;
+    document.getElementById('subtitulo').innerHTML = JUGADOR + ' · Jornada ' + data.jornada + ' · <a href="#" onclick="cambiarJugador();return false;" style="color:white;text-decoration:underline;">cambiar</a>';
 
     if (data.eliminado) {
       document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">Estás eliminado esta Vuelta.<br>No puedes enviar pronósticos.</div>';
