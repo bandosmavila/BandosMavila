@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pronósticos - Bandosmávila</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --verde: #1a6b3c;
+    --verde-claro: #2d9e5f;
+    --crema: #f5f0e8;
+    --tinta: #1a1a1a;
+    --gris: #6b6b6b;
+    --borde: #e0dcd0;
+    --rojo: #c0392b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--crema);
+    color: var(--tinta);
+    margin: 0;
+    padding: 16px;
+  }
+  .header {
+    background: var(--verde);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  .header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    margin: 0;
+    letter-spacing: 1px;
+  }
+  .header p { margin: 4px 0 0; opacity: 0.85; font-size: 14px; }
+  .card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--borde);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .card-header {
+    background: var(--verde);
+    color: white;
+    padding: 12px 16px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 0.5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .aviso {
+    background: #fff8e1;
+    border: 1px solid #f0d878;
+    color: #7a5c00;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-size: 14px;
+  }
+  .aviso.error { background: #fdecea; border-color: #f5b7b1; color: var(--rojo); }
+  .eliminado-msg {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--gris);
+  }
+  .contador-dobles {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    background: rgba(255,255,255,0.15);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .partido {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0ede6;
+  }
+  .partido:last-child { border-bottom: none; }
+  .partido-num {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--gris);
+    font-size: 12px;
+  }
+  .partido-equipos { font-weight: 600; margin: 4px 0 10px; }
+  .opciones { display: flex; gap: 8px; }
+  .opcion {
+    flex: 1;
+    text-align: center;
+    padding: 10px 0;
+    border: 2px solid var(--borde);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s;
+  }
+  .opcion.marcada {
+    background: var(--verde-claro);
+    border-color: var(--verde-claro);
+    color: white;
+  }
+  .p15-input {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid var(--borde);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    text-align: center;
+  }
+  .btn-enviar {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    background: var(--verde);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .btn-enviar:disabled { background: var(--gris); cursor: not-allowed; }
+  .loading { text-align: center; padding: 40px; color: var(--gris); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>BANDOSMÁVILA</h1>
+  <p id="subtitulo">Cargando...</p>
+</div>
+
+<div id="contenido">
+  <div class="loading">Cargando tus datos...</div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycby1Kj3flwsFSYUe6-T6iYFh6fNANnFvUxFGzCfWk2RxzZ47-lOSGT-9xNNe-1vPfTKt/exec';
+const CLAVE = 'Ad0lf013';
+
+const params = new URLSearchParams(window.location.search);
+const JUGADOR = (params.get('jugador') || '').toUpperCase();
+
+let datosJornada = null;
+let seleccion = {}; // { numPartido: ['1'] o ['1','X'] }
+
+async function cargarDatos() {
+  if (!JUGADOR) {
+    document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">Enlace incorrecto: falta el nombre de jugador.</div>';
+    return;
+  }
+  try {
+    const url = `${API_URL}?clave=${CLAVE}&accion=datosPronostico&jugador=${encodeURIComponent(JUGADOR)}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (!data.ok) {
+      document.getElementById('contenido').innerHTML = `<div class="eliminado-msg">${data.error}</div>`;
+      return;
+    }
+    datosJornada = data;
+    document.getElementById('subtitulo').textContent = JUGADOR + ' · Jornada ' + data.jornada;
+
+    if (data.eliminado) {
+      document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">Estás eliminado esta Vuelta.<br>No puedes enviar pronósticos.</div>';
+      return;
+    }
+
+    // Precargar selección previa, si la había
+    data.partidos.forEach(p => {
+      if (p.previo) {
+        seleccion[p.num] = p.num === 15 ? p.previo : p.previo.split('');
+      }
+    });
+
+    pintar(data);
+  } catch (e) {
+    document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">Error cargando datos. Recarga la página.</div>';
+  }
+}
+
+function contarDobles() {
+  let n = 0;
+  for (let np = 1; np <= 14; np++) {
+    if (seleccion[np] && seleccion[np].length === 2) n++;
+  }
+  return n;
+}
+
+function pintar(data) {
+  let html = '';
+  if (data.yaEnvio) {
+    html += '<div class="aviso">Ya enviaste tus pronósticos para esta jornada. Si continúas, se sustituirán por los nuevos.</div>';
+  }
+  html += `<div class="card">
+    <div class="card-header">
+      <span>PARTIDOS</span>
+      <span class="contador-dobles" id="contador">Dobles: ${contarDobles()}/${data.maxDobles}</span>
+    </div>`;
+
+  data.partidos.forEach(p => {
+    if (p.num === 15) {
+      html += `<div class="partido">
+        <div class="partido-num">PLENO AL 15</div>
+        <div class="partido-equipos">${p.local} — ${p.visitante}</div>
+        <input type="text" class="p15-input" id="p15" maxlength="3" placeholder="Ej: 1-2, M-0" value="${seleccion[15] || ''}">
+      </div>`;
+    } else {
+      const sel = seleccion[p.num] || [];
+      html += `<div class="partido">
+        <div class="partido-num">${p.num}</div>
+        <div class="partido-equipos">${p.local} — ${p.visitante}</div>
+        <div class="opciones">
+          ${['1','X','2'].map(op => `<div class="opcion ${sel.includes(op) ? 'marcada' : ''}" data-partido="${p.num}" data-opcion="${op}" onclick="toggleOpcion(${p.num}, '${op}')">${op}</div>`).join('')}
+        </div>
+      </div>`;
+    }
+  });
+
+  html += `</div>
+    <button class="btn-enviar" id="btnEnviar" onclick="enviar()">ENVIAR PRONÓSTICOS</button>
+    <div id="mensajeFinal"></div>`;
+
+  document.getElementById('contenido').innerHTML = html;
+  document.getElementById('p15').addEventListener('input', e => { seleccion[15] = e.target.value; });
+}
+
+function toggleOpcion(numPartido, opcion) {
+  if (!seleccion[numPartido]) seleccion[numPartido] = [];
+  const arr = seleccion[numPartido];
+  const idx = arr.indexOf(opcion);
+  if (idx > -1) {
+    arr.splice(idx, 1);
+  } else {
+    if (arr.length >= 2) {
+      alert('Máximo 2 signos por partido (no se permiten triples).');
+      return;
+    }
+    if (arr.length === 1 && contarDobles() >= datosJornada.maxDobles) {
+      alert('Ya has usado el máximo de dobles permitidos esta jornada (' + datosJornada.maxDobles + ').');
+      return;
+    }
+    arr.push(opcion);
+  }
+  pintar(datosJornada);
+}
+
+async function enviar() {
+  const signos = {};
+  for (let np = 1; np <= 14; np++) {
+    signos[np] = (seleccion[np] || []).join('');
+  }
+  signos[15] = seleccion[15] || '';
+
+  const faltan = [];
+  for (let np = 1; np <= 15; np++) {
+    if (!signos[np]) faltan.push(np);
+  }
+  if (faltan.length > 0) {
+    if (!confirm('Te faltan por rellenar los partidos: ' + faltan.join(', ') + '. ¿Enviar igualmente?')) return;
+  }
+
+  document.getElementById('btnEnviar').disabled = true;
+  document.getElementById('btnEnviar').textContent = 'ENVIANDO...';
+
+  try {
+    const url = `${API_URL}?clave=${CLAVE}&accion=guardarPronostico&jugador=${encodeURIComponent(JUGADOR)}&jornada=${datosJornada.jornada}&signos=${encodeURIComponent(JSON.stringify(signos))}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (data.ok) {
+      document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">✅ Pronósticos enviados correctamente.</div>';
+    } else {
+      document.getElementById('mensajeFinal').innerHTML = `<div class="aviso error">${data.error}</div>`;
+      document.getElementById('btnEnviar').disabled = false;
+      document.getElementById('btnEnviar').textContent = 'ENVIAR PRONÓSTICOS';
+    }
+  } catch (e) {
+    document.getElementById('mensajeFinal').innerHTML = '<div class="aviso error">Error de conexión, inténtalo de nuevo.</div>';
+    document.getElementById('btnEnviar').disabled = false;
+    document.getElementById('btnEnviar').textContent = 'ENVIAR PRONÓSTICOS';
+  }
+}
+
+cargarDatos();
+</script>
+</body>
+</html>
