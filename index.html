@@ -589,6 +589,12 @@
         </table>
       </div>
     </div>
+    <div class="card" id="card-ranking-final" style="display:none;">
+      <div class="card-header">Ranking Final</div>
+      <div class="card-body">
+        <table class="tabla-juegos" id="tabla-ranking-final"></table>
+      </div>
+    </div>
   </div>
 
   <!-- ECONOMICO -->
@@ -1111,7 +1117,31 @@ function cargarEstatutos(estatutos) {
   });
   document.getElementById('estatutos-content').innerHTML = html;
 }
+// ============================================================
+// CARGAR ELIMINACION
+// ============================================================
+function cargarRankingFinal(rows) {
+  if (!rows || rows.length === 0) {
+    document.getElementById('card-ranking-final').style.display = 'none';
+    return;
+  }
+  document.getElementById('card-ranking-final').style.display = '';
 
+  // Ordenar de abajo hacia arriba: puesto más alto (más eliminados quedan) primero,
+  // puesto 1 (campeón) al final, igual que el Excel de siempre
+  const filas = rows
+    .filter(r => r[1])
+    .map(r => ({ vuelta: r[0], nombre: r[1], puesto: parseInt(r[2]) }))
+    .sort((a, b) => b.puesto - a.puesto);
+
+  let html = '<thead><tr><th>Puesto</th><th>Nombre</th><th style="text-align:right">Vuelta</th></tr></thead><tbody>';
+  filas.forEach(f => {
+    const esCampeon = f.puesto === 1;
+    html += `<tr class="${esCampeon ? 'fila-pena' : ''}"><td>${f.puesto}</td><td>${f.nombre}</td><td style="text-align:right">${f.vuelta}</td></tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('tabla-ranking-final').innerHTML = html;
+}
 // ============================================================
 // MAIN — cargar todo
 // ============================================================
@@ -1151,7 +1181,7 @@ function cargarTrono(campeones) {
 }
   async function init() {
   try {
-    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows] = await Promise.all([
+    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows] = await Promise.all([
       leerHoja('Config'),
       leerHoja('Clasificacion'),
       leerHoja('Jornadas'),
@@ -1163,6 +1193,7 @@ function cargarTrono(campeones) {
       leerHoja('Campeones'),
       leerHoja('MarcadoresPartidos'),
       leerHoja('Loteria'),
+      leerHoja('RankingFinal'),
     ]);
 
     const config = parsearConfig(configRows);
@@ -1172,6 +1203,7 @@ function cargarTrono(campeones) {
     cargarInicio(config, clasif, jornadasRows.slice(1), calendario);
     cargarTrono(campeonesRows.slice(1));
     cargarClasificacion(clasif);
+    cargarRankingFinal(rankingRows.slice(1));
     cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1));
     cargarEconomico(resumenRows.slice(1), operacionesRows.slice(1));
     cargarHistorico(historicoRows.slice(1));
