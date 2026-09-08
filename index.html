@@ -898,7 +898,7 @@ function cargarJornada(jornadas, calendario, config, marcadores) {
 
   const dobles = posActual >= 0 ? activas[posActual].dobles : null;
   const textoDobles = dobles !== null ? (' · ' + dobles + (dobles === 1 ? ' doble' : ' dobles')) : '';
-  document.getElementById('jor-badge').textContent = 'Jornada ' + jornadaRel +
+  document.getElementById('jor-badge').textContent = 'Jornada ' + jornadaActual +
     (ligaPrimera ? ' (Liga 1ª: Jornada ' + ligaPrimera + ')' : '') + textoDobles;
 
   if (filas.length === 0) {
