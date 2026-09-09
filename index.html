@@ -748,6 +748,68 @@ async function leerHoja(nombre) {
   }
 }
 
+
+async function leerHojaSerial(nombre) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${nombre}?key=${API_KEY}&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    return data.values || [];
+  } catch(e) {
+    console.error('Error leyendo hoja (serial):', nombre, e);
+    return [];
+  }
+}
+
+function serialToDate(serial) {
+  // Número de serie de fecha de Google Sheets (días desde 1899-12-30) -> Date normal
+  return new Date(Math.round((serial - 25569) * 86400 * 1000));
+}
+
+// Réplica exacta de calcularCierreJornadaAPI() del Apps Script BandosMavilaAPI,
+// para saber en el navegador si ya ha cerrado el plazo de envío de una jornada.
+function calcularCierreJornada(jornadaQuiniela, calendarioCierreRows, fechasCierreRows) {
+  let fechaOficialSerial = null;
+  for (let i = 1; i < calendarioCierreRows.length; i++) {
+    if (parseInt(calendarioCierreRows[i][0]) === jornadaQuiniela) {
+      fechaOficialSerial = calendarioCierreRows[i][1];
+      break;
+    }
+  }
+  if (fechaOficialSerial === null || fechaOficialSerial === undefined || fechaOficialSerial === '') return null;
+
+  const fechaOficial = serialToDate(fechaOficialSerial);
+  const esFinde = fechaOficial.getDay() === 0; // domingo
+
+  if (esFinde) {
+    let fechaViernes = null;
+    for (let j = 1; j < fechasCierreRows.length; j++) {
+      if (parseInt(fechasCierreRows[j][0]) !== jornadaQuiniela) continue;
+      const serialF = fechasCierreRows[j][2];
+      if (serialF === undefined || serialF === '') continue;
+      const f = serialToDate(serialF);
+      if (f.getDay() === 5) { fechaViernes = f; break; }
+    }
+    if (fechaViernes) {
+      fechaViernes.setHours(16, 0, 0, 0);
+      return fechaViernes;
+    } else {
+      const viernesRef = new Date(fechaOficial);
+      viernesRef.setDate(viernesRef.getDate() - 2);
+      viernesRef.setDate(viernesRef.getDate() + 1);
+      viernesRef.setHours(0, 0, 0, 0);
+      return viernesRef;
+    }
+  } else {
+    const martes = new Date(fechaOficial);
+    while (martes.getDay() !== 2) {
+      martes.setDate(martes.getDate() - 1);
+    }
+    martes.setHours(16, 0, 0, 0);
+    return martes;
+  }
+}
+
 // ============================================================
 // PARSEAR CONFIG
 // ============================================================
@@ -932,6 +994,18 @@ function cargarJornada(jornadas, calendario, config, marcadores) {
     </div>`;
   });
   document.getElementById('jor-partidos').innerHTML = htmlPartidos;
+  
+  // Pronósticos: ocultos para todos hasta que cierre el plazo de envío de esta jornada
+  const cierre = calcularCierreJornada(jornadaActual, calendarioCierreRows, fechasCierreRows);
+  const cerrado = cierre ? (new Date() >= cierre) : false;
+
+  if (!cerrado) {
+    const mensajeCierre = cierre
+      ? `Los pronósticos se mostrarán cuando cierre el plazo de envío (${cierre.toLocaleDateString('es-ES')} a las ${cierre.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'})}).`
+      : 'Los pronósticos se mostrarán cuando cierre el plazo de envío de esta jornada.';
+    document.getElementById('jor-pronos').innerHTML = `<div class="loading">${mensajeCierre}</div>`;
+    return;
+  }
 
   // Pronósticos
   const jugadores = config.jugadores || [];
@@ -1190,9 +1264,10 @@ function cargarTrono(campeones) {
 
   cont.innerHTML = html;
 }
-  async function init() {
+
+async function init() {
   try {
-    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows] = await Promise.all([
+    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows] = await Promise.all([
       leerHoja('Config'),
       leerHoja('Clasificacion'),
       leerHoja('Jornadas'),
@@ -1205,17 +1280,19 @@ function cargarTrono(campeones) {
       leerHoja('MarcadoresPartidos'),
       leerHoja('Loteria'),
       leerHoja('RankingFinal'),
+      leerHojaSerial('CalendarioQuiniela'),
+      leerHojaSerial('FechasPartidos'),
     ]);
 
     const config = parsearConfig(configRows);
-    const clasif = clasificRows.slice(1).filter(r => r[1]); // sin cabecera
-    const calendario = calendarioRows.slice(1); // sin cabecera
+    const clasif = clasificRows.slice(1).filter(r => r[1]);
+    const calendario = calendarioRows.slice(1);
 
     cargarInicio(config, clasif, jornadasRows.slice(1), calendario);
     cargarTrono(campeonesRows.slice(1));
     cargarClasificacion(clasif);
     cargarRankingFinal(rankingRows.slice(1));
-    cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1));
+    cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1), calendarioCierreRows, fechasCierreRows);
     cargarEconomico(resumenRows.slice(1), operacionesRows.slice(1));
     cargarHistorico(historicoRows.slice(1));
     cargarEstatutos(estatutosRows.slice(1));
