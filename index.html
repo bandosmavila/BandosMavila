@@ -942,7 +942,7 @@ function cargarClasificacion(clasif) {
 // CARGAR JORNADA
 // ============================================================
 
-function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierreRows, fechasCierreRows) {
+function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierreRows, fechasCierreRows, clasif) {
   const activas = calendarioActivo(calendario);
   const jornadaActual = calcularJornadaActual(jornadas);
 
@@ -1009,8 +1009,20 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
 
   // Pronósticos
   const jugadores = config.jugadores || [];
+
+  // Averiguar qué jugadores están eliminados, para no mostrar su columna
+  const eliminadosSet = new Set(
+    clasif
+      .filter(r => (r[5] || '').toString().toLowerCase() === 'eliminado')
+      .map(r => (r[1] || '').toString().trim().toUpperCase())
+  );
+  const jugadorEliminado = jugadores.map(j => eliminadosSet.has(j.toString().trim().toUpperCase()));
+
   let htmlPronos = '<table class="tabla-pronos"><thead><tr><th class="partido-col">Nº</th>';
-  jugadores.forEach(j => { htmlPronos += `<th>${j.substring(0,4)}</th>`; });
+  jugadores.forEach((j, ji) => {
+    if (jugadorEliminado[ji]) return; // no se pinta la columna de los eliminados
+    htmlPronos += `<th>${j.substring(0,4)}</th>`;
+  });
   htmlPronos += '</tr></thead><tbody>';
 
   const aciertosJugador = jugadores.map(() => 0);
@@ -1021,19 +1033,23 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     const resultado = row[4] || '';
     htmlPronos += `<tr><td class="partido-col">${i + 1}</td>`;
     jugadores.forEach((j, ji) => {
+      if (jugadorEliminado[ji]) return; // no se pinta la celda de los eliminados
       const prono = row[5 + ji] || '';
       let cls = '';
       if (resultado && prono) {
         cls = (prono === resultado || resultado.includes(prono) || prono.includes(resultado)) ? 'acertado' : 'fallado';
         if (cls === 'acertado') aciertosJugador[ji]++;
       }
-      const pronoMostrado = prono.replace(/\s/g, ''); // solo visual: quita espacios de "M - 0" -> "M-0"
+      const pronoMostrado = prono.replace(/\s/g, '');
       htmlPronos += `<td class="${cls}">${pronoMostrado}</td>`;
     });
     htmlPronos += '</tr>';
   });
   htmlPronos += '</tbody><tfoot><tr><td class="partido-col">Ac.</td>';
-  jugadores.forEach((j, ji) => { htmlPronos += `<td>${aciertosJugador[ji]}</td>`; });
+  jugadores.forEach((j, ji) => {
+    if (jugadorEliminado[ji]) return;
+    htmlPronos += `<td>${aciertosJugador[ji]}</td>`;
+  });
   htmlPronos += '</tr></tfoot></table>';
   document.getElementById('jor-pronos').innerHTML = htmlPronos;
 }
@@ -1292,7 +1308,7 @@ async function init() {
     cargarTrono(campeonesRows.slice(1));
     cargarClasificacion(clasif);
     cargarRankingFinal(rankingRows.slice(1));
-    cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1), calendarioCierreRows, fechasCierreRows);
+    cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1), calendarioCierreRows, fechasCierreRows, clasif);
     cargarEconomico(resumenRows.slice(1), operacionesRows.slice(1));
     cargarHistorico(historicoRows.slice(1));
     cargarEstatutos(estatutosRows.slice(1));
