@@ -563,6 +563,32 @@
   0% { transform: translateY(0) rotate(0deg); opacity: 1; }
   100% { transform: translateY(320px) rotate(360deg); opacity: 0; }
 }
+.premios-selector { display: flex; gap: 20px; align-items: center; font-size: 14px; flex-wrap: wrap; }
+.premios-total { text-align: center; padding: 14px; border-radius: 10px; position: relative; overflow: hidden; animation: premioAparece 0.3s ease-out; }
+.premios-fiesta { background: linear-gradient(135deg, #f0d878, #c9a227); }
+.premios-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; justify-content: center; }
+.premio-chip {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: #f5f0e8; border-radius: 10px; padding: 10px 14px; min-width: 80px;
+  animation: premioAparece 0.35s ease-out;
+}
+.premio-icono {
+  width: 32px; height: 32px; border-radius: 50%; color: #fff; font-weight: 700;
+  font-size: 12px; display: flex; align-items: center; justify-content: center;
+}
+.premio-nombre { font-size: 11px; color: var(--gris); text-transform: uppercase; }
+.premio-importe { font-weight: 700; color: var(--verde); }
+@keyframes premioAparece {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.premios-confeti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.premios-confeti::before, .premios-confeti::after {
+  content: ''; position: absolute; top: -10px; width: 6px; height: 6px;
+  background: var(--verde-claro); opacity: 0.9; animation: caerConfeti 2s linear infinite;
+}
+.premios-confeti::before { left: 30%; }
+.premios-confeti::after { left: 65%; background: var(--rojo); animation-delay: 0.6s; }
 </style>
 </head>
 <body>
@@ -719,6 +745,7 @@
         </table>
       </div>
     </div>
+    
 
     <div class="card">
       <div class="card-header">Resumen por juego</div>
@@ -728,7 +755,18 @@
         </table>
       </div>
     </div>
-
+  <div class="card">
+    <div class="card-header">Premios de la semana</div>
+    <div class="card-body">
+      <div class="premios-selector">
+        <label><input type="radio" name="premios-modo" value="ultima" checked onchange="mostrarPremiosSemana()"> Última</label>
+        <label><input type="radio" name="premios-modo" value="numero" onchange="mostrarPremiosSemana()"> Semana
+          <input type="number" id="premios-semana-num" min="1" max="53" value="1" style="width:56px;" onchange="document.querySelector('input[name=premios-modo][value=numero]').checked=true; mostrarPremiosSemana();">
+        </label>
+      </div>
+      <div id="premios-semana-resultado" style="margin-top:14px;"></div>
+    </div>
+  </div>
     <div class="card">
       <div class="card-header" style="cursor:pointer;" onclick="toggleDetalleSemanal()">
         Detalle semanal (auditoría) <span id="eco-toggle-icono">▼</span>
@@ -1176,7 +1214,63 @@ function toggleDetalleSemanal() {
   icono.textContent = abierto ? '▼' : '▲';
 }
 
+let operacionesGlobal = [];
+let ultimaSemanaGlobal = 1;
+
+const ICONOS_JUEGO = {
+  'BONOLOTO':   { color: '#1a6b3c', simbolo: 'B' },
+  'PRIMITIVA':  { color: '#c0392b', simbolo: 'P' },
+  'EUROMILLÓN': { color: '#2d9e5f', simbolo: 'E' },
+  'LOTERÍA':    { color: '#f39c12', simbolo: '€' },
+  'QUINIELA':   { color: '#1a1a1a', simbolo: '1X2' },
+};
+
+function mostrarPremiosSemana() {
+  const modo = document.querySelector('input[name="premios-modo"]:checked').value;
+  const numInput = document.getElementById('premios-semana-num');
+  let semana = modo === 'ultima' ? ultimaSemanaGlobal : parseInt(numInput.value) || 1;
+  if (semana < 1) semana = 1;
+  if (semana > 53) semana = 53;
+  if (modo === 'numero') numInput.value = semana;
+
+  const filas = operacionesGlobal.filter(r => parseInt(r[0]) === semana);
+  let total = 0;
+  const porJuego = [];
+  filas.forEach(row => {
+    const premio = parseFloat(row[4]) || 0;
+    total += premio;
+    if (premio > 0) porJuego.push({ juego: row[2] || '', premio });
+  });
+
+  const esFiesta = total >= 50;
+  let html = `<div class="premios-total ${esFiesta ? 'premios-fiesta' : ''}">
+    <div style="font-size:12px; color:var(--gris); letter-spacing:1px;">SEMANA ${semana} · TOTAL PREMIOS</div>
+    <div style="font-family:'Bebas Neue',sans-serif; font-size:32px;">${total.toFixed(2)}€</div>
+    ${esFiesta ? '<div class="premios-confeti"></div>' : ''}
+  </div>`;
+
+  if (porJuego.length === 0) {
+    html += `<div style="color:var(--gris); text-align:center; padding:12px; font-size:14px;">Sin premios esa semana</div>`;
+  } else {
+    html += '<div class="premios-chips">';
+    porJuego.forEach(p => {
+      const icono = ICONOS_JUEGO[p.juego.toUpperCase()] || { color: 'var(--gris)', simbolo: '?' };
+      html += `<div class="premio-chip">
+        <div class="premio-icono" style="background:${icono.color};">${icono.simbolo}</div>
+        <div class="premio-nombre">${p.juego}</div>
+        <div class="premio-importe">${p.premio.toFixed(2)}€</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  document.getElementById('premios-semana-resultado').innerHTML = html;
+}
+
 function cargarEconomico(resumen, operaciones, paganinis, config) {
+  operacionesGlobal = operaciones;
+  const semanasConDatos = operaciones.map(r => parseInt(r[0])).filter(n => !isNaN(n));
+  ultimaSemanaGlobal = semanasConDatos.length ? Math.max(...semanasConDatos) : 1;
   const datos = {};
   resumen.forEach(row => {
     if (row[0]) datos[row[0]] = row[1];
@@ -1310,6 +1404,8 @@ function cargarEconomico(resumen, operaciones, paganinis, config) {
   });
   htmlDetalle += '</tbody>';
   document.getElementById('eco-detalle-semanal').innerHTML = htmlDetalle;
+  document.getElementById('premios-semana-num').value = ultimaSemanaGlobal;
+  mostrarPremiosSemana();
 }
 // ============================================================
 // CARGAR HISTORICO
