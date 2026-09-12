@@ -1162,16 +1162,37 @@ function cargarEconomico(resumen, operaciones, paganinis, config) {
   html += '</tbody>';
   document.getElementById('eco-detalle').innerHTML = html;
 
+  // Semanas jugadas: solo contamos semanas con Bonoloto realmente jugada (coste > 0),
+  // para no contar de más filas ya presentes en Operaciones sin jugar todavía
+  const semanasJugadas = new Set(
+    operaciones
+      .filter(row => String(row[2]).toUpperCase() === 'BONOLOTO' && (parseFloat(row[3]) || 0) > 0)
+      .map(row => row[0])
+  ).size;
+  const semanasTotales = parseInt(config['Semanas Totales']) || 53;
+  const pctTemporada = Math.round((semanasJugadas / semanasTotales) * 100);
+
   // Cuota actual y previsión para el año que viene
   const cuotaActual = num('Cuota actual');
-  const gastoPrevisto = Math.ceil(gastosJuegos); // redondeo al alza, según Estatutos
-  const necesario = gastoPrevisto - saldo;
-  const numMiembros = parseInt(config['Miembros']) || 14;
-  let previsionCuota = Math.ceil((necesario / numMiembros) / 5) * 5; // redondeo al alza a múltiplo de 5
-  if (previsionCuota < 10) previsionCuota = 10; // mínimo de los Estatutos
   document.getElementById('eco-cuota-actual').textContent = cuotaActual !== null ? cuotaActual.toFixed(2) + '€' : '-';
-  document.getElementById('eco-prevision-cuota').textContent = previsionCuota.toFixed(2) + '€ (orientativo)';
 
+  const fechaCierreTemporada = config['Fecha Cierre Temporada']
+    ? new Date(config['Fecha Cierre Temporada'].split('/').reverse().join('-'))
+    : null;
+  const diasParaCierre = fechaCierreTemporada
+    ? Math.round((fechaCierreTemporada - new Date()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  if (diasParaCierre !== null && diasParaCierre <= 20 && semanasJugadas > 0) {
+    const gastoPrevisto = Math.ceil(gastosJuegos * (semanasTotales / semanasJugadas));
+    const necesario = gastoPrevisto - saldo;
+    const numMiembros = parseInt(config['Miembros']) || 14;
+    let previsionCuota = Math.ceil((necesario / numMiembros) / 5) * 5;
+    if (previsionCuota < 10) previsionCuota = 10;
+    document.getElementById('eco-prevision-cuota').textContent = previsionCuota.toFixed(2) + '€ (orientativo)';
+  } else {
+    document.getElementById('eco-prevision-cuota').textContent = 'aún no disponible';
+  }
   // Paganinis: quién ha pagado, quién falta
   let htmlPaganinis = '<thead><tr><th>Jugador</th><th>Estado</th></tr></thead><tbody>';
   paganinis.forEach(row => {
@@ -1206,9 +1227,6 @@ function cargarEconomico(resumen, operaciones, paganinis, config) {
   document.getElementById('eco-resumen-juego').innerHTML = htmlJuego;
 
   // % de temporada completada, según semanas distintas en Operaciones
-  const semanasJugadas = new Set(operaciones.map(row => row[0]).filter(s => s !== '' && s !== undefined)).size;
-  const semanasTotales = parseInt(config['Semanas Totales']) || 53;
-  const pctTemporada = Math.round((semanasJugadas / semanasTotales) * 100);
   document.getElementById('eco-semanas').textContent = `${semanasJugadas} de ${semanasTotales} (${pctTemporada}%)`;
   document.getElementById('eco-semanas-barra').style.width = pctTemporada + '%';
 
