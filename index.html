@@ -1365,11 +1365,10 @@ async function init() {
       leerHoja('MarcadoresPartidos'),
       leerHoja('Loteria'),
       leerHoja('RankingFinal'),
-      leerHoja('Paganinis'),
       leerHojaSerial('CalendarioQuiniela'),
       leerHojaSerial('FechasPartidos'),
+      leerHoja('Paganinis'),
     ]);
-
     const config = parsearConfig(configRows);
     const clasif = clasificRows.slice(1).filter(r => r[1]);
     const calendario = calendarioRows.slice(1);
