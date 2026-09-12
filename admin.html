@@ -206,6 +206,23 @@ async function init() {
       htmlJugadores += `<div class="jugador-fila"><span>${nombre}</span><span class="${tieneAlgo ? 'estado-ok' : 'estado-pendiente'}">${tieneAlgo ? '✓ Enviado' : '⏳ Pendiente'}</span></div>`;
     });
 
+    let htmlTablaPron = '<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-family:\'JetBrains Mono\',monospace; font-size:13px; white-space:nowrap;">';
+    htmlTablaPron += '<tr><th style="text-align:left; padding:6px 8px; border-bottom:2px solid var(--borde);">Nº</th>';
+    jugadoresAMostrar.forEach(nombre => {
+      htmlTablaPron += `<th style="padding:6px 8px; border-bottom:2px solid var(--borde);">${nombre.substring(0,4)}</th>`;
+    });
+    htmlTablaPron += '</tr>';
+    filasJornada.forEach(r => {
+      htmlTablaPron += `<tr><td style="padding:6px 8px; border-bottom:1px solid #f0ede6; color:var(--gris);">${r[1]}</td>`;
+      jugadoresAMostrar.forEach(nombre => {
+        const col = colPorJugador[nombre.toUpperCase()];
+        const valor = col !== undefined ? (r[col] || '') : '';
+        htmlTablaPron += `<td style="padding:6px 8px; border-bottom:1px solid #f0ede6; text-align:center; font-weight:700;">${valor}</td>`;
+      });
+      htmlTablaPron += '</tr>';
+    });
+    htmlTablaPron += '</table></div>';
+
     document.getElementById('contenido').innerHTML = `
       <div class="card">
         <div class="card-header">PARTIDOS ${esGranFinal ? '(GRAN FINAL)' : ''}</div>
@@ -214,6 +231,10 @@ async function init() {
       <div class="card">
         <div class="card-header">PRONÓSTICOS — QUIÉN FALTA</div>
         <div class="card-body">${htmlJugadores}</div>
+      </div>
+      <div class="card">
+        <div class="card-header">PRONÓSTICOS COMPLETOS (para jugar)</div>
+        <div class="card-body">${htmlTablaPron}</div>
       </div>
     `;
   } catch (e) {
