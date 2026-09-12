@@ -1407,21 +1407,28 @@ function cargarRankingFinal(rows) {
 let podiumData = null; // guardado para poder reabrir sin recalcular
 let podiumTimer = null;
 
-function cargarTrono(campeones, podium) {
+function cargarTrono(campeones, podium, campeonesCierreRows) {
   const cont = document.getElementById('trono-container');
   const ahora = new Date();
 
   function diasDesde(fecha) {
     return (ahora - new Date(fecha)) / (1000 * 60 * 60 * 24);
   }
-
+  function fechaRealCampeon(filaCampeon) {
+    // Busca la fecha sin ambigüedad (serie) de esta misma fila, cruzando por año+vuelta+nombre
+    const fila = campeonesCierreRows.slice(1).find(r =>
+      String(r[0]) === String(filaCampeon[0]) && r[1] === filaCampeon[1] && r[2] === filaCampeon[2]
+    );
+    if (fila && fila[3]) return serialToDate(fila[3]);
+    return new Date(filaCampeon[3]); // red de seguridad si no se encuentra
+  }
   const granFinal = [...campeones].reverse().find(r => r[1] === 'GranFinal');
   const vuelta2 = [...campeones].reverse().find(r => r[1] === '2');
   const vuelta1 = [...campeones].reverse().find(r => r[1] === '1');
 
   let html = '';
 
-  if (granFinal && diasDesde(granFinal[3]) <= 15) {
+  if (granFinal && diasDesde(fechaRealCampeon(granFinal)) <= 15) {
     const anioFinal = String(granFinal[0]);
     podiumData = podium
       .filter(r => String(r[0]) === anioFinal)
@@ -1439,7 +1446,7 @@ function cargarTrono(campeones, podium) {
       <div style="font-size:12px; letter-spacing:1px; opacity:0.85;">CAMPEÓN VUELTA 2</div>
       <div style="font-family:'Bebas Neue',sans-serif; font-size:26px; margin-top:2px;">${vuelta2[2]}</div>
     </div>`;
-  } else if (vuelta1 && diasDesde(vuelta1[3]) <= 7) {
+  } else if (vuelta1 && diasDesde(fechaRealCampeon(vuelta1)) <= 7) {
     html = `<div class="card" style="background:var(--verde); color:#fff; text-align:center; padding:20px;">
       <div style="font-size:12px; letter-spacing:1px; opacity:0.85;">CAMPEÓN VUELTA 1</div>
       <div style="font-family:'Bebas Neue',sans-serif; font-size:26px; margin-top:2px;">${vuelta1[2]}</div>
@@ -1489,7 +1496,7 @@ function cerrarPodium() {
   
 async function init() {
   try {
-    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows, paganinisRows, podiumRows] = await Promise.all([
+    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows, paganinisRows, podiumRows, campeonesCierreRows] = await Promise.all([
       leerHoja('Config'),
       leerHoja('Clasificacion'),
       leerHoja('Jornadas'),
@@ -1506,13 +1513,14 @@ async function init() {
       leerHojaSerial('FechasPartidos'),
       leerHoja('Paganinis'),
       leerHoja('PodiumGranFinal'),
+      leerHojaSerial('Campeones'),
     ]);
     const config = parsearConfig(configRows);
     const clasif = clasificRows.slice(1).filter(r => r[1]);
     const calendario = calendarioRows.slice(1);
 
     cargarInicio(config, clasif, jornadasRows.slice(1), calendario, calendarioCierreRows, fechasCierreRows);
-    cargarTrono(campeonesRows.slice(1), podiumRows.slice(1));
+    cargarTrono(campeonesRows.slice(1), podiumRows.slice(1), campeonesCierreRows);
     cargarClasificacion(clasif);
     cargarRankingFinal(rankingRows.slice(1));
     cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1), calendarioCierreRows, fechasCierreRows, clasif);
