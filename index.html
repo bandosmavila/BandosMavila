@@ -599,20 +599,46 @@
 
   <!-- ECONOMICO -->
   <div id="sec-economico" class="section">
-    <div class="card">
-      <div class="card-header">Saldo de la Peña <span class="badge" id="eco-temporada-badge">-</span></div>
-      <div class="card-body" style="text-align:center; padding: 28px 16px;">
-        <div class="resumen-valor" id="eco-saldo" style="font-size:36px;">-</div>
-        <div class="saldo-barra" id="eco-saldo-barra">
-          <div class="saldo-barra-ingresos" id="eco-barra-ingresos" style="width:50%;"></div>
-          <div class="saldo-barra-gastos" id="eco-barra-gastos" style="width:50%;"></div>
-        </div>
-        <div class="saldo-leyenda">
-          <span><i class="dot dot-verde"></i>Ingresos <b id="eco-total-ingresos">-</b></span>
-          <span><i class="dot dot-rojo"></i>Gastos <b id="eco-total-gastos">-</b></span>
-        </div>
-      </div>
+<div class="card">
+  <div class="card-header">Saldo de la Peña <span class="badge" id="eco-temporada-badge">-</span></div>
+  <div class="card-body" style="text-align:center; padding: 28px 16px;">
+    <div class="resumen-valor" id="eco-saldo" style="font-size:36px;">-</div>
+    <div class="saldo-barra" id="eco-saldo-barra">
+      <div class="saldo-barra-ingresos" id="eco-barra-ingresos" style="width:50%;"></div>
+      <div class="saldo-barra-gastos" id="eco-barra-gastos" style="width:50%;"></div>
     </div>
+    <div class="saldo-leyenda">
+      <span><i class="dot dot-verde"></i>Ingresos <b id="eco-total-ingresos">-</b></span>
+      <span><i class="dot dot-rojo"></i>Gastos <b id="eco-total-gastos">-</b></span>
+    </div>
+    <div class="progreso-info" style="margin-top:18px;">
+      <span>Semanas jugadas</span>
+      <span><strong id="eco-semanas">-</strong></span>
+    </div>
+    <div class="progreso-bar">
+      <div class="progreso-fill" id="eco-semanas-barra" style="width:0%"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Cuota</div>
+  <div class="card-body" style="text-align:center; padding: 20px 16px;">
+    <div class="resumen-valor" id="eco-cuota-actual" style="font-size:28px;">-</div>
+    <div style="color:var(--gris); font-size:13px; margin-top:6px;">
+      Previsión próximo año: <strong id="eco-prevision-cuota">-</strong>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Paganinis (cuota de socios)</div>
+  <div class="card-body">
+    <table class="tabla-juegos" id="eco-paganinis">
+      <tr><th>Jugador</th><th>Estado</th></tr>
+    </table>
+  </div>
+</div>
 
     <div class="card">
       <div class="card-header">Detalle</div>
@@ -1079,7 +1105,7 @@ function toggleDetalleSemanal() {
   icono.textContent = abierto ? '▼' : '▲';
 }
 
-function cargarEconomico(resumen, operaciones) {
+function cargarEconomico(resumen, operaciones, paganinis, config) {
   const datos = {};
   resumen.forEach(row => {
     if (row[0]) datos[row[0]] = row[1];
@@ -1093,18 +1119,31 @@ function cargarEconomico(resumen, operaciones) {
 
   document.getElementById('eco-temporada-badge').textContent = datos['Temporada'] || '-';
 
-  const saldo = num('SALDO');
+  // Aportaciones: calculado en vivo desde Paganinis (suma de lo ya pagado)
+  let aportaciones = 0;
+  paganinis.forEach(row => {
+    aportaciones += parseFloat(String(row[1] || '0').replace(',', '.')) || 0;
+  });
+
+  // Juegos y Premios: calculados en vivo desde Operaciones
+  let gastosJuegos = 0, premios = 0;
+  operaciones.forEach(row => {
+    gastosJuegos += parseFloat(row[3]) || 0;
+    premios += parseFloat(row[4]) || 0;
+  });
+
+  const saldoAnterior = num('Saldo anterior') || 0;
+  const otros = num('Otros') || 0;
+
+  const totalIngresos = saldoAnterior + aportaciones + premios;
+  const totalGastos = gastosJuegos + otros;
+  const saldo = totalIngresos - totalGastos;
+
   const saldoEl = document.getElementById('eco-saldo');
-  if (saldo === null) {
-    saldoEl.textContent = '-';
-  } else {
-    saldoEl.textContent = (saldo >= 0 ? '+' : '') + saldo.toFixed(2) + '€';
-    saldoEl.className = 'resumen-valor ' + (saldo >= 0 ? 'valor-positivo' : 'valor-negativo');
-  }
+  saldoEl.textContent = (saldo >= 0 ? '+' : '') + saldo.toFixed(2) + '€';
+  saldoEl.className = 'resumen-valor ' + (saldo >= 0 ? 'valor-positivo' : 'valor-negativo');
 
   // Barra Ingresos vs Gastos
-  const totalIngresos = num('Total Ingresos') || 0;
-  const totalGastos = num('Total Gastos') || 0;
   const sumaTotal = totalIngresos + totalGastos;
   const pctIngresos = sumaTotal > 0 ? (totalIngresos / sumaTotal * 100) : 50;
   document.getElementById('eco-barra-ingresos').style.width = pctIngresos + '%';
@@ -1112,29 +1151,38 @@ function cargarEconomico(resumen, operaciones) {
   document.getElementById('eco-total-ingresos').textContent = totalIngresos.toFixed(2) + '€';
   document.getElementById('eco-total-gastos').textContent = totalGastos.toFixed(2) + '€';
 
-  const filasIngresos = [
-    ['Saldo anterior', 'Saldo anterior'],
-    ['Aportaciones', 'Aportaciones'],
-    ['Premios', 'Premios'],
-  ];
-  const filasGastos = [
-    ['Juegos', 'Juegos'],
-    ['Otros', 'Otros'],
-  ];
-
   let html = '<thead><tr><th>Concepto</th><th>Importe</th></tr></thead><tbody>';
-  filasIngresos.forEach(([label, key]) => {
-    const v = num(key);
-    html += `<tr><td>${label}</td><td class="importe-positivo">${v === null ? '-' : '+' + v.toFixed(2) + '€'}</td></tr>`;
-  });
+  html += `<tr><td>Saldo anterior</td><td class="importe-positivo">+${saldoAnterior.toFixed(2)}€</td></tr>`;
+  html += `<tr><td>Aportaciones</td><td class="importe-positivo">+${aportaciones.toFixed(2)}€</td></tr>`;
+  html += `<tr><td>Premios</td><td class="importe-positivo">+${premios.toFixed(2)}€</td></tr>`;
   html += `<tr class="fila-total"><td>Total Ingresos</td><td class="importe-positivo">${totalIngresos.toFixed(2)}€</td></tr>`;
-  filasGastos.forEach(([label, key]) => {
-    const v = num(key);
-    html += `<tr><td>${label}</td><td class="importe-negativo">${v === null ? '-' : '-' + v.toFixed(2) + '€'}</td></tr>`;
-  });
+  html += `<tr><td>Juegos</td><td class="importe-negativo">-${gastosJuegos.toFixed(2)}€</td></tr>`;
+  html += `<tr><td>Otros</td><td class="importe-negativo">${otros === 0 ? '-' : '-' + otros.toFixed(2) + '€'}</td></tr>`;
   html += `<tr class="fila-total"><td>Total Gastos</td><td class="importe-negativo">-${totalGastos.toFixed(2)}€</td></tr>`;
   html += '</tbody>';
   document.getElementById('eco-detalle').innerHTML = html;
+
+  // Cuota actual y previsión para el año que viene
+  const cuotaActual = num('Cuota actual');
+  const gastoPrevisto = Math.ceil(gastosJuegos); // redondeo al alza, según Estatutos
+  const necesario = gastoPrevisto - saldo;
+  const numMiembros = parseInt(config['Miembros']) || 14;
+  let previsionCuota = Math.ceil((necesario / numMiembros) / 5) * 5; // redondeo al alza a múltiplo de 5
+  if (previsionCuota < 10) previsionCuota = 10; // mínimo de los Estatutos
+  document.getElementById('eco-cuota-actual').textContent = cuotaActual !== null ? cuotaActual.toFixed(2) + '€' : '-';
+  document.getElementById('eco-prevision-cuota').textContent = previsionCuota.toFixed(2) + '€ (orientativo)';
+
+  // Paganinis: quién ha pagado, quién falta
+  let htmlPaganinis = '<thead><tr><th>Jugador</th><th>Estado</th></tr></thead><tbody>';
+  paganinis.forEach(row => {
+    const nombre = row[0] || '';
+    if (!nombre) return;
+    const importe = parseFloat(String(row[1] || '').replace(',', '.'));
+    const pagado = row[1] !== '' && row[1] !== undefined && !isNaN(importe);
+    htmlPaganinis += `<tr><td>${nombre}</td><td class="${pagado ? 'importe-positivo' : ''}">${pagado ? importe.toFixed(2) + '€ ✓' : 'Pendiente'}</td></tr>`;
+  });
+  htmlPaganinis += '</tbody>';
+  document.getElementById('eco-paganinis').innerHTML = htmlPaganinis;
 
   // Resumen por juego, calculado a partir de Operaciones
   const porJuego = {};
@@ -1157,6 +1205,12 @@ function cargarEconomico(resumen, operaciones) {
   htmlJuego += '</tbody>';
   document.getElementById('eco-resumen-juego').innerHTML = htmlJuego;
 
+  // % de temporada completada, según semanas distintas en Operaciones
+  const semanasJugadas = new Set(operaciones.map(row => row[0]).filter(s => s !== '' && s !== undefined)).size;
+  const semanasTotales = parseInt(config['Semanas Totales']) || 53;
+  const pctTemporada = Math.round((semanasJugadas / semanasTotales) * 100);
+  document.getElementById('eco-semanas').textContent = `${semanasJugadas} de ${semanasTotales} (${pctTemporada}%)`;
+
   // Detalle semanal completo, para auditoría
   let htmlDetalle = '<thead><tr><th>Sem.</th><th>Fecha</th><th>Juego</th><th>Coste</th><th>Premio</th></tr></thead><tbody>';
   operaciones.forEach(row => {
@@ -1167,7 +1221,6 @@ function cargarEconomico(resumen, operaciones) {
   htmlDetalle += '</tbody>';
   document.getElementById('eco-detalle-semanal').innerHTML = htmlDetalle;
 }
-
 // ============================================================
 // CARGAR HISTORICO
 // ============================================================
@@ -1298,7 +1351,7 @@ function cargarTrono(campeones) {
 
 async function init() {
   try {
-    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows] = await Promise.all([
+    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows, paganinisRows] = await Promise.all([
       leerHoja('Config'),
       leerHoja('Clasificacion'),
       leerHoja('Jornadas'),
@@ -1311,6 +1364,7 @@ async function init() {
       leerHoja('MarcadoresPartidos'),
       leerHoja('Loteria'),
       leerHoja('RankingFinal'),
+      leerHoja('Paganinis'),
       leerHojaSerial('CalendarioQuiniela'),
       leerHojaSerial('FechasPartidos'),
     ]);
@@ -1324,7 +1378,7 @@ async function init() {
     cargarClasificacion(clasif);
     cargarRankingFinal(rankingRows.slice(1));
     cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1), calendarioCierreRows, fechasCierreRows, clasif);
-    cargarEconomico(resumenRows.slice(1), operacionesRows.slice(1));
+    cargarEconomico(resumenRows.slice(1), operacionesRows.slice(1), paganinisRows.slice(1), config);
     cargarHistorico(historicoRows.slice(1));
     cargarEstatutos(estatutosRows.slice(1));
     cargarLoteria(loteriaRows.slice(1));
