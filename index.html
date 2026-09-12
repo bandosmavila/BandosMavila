@@ -1333,7 +1333,10 @@ function cargarRankingFinal(rows) {
 // ============================================================
 // MAIN — cargar todo
 // ============================================================
-function cargarTrono(campeones) {
+let podiumData = null; // guardado para poder reabrir sin recalcular
+let podiumTimer = null;
+
+function cargarTrono(campeones, podium) {
   const cont = document.getElementById('trono-container');
   const ahora = new Date();
 
@@ -1341,7 +1344,6 @@ function cargarTrono(campeones) {
     return (ahora - new Date(fecha)) / (1000 * 60 * 60 * 24);
   }
 
-  // Última fila de cada tipo (por si hay varias temporadas, coger la más reciente)
   const granFinal = [...campeones].reverse().find(r => r[1] === 'GranFinal');
   const vuelta2 = [...campeones].reverse().find(r => r[1] === '2');
   const vuelta1 = [...campeones].reverse().find(r => r[1] === '1');
@@ -1349,9 +1351,17 @@ function cargarTrono(campeones) {
   let html = '';
 
   if (granFinal && diasDesde(granFinal[3]) <= 15) {
-    html = `<div class="card" style="background:linear-gradient(135deg,#c9a227,#f0d878); text-align:center; padding:24px;">
-      <div style="font-size:13px; letter-spacing:1px; opacity:0.8;">GRAN CAMPEÓN DE LA TEMPORADA</div>
-      <div style="font-family:'Bebas Neue',sans-serif; font-size:32px; margin-top:4px;">${granFinal[2]}</div>
+    const anioFinal = String(granFinal[0]);
+    podiumData = podium
+      .filter(r => String(r[0]) === anioFinal)
+      .sort((a, b) => parseInt(a[1]) - parseInt(b[1]))
+      .map(r => r[2]);
+    if (podiumData.length === 0) podiumData = [granFinal[2]]; // red de seguridad si el pódium no llegó a guardarse
+
+    html = `<div class="card podio-trigger" onclick="abrirPodium()" style="background:linear-gradient(135deg,#c9a227,#f0d878); text-align:center; padding:20px; cursor:pointer;">
+      <div style="font-size:13px; letter-spacing:1px; opacity:0.8;">🏆 GRAN CAMPEÓN DE LA TEMPORADA</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:30px; margin-top:2px;">${granFinal[2]}</div>
+      <div style="font-size:12px; margin-top:6px; opacity:0.75;">Toca para ver el pódium</div>
     </div>`;
   } else if (vuelta2 && !granFinal) {
     html = `<div class="card" style="background:var(--verde); color:#fff; text-align:center; padding:20px;">
@@ -1370,7 +1380,7 @@ function cargarTrono(campeones) {
 
 async function init() {
   try {
-    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows, paganinisRows] = await Promise.all([
+    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows, paganinisRows, podiumRows] = await Promise.all([
       leerHoja('Config'),
       leerHoja('Clasificacion'),
       leerHoja('Jornadas'),
@@ -1386,13 +1396,14 @@ async function init() {
       leerHojaSerial('CalendarioQuiniela'),
       leerHojaSerial('FechasPartidos'),
       leerHoja('Paganinis'),
+      leerHoja('PodiumGranFinal'),
     ]);
     const config = parsearConfig(configRows);
     const clasif = clasificRows.slice(1).filter(r => r[1]);
     const calendario = calendarioRows.slice(1);
 
     cargarInicio(config, clasif, jornadasRows.slice(1), calendario, calendarioCierreRows, fechasCierreRows);
-    cargarTrono(campeonesRows.slice(1));
+    cargarTrono(campeonesRows.slice(1), podiumRows.slice(1));
     cargarClasificacion(clasif);
     cargarRankingFinal(rankingRows.slice(1));
     cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1), calendarioCierreRows, fechasCierreRows, clasif);
