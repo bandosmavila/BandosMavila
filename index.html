@@ -492,6 +492,77 @@
     .tabla-clasif th, .tabla-clasif td { padding: 6px 4px; }
     .col-estado { display: none; }
   }
+
+  .podio-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 20px;
+}
+.podio-caja {
+  background: var(--crema); border-radius: 16px; padding: 30px 20px 20px;
+  max-width: 480px; width: 100%; position: relative; overflow: hidden;
+}
+.podio-escalones {
+  display: flex; align-items: flex-end; justify-content: center; gap: 12px;
+}
+.podio-columna { display: flex; flex-direction: column; align-items: center; flex: 1; max-width: 100px; }
+.podio-nombre { font-weight: 700; font-size: 13px; margin: 6px 0 8px; text-align: center; color: var(--tinta); }
+.podio-escalon {
+  width: 100%; background: var(--verde); color: #fff;
+  display: flex; align-items: flex-start; justify-content: center; padding-top: 6px;
+  font-family: 'Bebas Neue', sans-serif; font-size: 20px; border-radius: 6px 6px 0 0;
+}
+.globo {
+  width: 56px; height: 66px; border-radius: 50% 50% 50% 50% / 55% 55% 45% 45%;
+  position: relative; display: flex; align-items: center; justify-content: center;
+}
+.globo::after {
+  content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+  width: 2px; height: 10px; background: var(--gris);
+}
+.globo-ojos { display: flex; gap: 10px; margin-top: -6px; }
+.globo-ojos span { width: 6px; height: 6px; background: var(--tinta); border-radius: 50%; display: block; }
+.globo-mano {
+  position: absolute; width: 14px; height: 6px; background: inherit;
+  border-radius: 4px; top: 30px;
+}
+.globo-mano-izq { left: -10px; }
+.globo-mano-der { right: -10px; }
+
+.globo-campeon { animation: saltoCampeon 0.6s ease-in-out infinite; }
+.globo-campeon .globo-mano-izq { animation: brazoArriba 0.6s ease-in-out infinite; transform-origin: right center; }
+.globo-campeon .globo-mano-der { animation: brazoArriba 0.6s ease-in-out infinite reverse; transform-origin: left center; }
+
+.globo-resto .globo-mano-izq { animation: aplaudir 0.5s ease-in-out infinite; transform-origin: right center; }
+.globo-resto .globo-mano-der { animation: aplaudir 0.5s ease-in-out infinite reverse; transform-origin: left center; }
+
+@keyframes saltoCampeon {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-18px) rotate(3deg); }
+}
+@keyframes brazoArriba {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  50% { transform: rotate(-40deg) translateY(-10px); }
+}
+@keyframes aplaudir {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(20deg); }
+}
+
+.podio-confeti {
+  position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+}
+.podio-confeti::before, .podio-confeti::after {
+  content: ''; position: absolute; top: -10px; width: 8px; height: 8px;
+  background: var(--amarillo); opacity: 0.9;
+  animation: caerConfeti 2.5s linear infinite;
+}
+.podio-confeti::before { left: 20%; animation-delay: 0s; background: var(--verde-claro); }
+.podio-confeti::after { left: 70%; animation-delay: 0.8s; background: #c9a227; }
+@keyframes caerConfeti {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(320px) rotate(360deg); opacity: 0; }
+}
 </style>
 </head>
 <body>
@@ -1378,6 +1449,44 @@ function cargarTrono(campeones, podium) {
   cont.innerHTML = html;
 }
 
+const COLORES_GLOBO = ['#c9a227', 'var(--verde-claro)', 'var(--amarillo)', '#9c9384'];
+
+function abrirPodium() {
+  if (!podiumData || podiumData.length === 0) return;
+
+  let html = '<div class="podio-overlay" id="podio-overlay" onclick="if(event.target===this) cerrarPodium()">';
+  html += '<div class="podio-caja">';
+  html += '<div class="podio-escalones">';
+  podiumData.forEach((nombre, idx) => {
+    const puesto = idx + 1;
+    const esCampeon = puesto === 1;
+    const alturaBase = 100 - idx * 22;
+    html += `<div class="podio-columna">
+      <div class="globo ${esCampeon ? 'globo-campeon' : 'globo-resto'}" style="background:${COLORES_GLOBO[idx] || COLORES_GLOBO[3]};">
+        <div class="globo-ojos"><span></span><span></span></div>
+        <div class="globo-mano globo-mano-izq"></div>
+        <div class="globo-mano globo-mano-der"></div>
+      </div>
+      <div class="podio-nombre">${nombre}</div>
+      <div class="podio-escalon" style="height:${alturaBase}px;">${puesto}º</div>
+    </div>`;
+  });
+  html += '</div>';
+  html += '<div class="podio-confeti"></div>';
+  html += '</div></div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+
+  if (podiumTimer) clearTimeout(podiumTimer);
+  podiumTimer = setTimeout(cerrarPodium, 30000);
+}
+
+function cerrarPodium() {
+  const overlay = document.getElementById('podio-overlay');
+  if (overlay) overlay.remove();
+  if (podiumTimer) { clearTimeout(podiumTimer); podiumTimer = null; }
+}
+  
 async function init() {
   try {
     const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows, paganinisRows, podiumRows] = await Promise.all([
