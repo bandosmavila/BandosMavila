@@ -1234,6 +1234,15 @@ function mostrarPremiosSemana() {
   if (modo === 'numero') numInput.value = semana;
 
   const filas = operacionesGlobal.filter(r => parseInt(r[0]) === semana);
+
+  if (filas.length !== 5) {
+    document.getElementById('premios-semana-resultado').innerHTML =
+      `<div style="color:var(--gris); text-align:center; padding:16px; font-size:14px;">
+        La semana ${semana} todavía no se ha traspasado desde OP_Claude (o está incompleta).
+      </div>`;
+    return;
+  }
+
   let total = 0;
   const porJuego = [];
   filas.forEach(row => {
@@ -1269,8 +1278,13 @@ function mostrarPremiosSemana() {
 
 function cargarEconomico(resumen, operaciones, paganinis, config) {
   operacionesGlobal = operaciones;
-  const semanasConDatos = operaciones.map(r => parseInt(r[0])).filter(n => !isNaN(n));
-  ultimaSemanaGlobal = semanasConDatos.length ? Math.max(...semanasConDatos) : 1;
+  const conteoPorSemana = {};
+  operaciones.forEach(r => {
+    const s = parseInt(r[0]);
+    if (!isNaN(s)) conteoPorSemana[s] = (conteoPorSemana[s] || 0) + 1;
+  });
+  const semanasCompletas = Object.keys(conteoPorSemana).map(Number).filter(s => conteoPorSemana[s] === 5);
+  ultimaSemanaGlobal = semanasCompletas.length ? Math.max(...semanasCompletas) : 1;
   const datos = {};
   resumen.forEach(row => {
     if (row[0]) datos[row[0]] = row[1];
