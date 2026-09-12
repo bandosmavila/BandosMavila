@@ -1210,6 +1210,7 @@ function cargarEconomico(resumen, operaciones, paganinis, config) {
   const semanasTotales = parseInt(config['Semanas Totales']) || 53;
   const pctTemporada = Math.round((semanasJugadas / semanasTotales) * 100);
   document.getElementById('eco-semanas').textContent = `${semanasJugadas} de ${semanasTotales} (${pctTemporada}%)`;
+  document.getElementById('eco-semanas-barra').style.width = pctTemporada + '%';
 
   // Detalle semanal completo, para auditoría
   let htmlDetalle = '<thead><tr><th>Sem.</th><th>Fecha</th><th>Juego</th><th>Coste</th><th>Premio</th></tr></thead><tbody>';
