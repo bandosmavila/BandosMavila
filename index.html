@@ -857,14 +857,29 @@ function calcularJornadaActual(jornadas) {
   }
   return nums.length ? nums[nums.length - 1] : null;
 }
+
+// Sustituye a calcularJornadaActual para decidir qué jornada mostrar en pantalla:
+// la más reciente cuyo plazo de envío ya ha cerrado (no depende de si hay resultados).
+function calcularJornadaMostrar(jornadasRows, calendarioCierreRows, fechasCierreRows) {
+  const nums = [...new Set(jornadasRows.map(r => parseInt(r[0])).filter(n => !!n))].sort((a, b) => a - b);
+  if (nums.length === 0) return null;
+  const ahora = new Date();
+  let jornadaMostrar = nums[0];
+  nums.forEach(j => {
+    const cierre = calcularCierreJornada(j, calendarioCierreRows, fechasCierreRows);
+    if (cierre && ahora >= cierre) jornadaMostrar = j;
+  });
+  return jornadaMostrar;
+}
+
 // ============================================================
 // CARGAR INICIO (QUITAR ESTE COMENTARIO??)
 // ============================================================
-async function cargarInicio(config, clasif, jornadas, calendario) {
+async function cargarInicio(config, clasif, jornadas, calendario, calendarioCierreRows, fechasCierreRows) {
   document.getElementById('temporada-badge').textContent = config['Temporada'] || '';
 
   const activas = calendarioActivo(calendario);
-  const jornadaActual = calcularJornadaActual(jornadas);
+  const jornadaActual = calcularJornadaMostrar(jornadas, calendarioCierreRows, fechasCierreRows);
   const posActual = jornadaActual !== null ? activas.findIndex(a => a.jornada === jornadaActual) : -1;
   const jActualRel = posActual >= 0 ? posActual + 1 : null;
   const jugadas = posActual >= 0 ? posActual : 0;
@@ -944,7 +959,7 @@ function cargarClasificacion(clasif) {
 
 function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierreRows, fechasCierreRows, clasif) {
   const activas = calendarioActivo(calendario);
-  const jornadaActual = calcularJornadaActual(jornadas);
+  const jornadaActual = calcularJornadaMostrar(jornadas, calendarioCierreRows, fechasCierreRows);
 
   if (jornadaActual === null) {
     document.getElementById('jor-badge').textContent = 'Jornada -';
@@ -1304,7 +1319,7 @@ async function init() {
     const clasif = clasificRows.slice(1).filter(r => r[1]);
     const calendario = calendarioRows.slice(1);
 
-    cargarInicio(config, clasif, jornadasRows.slice(1), calendario);
+    cargarInicio(config, clasif, jornadasRows.slice(1), calendario, calendarioCierreRows, fechasCierreRows);
     cargarTrono(campeonesRows.slice(1));
     cargarClasificacion(clasif);
     cargarRankingFinal(rankingRows.slice(1));
