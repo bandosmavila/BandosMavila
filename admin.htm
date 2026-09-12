@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - BandosMávila</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --verde: #1a6b3c;
+    --verde-claro: #2d9e5f;
+    --crema: #f5f0e8;
+    --tinta: #1a1a1a;
+    --gris: #6b6b6b;
+    --borde: #ddd8cc;
+    --rojo: #c0392b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--crema); color: var(--tinta); padding: 16px; }
+  .header { background: var(--tinta); color: white; padding: 16px 20px; border-radius: 12px; margin-bottom: 16px; max-width: 600px; margin-left: auto; margin-right: auto; }
+  .header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; }
+  .header p { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+  .card { background: white; border-radius: 12px; border: 1px solid var(--borde); margin-bottom: 16px; overflow: hidden; max-width: 600px; margin-left: auto; margin-right: auto; }
+  .card-header { background: var(--verde); color: white; padding: 12px 16px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.5px; }
+  .card-body { padding: 12px 16px; }
+  .partido { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0ede6; font-size: 14px; }
+  .partido:last-child { border-bottom: none; }
+  .partido-num { color: var(--gris); font-family: 'JetBrains Mono', monospace; font-size: 12px; margin-right: 8px; }
+  .jugador-fila { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0ede6; font-size: 14px; }
+  .jugador-fila:last-child { border-bottom: none; }
+  .estado-ok { color: var(--verde); font-weight: 700; }
+  .estado-pendiente { color: var(--rojo); font-weight: 700; }
+  .loading, .aviso { text-align: center; padding: 30px; color: var(--gris); }
+  .cierre-info { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--gris); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>ADMIN — BandosMávila</h1>
+  <p id="subtitulo">Cargando...</p>
+</div>
+
+<div id="contenido">
+  <div class="loading">Comprobando acceso...</div>
+</div>
+
+<script>
+const SHEET_ID = '1Gcbt0ND0K1fmBdqwf55DuoGKakrZR9s7eP2r0RIG9hY'; // el mismo que en index.html
+const API_KEY = '1Gcbt0ND0K1fmBdqwf55DuoGKakrZR9s7eP2r0RIG9hY'; // el mismo que en index.html
+const CLAVE_ADMIN = 'Ad0lf013'; // la misma CLAVE que en index.html/pronosticos.html
+
+async function leerHoja(nombre) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${nombre}?key=${API_KEY}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return data.values || [];
+}
+
+async function leerHojaSerial(nombre) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${nombre}?key=${API_KEY}&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return data.values || [];
+}
+
+function serialToDate(serial) {
+  return new Date(Math.round((serial - 25569) * 86400 * 1000));
+}
+
+function calcularCierreJornada(jornadaQuiniela, calendarioCierreRows, fechasCierreRows) {
+  let fechaOficialSerial = null;
+  for (let i = 1; i < calendarioCierreRows.length; i++) {
+    if (parseInt(calendarioCierreRows[i][0]) === jornadaQuiniela) {
+      fechaOficialSerial = calendarioCierreRows[i][1];
+      break;
+    }
+  }
+  if (fechaOficialSerial === null || fechaOficialSerial === undefined || fechaOficialSerial === '') return null;
+  const fechaOficial = serialToDate(fechaOficialSerial);
+  const esFinde = fechaOficial.getDay() === 0;
+  if (esFinde) {
+    let fechaViernes = null;
+    for (let j = 1; j < fechasCierreRows.length; j++) {
+      if (parseInt(fechasCierreRows[j][0]) !== jornadaQuiniela) continue;
+      const serialF = fechasCierreRows[j][2];
+      if (serialF === undefined || serialF === '') continue;
+      const f = serialToDate(serialF);
+      if (f.getDay() === 5) { fechaViernes = f; break; }
+    }
+    if (fechaViernes) {
+      fechaViernes.setHours(16, 0, 0, 0);
+      return fechaViernes;
+    } else {
+      const viernesRef = new Date(fechaOficial);
+      viernesRef.setDate(viernesRef.getDate() - 2);
+      viernesRef.setDate(viernesRef.getDate() + 1);
+      viernesRef.setHours(0, 0, 0, 0);
+      return viernesRef;
+    }
+  } else {
+    const martes = new Date(fechaOficial);
+    while (martes.getDay() !== 2) martes.setDate(martes.getDate() - 1);
+    martes.setHours(16, 0, 0, 0);
+    return martes;
+  }
+}
+
+function parsearConfig(rows) {
+  const config = {};
+  const jugadores = [];
+  let enJugadores = false;
+  rows.forEach(row => {
+    if (!row[0]) return;
+    if (row[0] === 'JUGADORES') { enJugadores = true; return; }
+    if (enJugadores) { if (row[0]) jugadores.push(row[0]); }
+    else { config[row[0]] = row[1] || ''; }
+  });
+  config.jugadores = jugadores;
+  return config;
+}
+
+async function init() {
+  try {
+    const [configRows, clasificRows, jornadasRows, calendarioCierreRows, fechasCierreRows, finalistasRows] = await Promise.all([
+      leerHoja('Config'),
+      leerHoja('Clasificacion'),
+      leerHoja('Jornadas'),
+      leerHojaSerial('CalendarioQuiniela'),
+      leerHojaSerial('FechasPartidos'),
+      leerHoja('GranFinalFinalistas'),
+    ]);
+
+    const config = parsearConfig(configRows);
+    const jornadas = jornadasRows.slice(1);
+
+    // Jornada actual = la primera con partidos pero sin sus 15 resultados (misma regla que el backend)
+    const porJornada = {};
+    jornadas.forEach(r => {
+      const j = parseInt(r[0]);
+      if (!j) return;
+      if (!porJornada[j]) porJornada[j] = { total: 0, conResultado: 0 };
+      porJornada[j].total++;
+      if (r[4]) porJornada[j].conResultado++;
+    });
+    const ordenadas = Object.keys(porJornada).map(Number).sort((a, b) => a - b);
+    let jornadaActual = null;
+    for (const j of ordenadas) {
+      if (porJornada[j].conResultado < 15) { jornadaActual = j; break; }
+    }
+
+    if (!jornadaActual) {
+      document.getElementById('subtitulo').textContent = 'No hay ninguna jornada abierta ahora mismo.';
+      document.getElementById('contenido').innerHTML = '';
+      return;
+    }
+
+    const cierre = calcularCierreJornada(jornadaActual, calendarioCierreRows, fechasCierreRows);
+    const ahora = new Date();
+    const cerrada = cierre && ahora >= cierre;
+
+    document.getElementById('subtitulo').innerHTML =
+      `Jornada ${jornadaActual} · Cierre: ${cierre ? cierre.toLocaleString('es-ES') : '?'} ` +
+      `<span class="cierre-info">(${cerrada ? 'YA CERRADA' : 'aún abierta'})</span>`;
+
+    // ¿Finalistas de la Gran Final, o jugadores activos normales?
+    const finalistas = finalistasRows.slice(1).map(r => String(r[0] || '').trim().toUpperCase()).filter(n => n);
+    const esGranFinal = finalistas.length > 0 && finalistasRows.length > 1;
+    // (nota: si nunca ha habido Gran Final, GranFinalFinalistas puede seguir vacía de la vez anterior;
+    //  esto es solo informativo, no bloquea nada)
+
+    let jugadoresAMostrar;
+    if (esGranFinal) {
+      jugadoresAMostrar = finalistas;
+    } else {
+      const eliminados = {};
+      clasificRows.slice(1).forEach(r => {
+        const nom = String(r[1] || '').trim().toUpperCase();
+        if (String(r[5] || '').toLowerCase() === 'eliminado') eliminados[nom] = true;
+      });
+      jugadoresAMostrar = config.jugadores.filter(n => !eliminados[n.toUpperCase()]);
+    }
+
+    // Cabecera real de Jornadas para saber en qué columna está cada jugador
+    const cabecera = jornadasRows[0];
+    const colPorJugador = {};
+    for (let c = 5; c < cabecera.length; c++) {
+      const nombre = String(cabecera[c] || '').trim().toUpperCase();
+      if (nombre) colPorJugador[nombre] = c;
+    }
+
+    const filasJornada = jornadas.filter(r => parseInt(r[0]) === jornadaActual);
+
+    let htmlPartidos = '';
+    filasJornada.sort((a, b) => parseInt(a[1]) - parseInt(b[1])).forEach(r => {
+      htmlPartidos += `<div class="partido"><span><span class="partido-num">${r[1]}</span>${r[2]} — ${r[3]}</span></div>`;
+    });
+
+    let htmlJugadores = '';
+    jugadoresAMostrar.forEach(nombre => {
+      const col = colPorJugador[nombre.toUpperCase()];
+      const tieneAlgo = col !== undefined && filasJornada.some(r => {
+        const v = r[col];
+        return v !== '' && v !== undefined && v !== null;
+      });
+      htmlJugadores += `<div class="jugador-fila"><span>${nombre}</span><span class="${tieneAlgo ? 'estado-ok' : 'estado-pendiente'}">${tieneAlgo ? '✓ Enviado' : '⏳ Pendiente'}</span></div>`;
+    });
+
+    document.getElementById('contenido').innerHTML = `
+      <div class="card">
+        <div class="card-header">PARTIDOS ${esGranFinal ? '(GRAN FINAL)' : ''}</div>
+        <div class="card-body">${htmlPartidos}</div>
+      </div>
+      <div class="card">
+        <div class="card-header">PRONÓSTICOS — QUIÉN FALTA</div>
+        <div class="card-body">${htmlJugadores}</div>
+      </div>
+    `;
+  } catch (e) {
+    document.getElementById('contenido').innerHTML = `<div class="aviso">Error cargando datos: ${e}</div>`;
+  }
+}
+
+// Barrera ligera: pide la clave antes de mostrar nada
+const claveIntroducida = prompt('Clave de acceso:');
+if (claveIntroducida === CLAVE_ADMIN) {
+  init();
+} else {
+  document.getElementById('subtitulo').textContent = 'Acceso denegado.';
+  document.getElementById('contenido').innerHTML = '';
+}
+</script>
+</body>
+</html>
