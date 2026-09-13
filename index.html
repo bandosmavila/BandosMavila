@@ -597,7 +597,8 @@
   <div class="header-top">
     <div class="logo">
       Bandosmávila
-      <span>Peña de Quiniela</span>
+      <span>Peña de Quiniela</span
+      <div id="frase-dia" style="font-size:11px; font-weight:400; opacity:0.75; margin-top:4px; font-style:italic;"></div>                              
     </div>
     <div class="temporada-badge" id="temporada-badge">...</div>
   </div>
@@ -1602,7 +1603,13 @@ function abrirPodium() {
   if (podiumTimer) clearTimeout(podiumTimer);
   podiumTimer = setTimeout(cerrarPodium, 30000);
 }
-
+function mostrarFraseDia(frases) {
+  const validas = frases.filter(r => r[0]);
+  if (validas.length === 0) return;
+  const elegida = validas[Math.floor(Math.random() * validas.length)];
+  const el = document.getElementById('frase-dia');
+  if (el) el.textContent = `"${elegida[0]}"${elegida[1] ? ' — ' + elegida[1] : ''}`;
+}
 function cerrarPodium() {
   const overlay = document.getElementById('podio-overlay');
   if (overlay) overlay.remove();
@@ -1611,7 +1618,7 @@ function cerrarPodium() {
   
 async function init() {
   try {
-    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows, paganinisRows, podiumRows, campeonesCierreRows] = await Promise.all([
+    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows, paganinisRows, podiumRows, campeonesCierreRows, frasesRows] = await Promise.all([
       leerHoja('Config'),
       leerHoja('Clasificacion'),
       leerHoja('Jornadas'),
@@ -1629,10 +1636,12 @@ async function init() {
       leerHoja('Paganinis'),
       leerHoja('PodiumGranFinal'),
       leerHojaSerial('Campeones'),
+      leerHoja('Frases'),
     ]);
     const config = parsearConfig(configRows);
     const clasif = clasificRows.slice(1).filter(r => r[1]);
     const calendario = calendarioRows.slice(1);
+    mostrarFraseDia(frasesRows.slice(1));
 
     cargarInicio(config, clasif, jornadasRows.slice(1), calendario, calendarioCierreRows, fechasCierreRows);
     cargarTrono(campeonesRows.slice(1), podiumRows.slice(1), campeonesCierreRows);
