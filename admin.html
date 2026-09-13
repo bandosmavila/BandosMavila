@@ -35,6 +35,15 @@
   .estado-pendiente { color: var(--rojo); font-weight: 700; }
   .loading, .aviso { text-align: center; padding: 30px; color: var(--gris); }
   .cierre-info { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--gris); margin-top: 4px; }
+  .perlas { display:flex; align-items:center; gap:4px; overflow-x:auto; padding:4px 0; }
+  .perla { width:16px; height:16px; border-radius:50%; flex-shrink:0; }
+  .perla-actual { width:26px; height:26px; border:2px solid; display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+  .perla-hilo { width:10px; height:2px; background:var(--borde); flex-shrink:0; }
+  .perla-pendiente { background:#d3d1c7; }
+  .perla-actual-color { background:#EF9F27; border-color:#854F0B; }
+  .perla-hecho { background:var(--verde-claro); }
+  .perla-incumplido { background:var(--rojo); }
+  .perla-etiqueta { font-size:10px; color:var(--gris); white-space:nowrap; margin-top:2px; }
 </style>
 </head>
 <body>
@@ -166,9 +175,173 @@ function generarChecklist(config, paganinisRows) {
     <strong>${a.tipo === 'aviso' ? '⚠️' : '📅'}</strong> ${a.texto}
   </div>`).join('');
 }
+
+function calcularJornadaCollar(jornadasRows, calendarioCierreRows, fechasCierreRows) {
+  const nums = [...new Set(jornadasRows.slice(1).map(r => parseInt(r[0])).filter(n => !!n))].sort((a,b)=>a-b);
+  if (!nums.length) return null;
+  const ahora = new Date();
+  let jornadaMostrar = nums[0];
+  nums.forEach(j => {
+    const cierre = calcularCierreJornada(j, calendarioCierreRows, fechasCierreRows);
+    if (cierre && ahora >= cierre) jornadaMostrar = j;
+  });
+  return jornadaMostrar;
+}
+
+function horaAMinutos(valor) {
+  if (typeof valor === 'number') return Math.round(valor * 24 * 60);
+  const partes = String(valor).split(':');
+  if (partes.length >= 2) return (parseInt(partes[0]) || 0) * 60 + (parseInt(partes[1]) || 0);
+  return null;
+}
+
+function calcularPrimerPartido(jornada, fechasCierreRows) {
+  let minFecha = null;
+  for (let j = 1; j < fechasCierreRows.length; j++) {
+    if (parseInt(fechasCierreRows[j][0]) !== jornada) continue;
+    const serialF = fechasCierreRows[j][2];
+    if (serialF === undefined || serialF === '') continue;
+    const fecha = serialToDate(serialF);
+    const mins = horaAMinutos(fechasCierreRows[j][3]);
+    if (mins !== null) fecha.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+    if (!minFecha || fecha < minFecha) minFecha = fecha;
+  }
+  return minFecha;
+}
+
+function formatoCuenta(ms) {
+  if (ms < 0) return null;
+  const totalSeg = Math.floor(ms / 1000);
+  const h = Math.floor(totalSeg / 3600);
+  const m = Math.floor((totalSeg % 3600) / 60);
+  const s = totalSeg % 60;
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+function perlaHTML(estado, actual, etiqueta, titulo) {
+  if (actual) {
+    return `<span class="perla-actual perla-${estado === 'actual' ? 'actual-color' : estado}" title="${titulo}"></span>
+      <span class="perla-etiqueta">${etiqueta}</span>`;
+  }
+  return `<span class="perla perla-${estado}" title="${titulo}"></span>`;
+}
+
+function construirFila1(jornadasRows, calendarioCierreRows, fechasCierreRows, cierresLogRows, eliminacionesLogRows, campeonesRows, podiumRows, finalistasRows) {
+  const jornadaCollar = calcularJornadaCollar(jornadasRows, calendarioCierreRows, fechasCierreRows);
+  if (!jornadaCollar) return { html: '<p style="color:var(--gris);">Sin jornada activa.</p>', reloj: null };
+
+  const ahora = new Date();
+  const cierre = calcularCierreJornada(jornadaCollar, calendarioCierreRows, fechasCierreRows);
+  const primerPartido = calcularPrimerPartido(jornadaCollar, fechasCierreRows);
+
+  const jornadas = jornadasRows.slice(1);
+  const filasJ = jornadas.filter(r => parseInt(r[0]) === jornadaCollar);
+  const conResultado = filasJ.filter(r => r[4]).length;
+
+  const enCierresLog = cierresLogRows.slice(1).some(r => parseInt(r[0]) === jornadaCollar);
+  const enElimLog = eliminacionesLogRows.slice(1).some(r => parseInt(r[0]) === jornadaCollar);
+
+  const nums = [...new Set(jornadas.map(r => parseInt(r[0])).filter(n => !!n))].sort((a,b)=>a-b);
+  const posActual = nums.indexOf(jornadaCollar);
+  const nextJ = posActual >= 0 && posActual + 1 < nums.length ? nums[posActual + 1] : null;
+  const filasNext = nextJ ? jornadas.filter(r => parseInt(r[0]) === nextJ) : [];
+
+  const esFinalDeVuelta = finalistasRows.slice(1).length > 0;
+  const anioActual = ahora.getFullYear();
+  const hayPodiumEsteAnio = campeonesRows.slice(1).some(r => String(r[0]) === String(anioActual) && r[1] === 'GranFinal');
+
+  const plazoAbierto = cierre ? ahora < cierre : true;
+  const perlas = [];
+
+  perlas.push({ label:'plazo abierto', titulo:'Los pronósticos están abiertos para esta jornada', estado: plazoAbierto ? 'actual' : 'hecho' });
+  perlas.push({ label:'plazo cerrado', titulo:'Ha pasado la hora de cierre de envío', estado: !cierre ? 'pendiente' : (ahora >= cierre ? 'hecho' : 'pendiente') });
+
+  let estadoReparto = 'pendiente';
+  if (cierre && ahora >= cierre) {
+    const margen = new Date(cierre.getTime() + 60*60*1000);
+    estadoReparto = enCierresLog ? 'hecho' : (ahora > margen ? 'incumplido' : 'actual');
+  }
+  perlas.push({ label:'reparto', titulo:'Se ha aplicado fijo/aleatorio a quien no envió a tiempo', estado: estadoReparto });
+
+  let estadoPrimerRes = 'pendiente';
+  if (primerPartido) {
+    const margen = new Date(primerPartido.getTime() + 2*60*60*1000);
+    estadoPrimerRes = conResultado > 0 ? 'hecho' : (ahora > margen && enCierresLog ? 'incumplido' : (enCierresLog ? 'actual' : 'pendiente'));
+  }
+  perlas.push({ label:'1er resultado', titulo:'Ha llegado el resultado del primer partido', estado: estadoPrimerRes });
+
+  perlas.push({ label:'15 resultados', titulo:'Los 15 partidos ya tienen resultado', estado: conResultado === 15 ? 'hecho' : (conResultado > 0 ? 'actual' : 'pendiente') });
+  perlas.push({ label:'eliminación', titulo:'Se ha decidido quién queda eliminado (o si es clasificatoria)', estado: enElimLog ? 'hecho' : (conResultado === 15 ? 'actual' : 'pendiente') });
+
+  if (esFinalDeVuelta) {
+    perlas.push({ label:'finalistas', titulo:'Finalistas de la Gran Final calculados', estado: 'hecho' });
+  }
+  if (hayPodiumEsteAnio) {
+    perlas.push({ label:'pódium', titulo:'Pódium de la Gran Final decidido', estado: 'hecho' });
+  }
+
+  perlas.push({ label:'jornada '+(nextJ||'?')+' bajada', titulo:'Partidos de la próxima jornada descargados', estado: filasNext.length === 15 ? 'hecho' : (conResultado === 15 ? 'actual' : 'pendiente') });
+
+  let doblesNext = false;
+  if (nextJ) {
+    for (let i = 1; i < calendarioCierreRows.length; i++) {
+      if (parseInt(calendarioCierreRows[i][0]) === nextJ && calendarioCierreRows[i][4] !== undefined && calendarioCierreRows[i][4] !== '') { doblesNext = true; break; }
+    }
+  }
+  perlas.push({ label:'dobles calc.', titulo:'Dobles de la próxima jornada calculados', estado: doblesNext ? 'hecho' : (filasNext.length === 15 ? 'actual' : 'pendiente') });
+
+  let html = `<div style="font-size:12px; color:var(--gris); margin-bottom:6px;">Jornada ${jornadaCollar}</div><div class="perlas">`;
+  perlas.forEach((p, i) => {
+    const esActual = p.estado === 'actual';
+    html += perlaHTML(p.estado, esActual, p.label, p.titulo);
+    if (i < perlas.length - 1) html += '<span class="perla-hilo"></span>';
+  });
+  html += '</div>';
+
+  let reloj = null;
+  if (cierre && primerPartido && ahora >= cierre && ahora < primerPartido) {
+    reloj = primerPartido;
+  }
+
+  return { html, reloj };
+}
+
+function construirFila2(config, operacionesRows) {
+  const operaciones = operacionesRows.slice(1);
+  const conteoPorSemana = {};
+  const bonolotoJugado = {};
+  operaciones.forEach(r => {
+    const s = parseInt(r[0]);
+    if (isNaN(s)) return;
+    conteoPorSemana[s] = (conteoPorSemana[s] || 0) + 1;
+    if (String(r[2]).toUpperCase() === 'BONOLOTO' && (parseFloat(String(r[3]||'0').replace(',','.'))||0) > 0) bonolotoJugado[s] = true;
+  });
+  const semanasCompletas = Object.keys(conteoPorSemana).map(Number).filter(s => conteoPorSemana[s] === 5 && bonolotoJugado[s]);
+  const ultima = semanasCompletas.length ? Math.max(...semanasCompletas) : 0;
+
+  const fechaInicioStr = config['Fecha Inicio'];
+  let desfase = null;
+  if (fechaInicioStr) {
+    const partes = String(fechaInicioStr).split('/');
+    const fechaInicio = new Date(partes[2], partes[1]-1, partes[0]);
+    const semanaTeorica = Math.floor((new Date() - fechaInicio) / (7*24*60*60*1000)) + 1;
+    desfase = semanaTeorica - ultima;
+  }
+
+  let html = `<div style="font-size:12px; color:var(--gris); margin-bottom:6px;">Fuera de jornada</div><div class="perlas">`;
+  html += perlaHTML('hecho', false, '', 'Última semana con datos completos en Operaciones: '+ultima);
+  html += '</div>';
+  if (desfase !== null && desfase >= 2) {
+    html += `<div style="color:var(--rojo); font-size:13px; margin-top:6px;">⚠️ Van ${desfase} semanas de diferencia entre la actual y la última traspasada (semana ${ultima}).</div>`;
+  } else {
+    html += `<div style="color:var(--gris); font-size:12px; margin-top:6px;">Última semana traspasada: ${ultima}</div>`;
+  }
+  return html;
+}
+
 async function init() {
   try {
-    const [configRows, clasificRows, jornadasRows, calendarioCierreRows, fechasCierreRows, finalistasRows, paganinisRows] = await Promise.all([
+    const [configRows, clasificRows, jornadasRows, calendarioCierreRows, fechasCierreRows, finalistasRows, paganinisRows, cierresLogRows, eliminacionesLogRows, campeonesRows, podiumRows, operacionesRows] = await Promise.all([
       leerHoja('Config'),
       leerHoja('Clasificacion'),
       leerHoja('Jornadas'),
@@ -176,6 +349,11 @@ async function init() {
       leerHojaSerial('FechasPartidos'),
       leerHoja('GranFinalFinalistas'),
       leerHoja('Paganinis'),
+      leerHoja('CierresLog'),
+      leerHoja('EliminacionesLog'),
+      leerHoja('Campeones'),
+      leerHoja('PodiumGranFinal'),
+      leerHoja('Operaciones'),
     ]);
 
     const config = parsearConfig(configRows);
@@ -271,6 +449,12 @@ async function init() {
     htmlTablaPron += '</table></div>';
     document.getElementById('contenido').innerHTML = `
       <div class="card">
+        <div class="card-header">ESTADO</div>
+        <div class="card-body" id="collar-jornada"></div>
+        <div class="card-body" id="collar-reloj" style="display:none; border-top:1px solid var(--borde); font-weight:700; text-align:center;"></div>
+        <div class="card-body" id="collar-economico" style="border-top:1px solid var(--borde);"></div>
+      </div>
+      <div class="card">
         <div class="card-header">CHECKLIST / AVISOS</div>
         <div class="card-body">${generarChecklist(config, paganinisRows)}</div>
       </div>
@@ -287,6 +471,22 @@ async function init() {
         <div class="card-body">${htmlTablaPron}</div>
       </div>
     `;
+
+    const fila1 = construirFila1(jornadasRows, calendarioCierreRows, fechasCierreRows, cierresLogRows, eliminacionesLogRows, campeonesRows, podiumRows, finalistasRows);
+    document.getElementById('collar-jornada').innerHTML = fila1.html;
+    document.getElementById('collar-economico').innerHTML = construirFila2(config, operacionesRows);
+
+    if (fila1.reloj) {
+      const relojEl = document.getElementById('collar-reloj');
+      relojEl.style.display = 'block';
+      function actualizarReloj() {
+        const restante = fila1.reloj - new Date();
+        if (restante <= 0) { relojEl.style.display = 'none'; return; }
+        relojEl.textContent = 'Tiempo para jugar el boleto: ' + formatoCuenta(restante);
+      }
+      actualizarReloj();
+      setInterval(actualizarReloj, 1000);
+    }
   } catch (e) {
     document.getElementById('contenido').innerHTML = `<div class="aviso">Error cargando datos: ${e}</div>`;
   }
