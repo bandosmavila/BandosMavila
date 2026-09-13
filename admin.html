@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin - BandosMávila</title>
+<meta name="theme-color" content="#1a1a1a">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -289,9 +290,15 @@ async function init() {
   }
 }
 
-// Barrera ligera: pide la clave antes de mostrar nada
-const claveIntroducida = prompt('Clave de acceso:');
-if (claveIntroducida === CLAVE_ADMIN) {
+// Barrera ligera: pide la clave la primera vez, luego la recuerda en este navegador
+let claveGuardada = localStorage.getItem('admin_clave');
+if (claveGuardada !== CLAVE_ADMIN) {
+  claveGuardada = prompt('Clave de acceso:');
+  if (claveGuardada === CLAVE_ADMIN) {
+    localStorage.setItem('admin_clave', claveGuardada);
+  }
+}
+if (claveGuardada === CLAVE_ADMIN) {
   init();
 } else {
   document.getElementById('subtitulo').textContent = 'Acceso denegado.';
