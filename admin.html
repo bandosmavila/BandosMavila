@@ -119,16 +119,60 @@ function parsearConfig(rows) {
   config.jugadores = jugadores;
   return config;
 }
+function generarChecklist(config, paganinisRows) {
+  const ahora = new Date();
+  const avisos = [];
 
+  function parseFechaConfig(campo) {
+    const v = config[campo];
+    if (!v) return null;
+    const partes = String(v).split('/');
+    if (partes.length !== 3) return null;
+    return new Date(partes[2] + '-' + partes[1] + '-' + partes[0]);
+  }
+
+  // 1) Fin de temporada
+  const fechaFin = parseFechaConfig('Fecha Fin');
+  if (fechaFin && ahora > fechaFin) {
+    avisos.push({ tipo: 'aviso', texto: 'La temporada ya debería haber terminado (Fecha Fin: ' + fechaFin.toLocaleDateString('es-ES') + '). Revisa: Config (Temporada, fechas, Semanas Totales, Fecha Cierre Temporada), Cuota actual, Paganinis en blanco, cerrarAnioEconomico(), CalendarioQuiniela del año nuevo, PronosticosFijos, y actualizar el backup.' });
+  }
+
+  // 2) Pagos de cuota pendientes tras el 31 de marzo
+  const finPlazoCuota = new Date(ahora.getFullYear(), 2, 31);
+  if (ahora > finPlazoCuota) {
+    const pendientes = paganinisRows.slice(1).filter(r => r[0] && (r[1] === '' || r[1] === undefined));
+    if (pendientes.length > 0) {
+      avisos.push({ tipo: 'aviso', texto: 'Quedan ' + pendientes.length + ' pago(s) de cuota pendientes en Paganinis (ya pasó el 31 de marzo): ' + pendientes.map(r => r[0]).join(', ') });
+    }
+  }
+
+  // 3) Recordatorios por fecha, sin comprobación real de datos
+  const mes = ahora.getMonth() + 1;
+  if (mes === 7) {
+    avisos.push({ tipo: 'recordatorio', texto: 'Julio: revisa/actualiza TEMPORADA en el Apps Script (capa Quinielista) y amplía CalendarioQuiniela para la temporada que empieza.' });
+  }
+  if (mes === 1) {
+    avisos.push({ tipo: 'recordatorio', texto: 'Enero: revisa si hay cambios en PronosticosFijos para la nueva temporada.' });
+  }
+
+  if (avisos.length === 0) {
+    return '<div style="color:var(--gris); text-align:center; padding:16px;">Sin avisos pendientes ahora mismo.</div>';
+  }
+
+  return avisos.map(a => `<div style="padding:10px 0; border-bottom:1px solid #f0ede6; color:${a.tipo === 'aviso' ? 'var(--rojo)' : 'var(--tinta)'};">
+    <strong>${a.tipo === 'aviso' ? '⚠️' : '📅'}</strong> ${a.texto}
+  </div>`).join('');
+}
 async function init() {
   try {
-    const [configRows, clasificRows, jornadasRows, calendarioCierreRows, fechasCierreRows, finalistasRows] = await Promise.all([
+    const [configRows, clasificRows, jornadasRows, calendarioCierreRows, fechasCierreRows, finalistasRows, paganinisRows] = await Promise.all([
       leerHoja('Config'),
       leerHoja('Clasificacion'),
       leerHoja('Jornadas'),
       leerHojaSerial('CalendarioQuiniela'),
       leerHojaSerial('FechasPartidos'),
       leerHoja('GranFinalFinalistas'),
+      leerHoja('Paganinis'),
     ]);
 
     const config = parsearConfig(configRows);
@@ -222,8 +266,11 @@ async function init() {
       htmlTablaPron += '</tr>';
     });
     htmlTablaPron += '</table></div>';
-
     document.getElementById('contenido').innerHTML = `
+      <div class="card">
+        <div class="card-header">CHECKLIST / AVISOS</div>
+        <div class="card-body">${generarChecklist(config, paganinisRows)}</div>
+      </div>
       <div class="card">
         <div class="card-header">PARTIDOS ${esGranFinal ? '(GRAN FINAL)' : ''}</div>
         <div class="card-body">${htmlPartidos}</div>
