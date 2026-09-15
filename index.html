@@ -997,15 +997,11 @@ function calcularJornadaActual(jornadas) {
 // Sustituye a calcularJornadaActual para decidir qué jornada mostrar en pantalla:
 // la más reciente cuyo plazo de envío ya ha cerrado (no depende de si hay resultados).
 function calcularJornadaMostrar(jornadasRows, calendarioCierreRows, fechasCierreRows) {
+  // La jornada a mostrar es siempre la más reciente que ya tenga partidos descargados,
+  // esté cerrada o no — la ocultación de pronósticos hasta el cierre se decide aparte.
   const nums = [...new Set(jornadasRows.map(r => parseInt(r[0])).filter(n => !!n))].sort((a, b) => a - b);
   if (nums.length === 0) return null;
-  const ahora = new Date();
-  let jornadaMostrar = nums[0];
-  nums.forEach(j => {
-    const cierre = calcularCierreJornada(j, calendarioCierreRows, fechasCierreRows);
-    if (cierre && ahora >= cierre) jornadaMostrar = j;
-  });
-  return jornadaMostrar;
+  return nums[nums.length - 1];
 }
 
 // ============================================================
