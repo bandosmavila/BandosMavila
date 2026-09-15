@@ -1002,9 +1002,14 @@ function calcularJornadaMostrar(jornadasRows, calendarioCierreRows, fechasCierre
   const ahora = new Date();
   for (const j of nums) {
     const cierre = calcularCierreJornada(j, calendarioCierreRows, fechasCierreRows);
-    if (!cierre || ahora < cierre) return j; // la primera cuyo plazo sigue abierto (o sin cierre calculable)
+    const yaCerro = cierre && ahora >= cierre;
+    const filasJ = jornadasRows.filter(r => parseInt(r[0]) === j);
+    const conResultado = filasJ.filter(r => r[4]).length;
+    const totalResultados = filasJ.length;
+    const terminada = yaCerro && totalResultados > 0 && conResultado === totalResultados;
+    if (!terminada) return j; // la primera que no está del todo cerrada Y resuelta
   }
-  return nums[nums.length - 1]; // si todas están cerradas ya, mostramos la última
+  return nums[nums.length - 1];
 }
 
 // ============================================================
