@@ -1142,7 +1142,17 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
   });
   document.getElementById('jor-partidos').innerHTML = htmlPartidos;
   
-  // Pronósticos: ocultos para todos hasta que cierre el plazo de envío de esta jornada
+  // Jugadores y eliminados: se calcula siempre, lo necesitan tanto la jornada
+  // actual (si ya cerró) como la jornada anterior (más abajo)
+  const jugadores = config.jugadores || [];
+  const eliminadosSet = new Set(
+    clasif
+      .filter(r => (r[5] || '').toString().toLowerCase() === 'eliminado')
+      .map(r => (r[1] || '').toString().trim().toUpperCase())
+  );
+  const jugadorEliminado = jugadores.map(j => eliminadosSet.has(j.toString().trim().toUpperCase()));
+
+  // Pronósticos de la jornada actual: ocultos para todos hasta que cierre el plazo de envío
   const cierre = calcularCierreJornada(jornadaActual, calendarioCierreRows, fechasCierreRows);
   const cerrado = cierre ? (new Date() >= cierre) : false;
 
@@ -1151,55 +1161,106 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
       ? `Los pronósticos se mostrarán cuando cierre el plazo de envío (${cierre.toLocaleDateString('es-ES')} a las ${cierre.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'})}).`
       : 'Los pronósticos se mostrarán cuando cierre el plazo de envío de esta jornada.';
     document.getElementById('jor-pronos').innerHTML = `<div class="loading">${mensajeCierre}</div>`;
-    return;
+  } else {
+    let htmlPronos = '<table class="tabla-pronos"><thead><tr><th class="partido-col">Nº</th>';
+    jugadores.forEach((j, ji) => {
+      if (jugadorEliminado[ji]) return;
+      htmlPronos += `<th>${j.substring(0,4)}</th>`;
+    });
+    htmlPronos += '</tr></thead><tbody>';
+
+    const aciertosJugador = jugadores.map(() => 0);
+
+    filas.forEach((row, i) => {
+      const resultado = row[4] || '';
+      htmlPronos += `<tr><td class="partido-col">${i + 1}</td>`;
+      jugadores.forEach((j, ji) => {
+        if (jugadorEliminado[ji]) return;
+        const prono = row[5 + ji] || '';
+        let cls = '';
+        if (resultado && prono) {
+          cls = (prono === resultado || resultado.includes(prono) || prono.includes(resultado)) ? 'acertado' : 'fallado';
+          if (cls === 'acertado') aciertosJugador[ji]++;
+        }
+        htmlPronos += `<td class="${cls}">${prono.replace(/\s/g, '')}</td>`;
+      });
+      htmlPronos += '</tr>';
+    });
+    htmlPronos += '</tbody><tfoot><tr><td class="partido-col">Ac.</td>';
+    jugadores.forEach((j, ji) => {
+      if (jugadorEliminado[ji]) return;
+      htmlPronos += `<td>${aciertosJugador[ji]}</td>`;
+    });
+    htmlPronos += '</tr></tfoot></table>';
+    document.getElementById('jor-pronos').innerHTML = htmlPronos;
   }
 
-  // Pronósticos
-  const jugadores = config.jugadores || [];
+  // Jornada anterior: siempre visible (ya cerrada por definición), para repasar aciertos recién resueltos
+  const numsDisponibles = [...new Set(jornadas.map(r => parseInt(r[0])).filter(n => !!n))].sort((a, b) => a - b);
+  const posMostrar = numsDisponibles.indexOf(jornadaActual);
+  const jornadaAnterior = posMostrar > 0 ? numsDisponibles[posMostrar - 1] : null;
 
-  // Averiguar qué jugadores están eliminados, para no mostrar su columna
-  const eliminadosSet = new Set(
-    clasif
-      .filter(r => (r[5] || '').toString().toLowerCase() === 'eliminado')
-      .map(r => (r[1] || '').toString().trim().toUpperCase())
-  );
-  const jugadorEliminado = jugadores.map(j => eliminadosSet.has(j.toString().trim().toUpperCase()));
+  const existenteAnterior = document.getElementById('jor-anterior-wrap');
+  if (existenteAnterior) existenteAnterior.remove();
 
-  let htmlPronos = '<table class="tabla-pronos"><thead><tr><th class="partido-col">Nº</th>';
-  jugadores.forEach((j, ji) => {
-    if (jugadorEliminado[ji]) return; // no se pinta la columna de los eliminados
-    htmlPronos += `<th>${j.substring(0,4)}</th>`;
-  });
-  htmlPronos += '</tr></thead><tbody>';
+  if (jornadaAnterior) {
+    const filasAnterior = jornadas.filter(r => parseInt(r[0]) === jornadaAnterior);
 
-  const aciertosJugador = jugadores.map(() => 0);
-
-  filas.forEach((row, i) => {
-    const local = row[2] || '';
-    const visitante = row[3] || '';
-    const resultado = row[4] || '';
-    htmlPronos += `<tr><td class="partido-col">${i + 1}</td>`;
-    jugadores.forEach((j, ji) => {
-      if (jugadorEliminado[ji]) return; // no se pinta la celda de los eliminados
-      const prono = row[5 + ji] || '';
-      let cls = '';
-      if (resultado && prono) {
-        cls = (prono === resultado || resultado.includes(prono) || prono.includes(resultado)) ? 'acertado' : 'fallado';
-        if (cls === 'acertado') aciertosJugador[ji]++;
-      }
-      const pronoMostrado = prono.replace(/\s/g, '');
-      htmlPronos += `<td class="${cls}">${pronoMostrado}</td>`;
+    const marcadorPorPartidoAnterior = {};
+    marcadores.forEach(row => {
+      if (parseInt(row[0]) === jornadaAnterior) marcadorPorPartidoAnterior[row[1]] = row[2] || '';
     });
-    htmlPronos += '</tr>';
-  });
-  htmlPronos += '</tbody><tfoot><tr><td class="partido-col">Ac.</td>';
-  jugadores.forEach((j, ji) => {
-    if (jugadorEliminado[ji]) return;
-    htmlPronos += `<td>${aciertosJugador[ji]}</td>`;
-  });
-  htmlPronos += '</tr></tfoot></table>';
-  document.getElementById('jor-pronos').innerHTML = htmlPronos;
+
+    let htmlPartidosAnterior = '';
+    filasAnterior.forEach((row, i) => {
+      const num = i + 1;
+      const marcador = marcadorPorPartidoAnterior[num] || '';
+      htmlPartidosAnterior += `<div class="partido-row">
+        <span class="partido-num">${num}</span>
+        <span class="partido-equipos">${row[2] || ''} — ${row[3] || ''}</span>
+        ${num === 15 ? '<span class="partido-p15">P15</span>' : ''}
+        ${marcador ? `<span class="partido-marcador">${marcador}</span>` : ''}
+        <span class="partido-resultado">${row[4] || ''}</span>
+      </div>`;
+    });
+
+    let htmlPronosAnterior = '<table class="tabla-pronos"><thead><tr><th class="partido-col">Nº</th>';
+    jugadores.forEach((j, ji) => {
+      if (jugadorEliminado[ji]) return;
+      htmlPronosAnterior += `<th>${j.substring(0,4)}</th>`;
+    });
+    htmlPronosAnterior += '</tr></thead><tbody>';
+    filasAnterior.forEach((row, i) => {
+      const resultado = row[4] || '';
+      htmlPronosAnterior += `<tr><td class="partido-col">${i + 1}</td>`;
+      jugadores.forEach((j, ji) => {
+        if (jugadorEliminado[ji]) return;
+        const prono = row[5 + ji] || '';
+        let cls = '';
+        if (resultado && prono) {
+          cls = (prono === resultado || resultado.includes(prono) || prono.includes(resultado)) ? 'acertado' : 'fallado';
+        }
+        htmlPronosAnterior += `<td class="${cls}">${prono.replace(/\s/g, '')}</td>`;
+      });
+      htmlPronosAnterior += '</tr>';
+    });
+    htmlPronosAnterior += '</tbody></table>';
+
+    document.getElementById('sec-jornada').insertAdjacentHTML('beforeend', `
+      <div id="jor-anterior-wrap">
+        <div class="card">
+          <div class="card-header">Partidos <span class="badge">Jornada ${jornadaAnterior} (anterior)</span></div>
+          <div class="card-body">${htmlPartidosAnterior}</div>
+        </div>
+        <div class="card">
+          <div class="card-header">Pronósticos — Jornada ${jornadaAnterior}</div>
+          <div class="card-body pronos-scroll">${htmlPronosAnterior}</div>
+        </div>
+      </div>
+    `);
+  }
 }
+  
 // ============================================================
 // CARGAR ECONOMICO
 // ============================================================
