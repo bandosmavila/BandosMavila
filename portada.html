@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portada (PRUEBA) - BandosMávila</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --verde: #1a6b3c;
+    --verde-claro: #2d9e5f;
+    --crema: #f5f0e8;
+    --tinta: #1a1a1a;
+    --gris: #6b6b6b;
+    --dorado: #c9a227;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    background: radial-gradient(circle at 50% 30%, #1e7a45, var(--verde) 70%);
+    color: white;
+  }
+  .aviso-prueba {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    background: #c0392b; color: white; text-align: center;
+    font-size: 11px; padding: 4px; letter-spacing: 1px;
+  }
+  .portada {
+    height: 100%; width: 100%; position: relative;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 40px 16px 20px;
+  }
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px; letter-spacing: 2px; text-align: center;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  .musica-linea {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 8px; font-size: 13px; opacity: 0.9;
+  }
+  .btn-play {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5);
+    color: white; font-size: 13px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn-play:active { transform: scale(0.92); }
+
+  .orla {
+    position: relative;
+    flex: 1; width: 100%; max-width: 420px;
+    margin-top: 10px;
+  }
+  .globo {
+    position: absolute;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    font-family: 'Inter', sans-serif; font-weight: 700;
+    line-height: 1.05;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+    transform: translate(-50%, -50%);
+  }
+  .globo::after {
+    content: ''; position: absolute; bottom: -6px; left: 50%;
+    transform: translateX(-50%);
+    width: 1.5px; height: 8px; background: rgba(255,255,255,0.4);
+  }
+  .nombre-fuera {
+    position: absolute; font-size: 9px; text-align: center;
+    white-space: nowrap; opacity: 0.85;
+  }
+
+  .entrar {
+    position: absolute; bottom: 14px; right: 18px;
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 30px; padding: 8px 16px;
+    font-size: 13px; letter-spacing: 0.5px;
+    cursor: pointer; color: white;
+  }
+
+  .firma-wrap {
+    text-align: center; margin-bottom: 6px;
+  }
+  .firma {
+    font-family: 'Dancing Script', cursive;
+    font-size: 20px; opacity: 0.75;
+  }
+  .rubrica {
+    width: 70px; height: 14px; margin: 2px auto 0; opacity: 0.55;
+  }
+</style>
+</head>
+<body>
+
+<div class="aviso-prueba">VERSIÓN DE PRUEBA — no enlazada desde la web real</div>
+
+<div class="portada">
+  <h1>PEÑA BANDOSMÁVILA</h1>
+  <div class="musica-linea">
+    <button class="btn-play" id="btnPlay" onclick="toggleMusica()">▶</button>
+    <span>Música: <span id="autorMusica">Pendiente</span></span>
+  </div>
+
+  <div class="orla" id="orla"></div>
+
+  <div class="firma-wrap">
+    <div class="firma">Claude</div>
+    <svg class="rubrica" viewBox="0 0 100 20"><path d="M2 15 C 20 2, 35 18, 50 8 S 80 2, 98 12" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+  </div>
+
+  <div class="entrar" onclick="window.location.href='index.html'">Entrar <span>→</span></div>
+</div>
+
+<audio id="audioMusica" src="musica-temporal.mp3" loop></audio>
+
+<script>
+const SHEET_ID = '1Gcbt0ND0K1fmBdqwf55DuoGKakrZR9s7eP2r0RIG9hY';
+const API_KEY = 'AIzaSyA6zHLUiBURBem0lVORI8X1y-ovSGg2UXs';
+
+// Colores de globo por equipo (claro=Barça, oscuro=Madrid, medio=Atleti, amarillo=Las Palmas)
+const EQUIPOS = {
+  'ADOLFO': 'atletico', 'AGUS': 'atletico', 'MICHEL': 'atletico',
+  'MANOLO': 'barcelona', 'NESTOR': 'barcelona', 'CACHO': 'barcelona', 'LOLO': 'barcelona', 'LUISFER': 'barcelona',
+  'JULIO': 'madrid', 'JAVI': 'madrid', 'CHUCHI': 'madrid', 'BOZO': 'madrid', 'FIDE': 'madrid',
+  'JOSE': 'laspalmas'
+};
+const ESTILO_EQUIPO = {
+  atletico:   { fondo: 'linear-gradient(180deg, #c0392b 0%, #c0392b 50%, #ffffff 50%, #ffffff 100%)', color: '#fff' },
+  barcelona:  { fondo: 'repeating-linear-gradient(90deg, #a8d5f2 0px, #a8d5f2 8px, #ffffff 8px, #ffffff 16px)', color: '#004d98' },
+  madrid:     { fondo: '#f4f4f4', color: '#1a1a2e' },
+  laspalmas:  { fondo: 'repeating-linear-gradient(90deg, #ffd500 0px, #ffd500 8px, #1a1a2e 8px, #1a1a2e 16px)', color: '#1a1a2e' },
+};
+
+async function leerHoja(nombre) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${nombre}?key=${API_KEY}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return data.values || [];
+}
+
+function toggleMusica() {
+  const audio = document.getElementById('audioMusica');
+  const btn = document.getElementById('btnPlay');
+  if (audio.paused) {
+    audio.play().catch(() => alert('Falta subir musica-temporal.mp3 al repositorio, o el navegador ha bloqueado el sonido.'));
+    btn.textContent = '❚❚';
+  } else {
+    audio.pause();
+    btn.textContent = '▶';
+  }
+}
+
+function colocarOrla(nombresOrdenados) {
+  const orla = document.getElementById('orla');
+  const w = orla.clientWidth, h = orla.clientHeight;
+  const cx = w / 2, cy = h / 2;
+
+  // anillo 0: centro (1 persona) | anillo 1: siguientes 4 | anillo 2: el resto
+  const anillos = [
+    { radio: 0, gente: nombresOrdenados.slice(0, 1), tam: 74 },
+    { radio: Math.min(w, h) * 0.30, gente: nombresOrdenados.slice(1, 5), tam: 58 },
+    { radio: Math.min(w, h) * 0.46, gente: nombresOrdenados.slice(5), tam: 46 },
+  ];
+
+  anillos.forEach((anillo, ai) => {
+    const n = anillo.gente.length;
+    anillo.gente.forEach((nombre, i) => {
+      const angulo = (ai === 0) ? 0 : (Math.PI * 2 * i / n) - Math.PI / 2 + (ai === 2 ? 0.3 : 0);
+      const x = cx + anillo.radio * Math.cos(angulo);
+      const y = cy + anillo.radio * Math.sin(angulo) * 0.85; // achatado, cabe mejor en vertical
+      const equipo = EQUIPOS[nombre] || 'madrid';
+      const estilo = ESTILO_EQUIPO[equipo];
+      const tam = anillo.tam;
+
+      const globo = document.createElement('div');
+      globo.className = 'globo';
+      globo.style.left = x + 'px';
+      globo.style.top = y + 'px';
+      globo.style.width = tam + 'px';
+      globo.style.height = tam + 'px';
+      globo.style.background = estilo.fondo;
+      globo.style.color = estilo.color;
+      globo.style.fontSize = (tam > 60 ? 11 : tam > 50 ? 9.5 : 8.5) + 'px';
+      globo.textContent = nombre.substring(0, 6);
+      orla.appendChild(globo);
+    });
+  });
+}
+
+async function init() {
+  try {
+    const clasifRows = await leerHoja('Clasificacion');
+    const clasif = clasifRows.slice(1).filter(r => r[1]);
+    // Ya viene ordenada por actualizarClasificacion (aciertos > premios > pleno15)
+    const nombresOrdenados = clasif.map(r => String(r[1]).trim().toUpperCase());
+    colocarOrla(nombresOrdenados);
+  } catch (e) {
+    document.getElementById('orla').innerHTML = `<div style="text-align:center; padding-top:40px; opacity:0.8;">Error cargando Clasificación: ${e}</div>`;
+  }
+}
+init();
+</script>
+</body>
+</html>
