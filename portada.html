@@ -55,18 +55,33 @@
     margin: 6px auto 0;
   }
 
-  /* --- Globo, tal como en el Pódium: cuerpo, ojos, manos --- */
+  /* --- Globo: cuerpo con relieve 3D, ojos, manos, y balanceo suave --- */
   .globo-wrap {
     position: absolute; transform: translate(-50%, -50%);
     display: flex; flex-direction: column; align-items: center;
+    animation-name: flotar; animation-iteration-count: infinite; animation-timing-function: ease-in-out;
+  }
+  @keyframes flotar {
+    0%, 100% { transform: translate(-50%, -50%) translateY(0) rotate(-2deg); }
+    50%      { transform: translate(-50%, -50%) translateY(-6%) rotate(2deg); }
   }
   .globo {
     border-radius: 50% 50% 50% 50% / 55% 55% 45% 45%;
     position: relative; display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4), inset 0 -10px 14px rgba(0,0,0,0.28);
     overflow: hidden;
   }
+  /* brillo tipo esfera, arriba-izquierda */
+  .globo::before {
+    content: '';
+    position: absolute; top: 8%; left: 14%;
+    width: 55%; height: 45%;
+    background: radial-gradient(circle, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.15) 55%, transparent 75%);
+    border-radius: 50%;
+    pointer-events: none; z-index: 3;
+  }
+  /* hilo del globo */
   .globo::after {
     content: ''; position: absolute; bottom: -8px; left: 50%;
     transform: translateX(-50%);
@@ -76,6 +91,7 @@
   .globo-ojos span { background: var(--tinta); border-radius: 50%; display: block; }
   .globo-mano {
     position: absolute; background: inherit; border-radius: 4px; z-index: 1;
+    box-shadow: inset 0 -4px 6px rgba(0,0,0,0.25);
   }
   .globo-mano-izq { left: -18%; }
   .globo-mano-der { right: -18%; }
@@ -131,7 +147,7 @@
 const SHEET_ID = '1Gcbt0ND0K1fmBdqwf55DuoGKakrZR9s7eP2r0RIG9hY';
 const API_KEY = 'AIzaSyA6zHLUiBURBem0lVORI8X1y-ovSGg2UXs';
 
-// Colores de globo por equipo (Barça=grana/azul, Madrid=blanco liso, Atleti=rojiblanco, Las Palmas=amarillo/azul)
+// Colores de globo por equipo (Barça=grana/azul, Madrid=blanco liso, Atleti=rojo/blanco verticales, Las Palmas=amarillo liso)
 const EQUIPOS = {
   'ADOLFO': 'atletico', 'AGUS': 'atletico', 'MICHEL': 'atletico',
   'MANOLO': 'barcelona', 'NESTOR': 'barcelona', 'CACHO': 'barcelona', 'LOLO': 'barcelona', 'LUISFER': 'barcelona',
@@ -139,7 +155,7 @@ const EQUIPOS = {
   'JOSE': 'laspalmas'
 };
 const ESTILO_EQUIPO = {
-  atletico:   'linear-gradient(180deg, #c0392b 0%, #c0392b 50%, #ffffff 50%, #ffffff 100%)',
+  atletico:   'repeating-linear-gradient(90deg, #cb3524 0px, #cb3524 18%, #ffffff 18%, #ffffff 36%)',
   barcelona:  'repeating-linear-gradient(90deg, #a50044 0px, #a50044 18%, #004d98 18%, #004d98 36%)',
   madrid:     '#f4f4f4',
   laspalmas:  '#ffd500',
@@ -170,6 +186,11 @@ function crearGlobo(nombre, tam) {
 
   const wrap = document.createElement('div');
   wrap.className = 'globo-wrap';
+  // Balanceo distinto para cada uno: duración y retraso aleatorios, para que no vayan sincronizados
+  const duracion = (3.2 + Math.random() * 2.2).toFixed(2);
+  const retraso = (Math.random() * -4).toFixed(2);
+  wrap.style.animationDuration = duracion + 's';
+  wrap.style.animationDelay = retraso + 's';
 
   const globo = document.createElement('div');
   globo.className = 'globo';
