@@ -88,7 +88,7 @@
   .globo-ojos span { background: var(--tinta); border-radius: 50%; display: block; }
   .globo-extremidad {
     position: absolute; z-index: 1; pointer-events: none;
-    stroke: white; stroke-width: 5.5; stroke-linecap: round; fill: none;
+    stroke: #c9a37a; stroke-width: 5.5; stroke-linecap: round; fill: none;
     filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35));
   }
   .globo-nombre {
@@ -149,6 +149,16 @@ const EQUIPOS = {
   'MANOLO': 'barcelona', 'NESTOR': 'barcelona', 'CACHO': 'barcelona', 'LOLO': 'barcelona', 'LUISFER': 'barcelona',
   'JULIO': 'madrid', 'JAVI': 'madrid', 'CHUCHI': 'madrid', 'BOZO': 'madrid', 'FIDE': 'madrid',
   'JOSE': 'laspalmas'
+};
+const COLORES_NOMBRE = {
+  // Atlético (medios)
+  'ADOLFO': '#2980b9', 'AGUS': '#5b6ee1', 'MICHEL': '#a67c52',
+  // Barcelona (oscuros)
+  'MANOLO': '#16a085', 'NESTOR': '#8e44ad', 'CACHO': '#795548', 'LOLO': '#607d8b', 'LUISFER': '#34495e',
+  // Real Madrid (claros)
+  'JULIO': '#f1c40f', 'JAVI': '#8bc34a', 'CHUCHI': '#d81b60', 'BOZO': '#ff6f91', 'FIDE': '#00bcd4',
+  // Jose
+  'JOSE': '#c0392b',
 };
 const ESTILO_EQUIPO = {
   atletico:   'repeating-linear-gradient(90deg, #cb3524 0px, #cb3524 18%, #ffffff 18%, #ffffff 36%)',
@@ -268,6 +278,7 @@ function crearGlobo(nombre, tam) {
   nombreEl.className = 'globo-nombre';
   nombreEl.style.fontSize = (tam * 0.20) + 'px';
   nombreEl.style.marginTop = (tam * 0.10) + 'px';
+  nombreEl.style.color = COLORES_NOMBRE[nombre] || '#ffffff';
   nombreEl.textContent = nombre.substring(0, 7);
 
   globo.appendChild(ojos);
@@ -276,15 +287,33 @@ function crearGlobo(nombre, tam) {
   return wrap;
 }
 
+// Reordena un grupo alternando equipos (round-robin), para que dos del mismo
+// equipo no queden casi nunca uno junto a otro, sea cual sea el orden de partida.
+function mezclarPorEquipo(lista) {
+  const porEquipo = {};
+  lista.forEach(nombre => {
+    const eq = EQUIPOS[nombre] || 'otro';
+    (porEquipo[eq] = porEquipo[eq] || []).push(nombre);
+  });
+  const grupos = Object.values(porEquipo);
+  const resultado = [];
+  let quedan = true;
+  while (quedan) {
+    quedan = false;
+    grupos.forEach(g => { if (g.length) { resultado.push(g.shift()); quedan = true; } });
+  }
+  return resultado;
+}
+
 function colocarOrla(nombresOrdenados) {
   const orla = document.getElementById('orla');
   const w = orla.clientWidth, h = orla.clientHeight;
   const cx = w / 2, cy = h / 2;
 
   const anillos = [
-    { radio: 0,               gente: nombresOrdenados.slice(0, 1), tam: w * 0.26 },
-    { radio: Math.min(w,h)*0.30, gente: nombresOrdenados.slice(1, 5), tam: w * 0.20 },
-    { radio: Math.min(w,h)*0.46, gente: nombresOrdenados.slice(5),    tam: w * 0.155 },
+    { radio: 0,               gente: nombresOrdenados.slice(0, 1),               tam: w * 0.26 },
+    { radio: Math.min(w,h)*0.30, gente: mezclarPorEquipo(nombresOrdenados.slice(1, 5)), tam: w * 0.20 },
+    { radio: Math.min(w,h)*0.46, gente: mezclarPorEquipo(nombresOrdenados.slice(5)),    tam: w * 0.155 },
   ];
 
   anillos.forEach((anillo, ai) => {
