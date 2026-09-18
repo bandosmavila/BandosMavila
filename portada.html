@@ -88,7 +88,7 @@
   .globo-ojos span { background: var(--tinta); border-radius: 50%; display: block; }
   .globo-extremidad {
     position: absolute; z-index: 1; pointer-events: none;
-    stroke: white; stroke-width: 2.2; stroke-linecap: round; fill: none;
+    stroke: white; stroke-width: 5.5; stroke-linecap: round; fill: none;
     filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35));
   }
   .globo-nombre {
@@ -211,22 +211,22 @@ function crearGlobo(nombre, tam) {
   // Brazo + mano de 3 dedos (SVG), uno a cada lado
   function crearBrazo(lado) {
     const ns = 'http://www.w3.org/2000/svg';
-    const anchoSvg = tam * 0.42, altoSvg = tam * 0.4;
+    const anchoSvg = tam * 0.30, altoSvg = tam * 0.28;
     const svg = document.createElementNS(ns, 'svg');
-    svg.setAttribute('viewBox', '0 0 42 40');
+    svg.setAttribute('viewBox', '0 0 30 28');
     svg.setAttribute('class', 'globo-extremidad');
     svg.style.width = anchoSvg + 'px';
     svg.style.height = altoSvg + 'px';
-    svg.style.top = (tam * 0.40) + 'px';
-    if (lado === 'izq') svg.style.left = -(anchoSvg * 0.78) + 'px';
-    else { svg.style.right = -(anchoSvg * 0.78) + 'px'; svg.style.transform = 'scaleX(-1)'; }
+    svg.style.top = (tam * 0.42) + 'px';
+    if (lado === 'izq') svg.style.left = -(anchoSvg * 0.42) + 'px';
+    else { svg.style.right = -(anchoSvg * 0.42) + 'px'; svg.style.transform = 'scaleX(-1)'; }
 
-    // brazo: línea desde el cuerpo hasta la mano
+    // brazo casi inexistente: solo lo justo para unir cuerpo y mano
     const brazo = document.createElementNS(ns, 'path');
-    brazo.setAttribute('d', 'M40 8 L10 18');
+    brazo.setAttribute('d', 'M27 8 L20 12');
     svg.appendChild(brazo);
-    // mano: 3 dedos cortos abriéndose en abanico
-    [[10,18,0,4],[10,18,4,13],[10,18,2,22]].forEach(([x1,y1,x2,y2]) => {
+    // mano: 3 dedos cortos y gorditos, en abanico
+    [[20,12,14,6],[20,12,15,13],[20,12,15,19]].forEach(([x1,y1,x2,y2]) => {
       const dedo = document.createElementNS(ns, 'path');
       dedo.setAttribute('d', `M${x1} ${y1} L${x2} ${y2}`);
       svg.appendChild(dedo);
@@ -239,20 +239,22 @@ function crearGlobo(nombre, tam) {
   // Pata + pie de 3 dedos (pata de pollo), una a cada lado, debajo del globo
   function crearPata(lado) {
     const ns = 'http://www.w3.org/2000/svg';
-    const anchoSvg = tam * 0.30, altoSvg = tam * 0.30;
+    const anchoSvg = tam * 0.24, altoSvg = tam * 0.22;
     const svg = document.createElementNS(ns, 'svg');
-    svg.setAttribute('viewBox', '0 0 30 30');
+    svg.setAttribute('viewBox', '0 0 24 22');
     svg.setAttribute('class', 'globo-extremidad');
     svg.style.width = anchoSvg + 'px';
     svg.style.height = altoSvg + 'px';
-    svg.style.top = (tam * 1.08) + 'px';
-    if (lado === 'izq') svg.style.left = (tam * 0.18) + 'px';
-    else { svg.style.right = (tam * 0.18) + 'px'; svg.style.transform = 'scaleX(-1)'; }
+    svg.style.top = (tam * 1.02) + 'px';
+    if (lado === 'izq') svg.style.left = (tam * 0.20) + 'px';
+    else { svg.style.right = (tam * 0.20) + 'px'; svg.style.transform = 'scaleX(-1)'; }
 
+    // pata casi inexistente: solo lo justo para unir cuerpo y pie
     const pierna = document.createElementNS(ns, 'path');
-    pierna.setAttribute('d', 'M15 0 L15 16');
+    pierna.setAttribute('d', 'M12 0 L12 6');
     svg.appendChild(pierna);
-    [[15,16,4,26],[15,16,15,29],[15,16,25,25]].forEach(([x1,y1,x2,y2]) => {
+    // pie: 3 deditos cortos y gorditos, tipo pata de pollo
+    [[12,6,6,13],[12,6,12,16],[12,6,18,13]].forEach(([x1,y1,x2,y2]) => {
       const dedo = document.createElementNS(ns, 'path');
       dedo.setAttribute('d', `M${x1} ${y1} L${x2} ${y2}`);
       svg.appendChild(dedo);
@@ -266,7 +268,7 @@ function crearGlobo(nombre, tam) {
   nombreEl.className = 'globo-nombre';
   nombreEl.style.fontSize = (tam * 0.20) + 'px';
   nombreEl.style.marginTop = (tam * 0.10) + 'px';
-  nombreEl.textContent = nombre.substring(0, 6);
+  nombreEl.textContent = nombre.substring(0, 7);
 
   globo.appendChild(ojos);
   globo.appendChild(nombreEl);
