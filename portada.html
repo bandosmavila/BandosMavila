@@ -66,14 +66,17 @@
     50%      { transform: translate(-50%, -50%) translateY(-6%) rotate(2deg); }
   }
   .globo {
-    border-radius: 50% 50% 50% 50% / 55% 55% 45% 45%;
     position: relative; display: flex; flex-direction: column;
     align-items: center; justify-content: center;
+  }
+  .globo-cuerpo {
+    position: absolute; inset: 0;
+    border-radius: 50% 50% 50% 50% / 55% 55% 45% 45%;
     box-shadow: 0 6px 12px rgba(0,0,0,0.4), inset 0 -10px 14px rgba(0,0,0,0.28);
-    overflow: hidden;
+    overflow: hidden; z-index: 0;
   }
   /* brillo tipo esfera, arriba-izquierda */
-  .globo::before {
+  .globo-cuerpo::before {
     content: '';
     position: absolute; top: 8%; left: 14%;
     width: 55%; height: 45%;
@@ -81,20 +84,13 @@
     border-radius: 50%;
     pointer-events: none; z-index: 3;
   }
-  /* hilo del globo */
-  .globo::after {
-    content: ''; position: absolute; bottom: -8px; left: 50%;
-    transform: translateX(-50%);
-    width: 2px; height: 10px; background: rgba(255,255,255,0.5);
-  }
-  .globo-ojos { display: flex; z-index: 2; }
+  .globo-ojos { display: flex; position: relative; z-index: 2; }
   .globo-ojos span { background: var(--tinta); border-radius: 50%; display: block; }
-  .globo-mano {
-    position: absolute; background: inherit; border-radius: 4px; z-index: 1;
-    box-shadow: inset 0 -4px 6px rgba(0,0,0,0.25);
+  .globo-extremidad {
+    position: absolute; z-index: 1; pointer-events: none;
+    stroke: white; stroke-width: 2.2; stroke-linecap: round; fill: none;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35));
   }
-  .globo-mano-izq { left: -18%; }
-  .globo-mano-der { right: -18%; }
   .globo-nombre {
     position: relative; z-index: 2;
     font-weight: 700; text-align: center; line-height: 1;
@@ -196,7 +192,11 @@ function crearGlobo(nombre, tam) {
   globo.className = 'globo';
   globo.style.width = tam + 'px';
   globo.style.height = (tam * 1.15) + 'px';
-  globo.style.background = fondo;
+
+  const cuerpo = document.createElement('div');
+  cuerpo.className = 'globo-cuerpo';
+  cuerpo.style.background = fondo;
+  globo.appendChild(cuerpo);
 
   const ojos = document.createElement('div');
   ojos.className = 'globo-ojos';
@@ -208,17 +208,59 @@ function crearGlobo(nombre, tam) {
     ojos.appendChild(ojo);
   }
 
-  const manoIzq = document.createElement('div');
-  manoIzq.className = 'globo-mano globo-mano-izq';
-  manoIzq.style.width = (tam * 0.26) + 'px';
-  manoIzq.style.height = (tam * 0.11) + 'px';
-  manoIzq.style.top = (tam * 0.48) + 'px';
+  // Brazo + mano de 3 dedos (SVG), uno a cada lado
+  function crearBrazo(lado) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const anchoSvg = tam * 0.42, altoSvg = tam * 0.4;
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 42 40');
+    svg.setAttribute('class', 'globo-extremidad');
+    svg.style.width = anchoSvg + 'px';
+    svg.style.height = altoSvg + 'px';
+    svg.style.top = (tam * 0.40) + 'px';
+    if (lado === 'izq') svg.style.left = -(anchoSvg * 0.78) + 'px';
+    else { svg.style.right = -(anchoSvg * 0.78) + 'px'; svg.style.transform = 'scaleX(-1)'; }
 
-  const manoDer = document.createElement('div');
-  manoDer.className = 'globo-mano globo-mano-der';
-  manoDer.style.width = (tam * 0.26) + 'px';
-  manoDer.style.height = (tam * 0.11) + 'px';
-  manoDer.style.top = (tam * 0.48) + 'px';
+    // brazo: línea desde el cuerpo hasta la mano
+    const brazo = document.createElementNS(ns, 'path');
+    brazo.setAttribute('d', 'M40 8 L10 18');
+    svg.appendChild(brazo);
+    // mano: 3 dedos cortos abriéndose en abanico
+    [[10,18,0,4],[10,18,4,13],[10,18,2,22]].forEach(([x1,y1,x2,y2]) => {
+      const dedo = document.createElementNS(ns, 'path');
+      dedo.setAttribute('d', `M${x1} ${y1} L${x2} ${y2}`);
+      svg.appendChild(dedo);
+    });
+    return svg;
+  }
+  globo.appendChild(crearBrazo('izq'));
+  globo.appendChild(crearBrazo('der'));
+
+  // Pata + pie de 3 dedos (pata de pollo), una a cada lado, debajo del globo
+  function crearPata(lado) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const anchoSvg = tam * 0.30, altoSvg = tam * 0.30;
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 30 30');
+    svg.setAttribute('class', 'globo-extremidad');
+    svg.style.width = anchoSvg + 'px';
+    svg.style.height = altoSvg + 'px';
+    svg.style.top = (tam * 1.08) + 'px';
+    if (lado === 'izq') svg.style.left = (tam * 0.18) + 'px';
+    else { svg.style.right = (tam * 0.18) + 'px'; svg.style.transform = 'scaleX(-1)'; }
+
+    const pierna = document.createElementNS(ns, 'path');
+    pierna.setAttribute('d', 'M15 0 L15 16');
+    svg.appendChild(pierna);
+    [[15,16,4,26],[15,16,15,29],[15,16,25,25]].forEach(([x1,y1,x2,y2]) => {
+      const dedo = document.createElementNS(ns, 'path');
+      dedo.setAttribute('d', `M${x1} ${y1} L${x2} ${y2}`);
+      svg.appendChild(dedo);
+    });
+    return svg;
+  }
+  globo.appendChild(crearPata('izq'));
+  globo.appendChild(crearPata('der'));
 
   const nombreEl = document.createElement('div');
   nombreEl.className = 'globo-nombre';
@@ -227,8 +269,6 @@ function crearGlobo(nombre, tam) {
   nombreEl.textContent = nombre.substring(0, 6);
 
   globo.appendChild(ojos);
-  globo.appendChild(manoIzq);
-  globo.appendChild(manoDer);
   globo.appendChild(nombreEl);
   wrap.appendChild(globo);
   return wrap;
