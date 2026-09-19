@@ -131,6 +131,8 @@ function parsearConfig(rows) {
   config.jugadores = jugadores;
   return config;
 }
+
+
 function generarChecklist(config, paganinisRows) {
   const ahora = new Date();
   const avisos = [];
@@ -469,6 +471,18 @@ async function init() {
       <div class="card">
         <div class="card-header">PRONÓSTICOS COMPLETOS (para jugar)</div>
         <div class="card-body">${htmlTablaPron}</div>
+      </div>
+      <div class="card">
+        <div class="card-header">Tareas manuales de la semana</div>
+        <div class="card-body" style="padding:16px; font-size:14px; line-height:1.6;">
+          <ol style="margin:0; padding-left:20px;">
+            <li>Rellenar <strong>COMPROBADOR</strong> (Lotería, Quiniela, reintegros) en OP_Claude</li>
+            <li>Registrar premios de Quiniela, si los hay</li>
+            <li>Traspasar la semana a <strong>Operaciones</strong> (normalmente martes)</li>
+            <li>Jugar el boleto físico de Quiniela (mira el reloj de arriba)</li>
+            <li>Jugar los números fijos de Primitiva/Bonoloto/Euromillón (y Lotería, si toca)</li>
+          </ol>
+        </div>
       </div>
     `;
 
