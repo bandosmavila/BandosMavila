@@ -453,10 +453,13 @@
     color: var(--gris);
   }
   .progreso-info strong { color: var(--tinta); }
-
-  .numero-fijo-linea { padding: 8px 0; border-bottom: 1px solid #f0ede6; font-size: 14px; }
+  
+  .progreso-proxima { margin-top: 10px; font-size: 12px; color: var(--gris); }
+  
+  .numero-fijo-linea { padding: 10px 0; border-bottom: 1px solid #f0ede6; }
   .numero-fijo-linea:last-child { border-bottom: none; }
-  .numero-fijo-linea strong { display: block; font-size: 11px; letter-spacing: 0.5px; color: var(--gris); margin-bottom: 2px; }
+  .numero-fijo-linea strong { display: block; font-size: 11px; letter-spacing: 0.5px; color: var(--gris); margin-bottom: 4px; }
+  .numero-fijo-valor { font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 600; letter-spacing: 1px; color: var(--tinta); }
 
   /* JORNADA ACTUAL INFO */
   .jornada-info {
@@ -638,6 +641,7 @@
         <div class="progreso-bar">
           <div class="progreso-fill" id="ini-barra" style="width:0%"></div>
         </div>
+        <div class="progreso-proxima" id="ini-proxima-linea"></div>
       </div>
     </div>
 
@@ -650,12 +654,6 @@
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-header">Próxima jornada</div>
-      <div class="card-body" id="ini-proxima">
-        <div class="loading"><div class="spinner"></div>Cargando...</div>
-      </div>
-    </div>
     <div class="card">
       <div class="card-header">Nuestros números fijos</div>
       <div class="card-body" id="ini-numeros-fijos">
@@ -980,13 +978,11 @@ function parsearConfig(rows) {
 // JORNADAS QUE SE JUEGAN, Y CUÁL TOCA AHORA (sin depender de Config)
 // ============================================================
 function calendarioActivo(calendario) {
-  // Solo las jornadas de CalendarioQuiniela que incluyen Primera, ordenadas
   return calendario
     .filter(r => String(r[3]).toUpperCase() === 'TRUE')
-    .map(r => ({ jornada: parseInt(r[0]), ligaPrimera: r[2] || '', dobles: r[4] !== '' && r[4] !== undefined ? r[4] : null }))
+    .map(r => ({ jornada: parseInt(r[0]), fecha: r[1] || '', ligaPrimera: r[2] || '', dobles: r[4] !== '' && r[4] !== undefined ? r[4] : null }))
     .sort((a, b) => a.jornada - b.jornada);
 }
-
 function calcularJornadaActual(jornadas) {
   // La primera (más baja) jornada con partidos pero sin sus 15 resultados aún
   const porJornada = {};
@@ -1024,16 +1020,17 @@ function calcularJornadaMostrar(jornadasRows, calendarioCierreRows, fechasCierre
 function mostrarNumerosFijos(config) {
   const html = `
     <div class="numero-fijo-linea"><strong>PRIMITIVA</strong>
-      ${config['Primitiva Serie 1'] || '-'}<br>${config['Primitiva Serie 2'] || '-'}
+      <div class="numero-fijo-valor">${config['Primitiva Serie 1'] || '-'}</div>
+      <div class="numero-fijo-valor">${config['Primitiva Serie 2'] || '-'}</div>
     </div>
     <div class="numero-fijo-linea"><strong>BONOLOTO</strong>
-      ${config['Bonoloto'] || '-'}
+      <div class="numero-fijo-valor">${config['Bonoloto'] || '-'}</div>
     </div>
     <div class="numero-fijo-linea"><strong>EUROMILLÓN</strong>
-      ${config['Euromillon'] || '-'} &nbsp;|&nbsp; Estrellas: ${config['Euromillon Estrellas'] || '-'}
+      <div class="numero-fijo-valor">${config['Euromillon'] || '-'} &nbsp;|&nbsp; Estrellas: ${config['Euromillon Estrellas'] || '-'}</div>
     </div>
     <div class="numero-fijo-linea"><strong>LOTERÍA</strong>
-      ${config['Loteria'] || 'Aleatorio'}
+      <div class="numero-fijo-valor">${config['Loteria'] || 'Aleatorio'}</div>
     </div>
   `;
   document.getElementById('ini-numeros-fijos').innerHTML = html;
@@ -1078,17 +1075,13 @@ async function cargarInicio(config, clasif, jornadas, calendario, calendarioCier
   html += '</tbody>';
   document.getElementById('ini-top5').innerHTML = html;
 
-  const filasJornada = proxima ? jornadas.filter(r => parseInt(r[0]) === proxima.jornada) : [];
-  if (filasJornada.length === 0) {
-    document.getElementById('ini-proxima').innerHTML = '<div class="loading">Sin datos de jornada</div>';
+  const elProxima = document.getElementById('ini-proxima-linea');
+  if (proxima) {
+    elProxima.textContent = 'Próxima: Jornada ' + proxima.jornada + ' (Quiniela)' +
+      (proxima.ligaPrimera ? ' · Liga 1ª: Jornada ' + proxima.ligaPrimera : '') +
+      (proxima.fecha ? ' · ' + proxima.fecha : '');
   } else {
-    const etiqueta = 'Jornada ' + proxima.jornada +
-      (proxima.ligaPrimera ? ' (Liga 1ª: Jornada ' + proxima.ligaPrimera + ')' : '');
-    let htmlProxima = `<div class="jornada-info"><span>${etiqueta}</span><span>${filasJornada.length} partidos</span></div>`;
-    filasJornada.forEach(row => {
-      htmlProxima += `<div class="partido-row"><span class="partido-equipos">${row[2] || ''} — ${row[3] || ''}</span></div>`;
-    });
-    document.getElementById('ini-proxima').innerHTML = htmlProxima;
+    elProxima.textContent = '';
   }
   mostrarNumerosFijos(config);
 }
