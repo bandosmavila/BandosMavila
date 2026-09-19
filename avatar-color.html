@@ -95,6 +95,28 @@
   .emoji-item.mio { border-color: var(--verde); background: #eaf7ee; }
   .estado-linea { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
   .estado-linea strong { font-size: 32px; }
+
+  .preview-globo {
+    width: 110px; height: 126px; margin: 0 auto 12px;
+    border-radius: 50% 50% 50% 50% / 55% 55% 45% 45%;
+    position: relative; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3); overflow: hidden;
+  }
+  .preview-ojos { display: flex; gap: 14px; margin-top: -10px; z-index: 2; }
+  .preview-ojos span { width: 9px; height: 9px; background: var(--tinta); border-radius: 50%; display: block; }
+  .preview-nombre {
+    position: absolute; bottom: 14px; left: 0; right: 0; text-align: center;
+    font-weight: 700; font-size: 13px;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+  }
+  .preview-emoji-grande { font-size: 80px; text-align: center; margin-bottom: 8px; }
+  .preview-botones { display: flex; gap: 10px; margin-top: 12px; }
+  .preview-botones button {
+    flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;
+    font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 0.5px;
+  }
+  .btn-confirmar { background: var(--verde); color: white; }
+  .btn-otro { background: var(--borde); color: var(--tinta); }
 </style>
 </head>
 <body>
@@ -140,8 +162,18 @@ const EMOJIS = [
 const params = new URLSearchParams(window.location.search);
 let JUGADOR = (params.get('jugador') || localStorage.getItem('bandosmavila_jugador') || '').toUpperCase();
 
+const ESTILO_EQUIPO = {
+  'ATLÉTICO': 'repeating-linear-gradient(90deg, #cb3524 0px, #cb3524 18%, #ffffff 18%, #ffffff 36%)',
+  'ATLETICO': 'repeating-linear-gradient(90deg, #cb3524 0px, #cb3524 18%, #ffffff 18%, #ffffff 36%)',
+  'BARCELONA': 'repeating-linear-gradient(90deg, #a50044 0px, #a50044 18%, #004d98 18%, #004d98 36%)',
+  'MADRID': '#f4f4f4',
+  'LAS PALMAS': '#ffd500',
+};
+
 let listaCompleta = [];
 let miDato = null;
+let previewTipo = null;
+let previewValor = null;
 
 function elegirJugador(nombre) {
   JUGADOR = nombre;
@@ -195,6 +227,34 @@ function mostrarSelector() {
   document.getElementById('contenido').innerHTML = html;
 }
 
+function fondoEquipo(equipo) {
+  return ESTILO_EQUIPO[String(equipo || '').trim().toUpperCase()] || '#cccccc';
+}
+
+function pintarPreview() {
+  if (!previewTipo) return '';
+  let contenidoPreview = '';
+  if (previewTipo === 'emoji') {
+    contenidoPreview = `<div class="preview-emoji-grande">${previewValor}</div>`;
+  } else {
+    contenidoPreview = `<div class="preview-globo" style="background:${fondoEquipo(miDato.equipo)}">
+      <div class="preview-ojos"><span></span><span></span></div>
+      <div class="preview-nombre" style="color:${COLORES.find(c=>c.nombre===previewValor).hex}">${JUGADOR}</div>
+    </div>`;
+  }
+  return `<div class="card">
+    <div class="card-header">VISTA PREVIA</div>
+    <div class="card-body">
+      ${contenidoPreview}
+      <div style="text-align:center; font-size:13px; color:var(--gris); margin-bottom:4px;">${previewTipo === 'emoji' ? 'Tu emoji sería este' : 'Así quedaría tu nombre: "' + previewValor + '"'}</div>
+      <div class="preview-botones">
+        <button class="btn-otro" onclick="cancelarPreview()">Elegir otro</button>
+        <button class="btn-confirmar" onclick="confirmarEleccion()">Confirmar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
 function pintar() {
   const colorTomadoPor = {};
   const emojiTomadoPor = {};
@@ -207,23 +267,25 @@ function pintar() {
     <div class="card-header">TU ESTADO ACTUAL</div>
     <div class="card-body">
       <div class="estado-linea"><span>Equipo</span><span>${miDato.equipo || '—'}</span></div>
-      <div class="estado-linea"><span>Color</span><span>${miDato.color || 'Sin elegir (globo por defecto)'}</span></div>
-      <div class="estado-linea"><span>Emoji</span><strong>${miDato.emoji || '—'}</strong></div>
+      <div class="estado-linea"><span>Color de tu nombre</span><span>${miDato.color || 'Sin elegir'}</span></div>
+      <div class="estado-linea"><span>Emoji (sustituye al globo)</span><strong>${miDato.emoji || '—'}</strong></div>
     </div>
   </div>`;
+
+  html += pintarPreview();
 
   // COLOR
   html += `<div class="card"><div class="card-header">TU COLOR</div><div class="card-body">`;
   if (miDato.color) {
     html += `<div class="aviso ok">Ya elegiste tu color: <strong>${miDato.color}</strong>. No se puede cambiar.</div>`;
   } else {
-    html += `<div class="aviso">Elige un color para tu globo. Una vez confirmado, no podrás cambiarlo.</div><div class="paleta">`;
+    html += `<div class="aviso">Este color no sustituye tu camiseta — sigues llevando la de tu equipo. Es solo el color en el que se escribe tu nombre, para distinguirte de tus compañeros de equipo. Toca uno para ver cómo queda antes de confirmar.</div><div class="paleta">`;
     COLORES.forEach(c => {
       const ocupadoPor = colorTomadoPor[c.nombre];
       const ocupado = !!ocupadoPor;
       html += `<div class="color-item ${ocupado ? 'ocupado' : ''}" style="background:${c.hex}"
         title="${ocupado ? c.nombre + ' — ya elegido por ' + ocupadoPor : c.nombre}"
-        onclick="${ocupado ? '' : `elegirColor('${c.nombre}')`}">${c.nombre}</div>`;
+        onclick="${ocupado ? '' : `previsualizarColor('${c.nombre}')`}">${c.nombre}</div>`;
     });
     html += `</div>`;
   }
@@ -234,13 +296,13 @@ function pintar() {
   if (miDato.emoji) {
     html += `<div class="aviso ok">Ya elegiste tu emoji: <strong>${miDato.emoji}</strong>. No se puede cambiar.</div>`;
   } else {
-    html += `<div class="aviso">Si eliges un emoji, sustituye por completo al globo con camiseta. Es opcional — si no eliges nada, te quedas con el globo de tu equipo. Una vez confirmado, no se puede cambiar.</div><div class="emojis">`;
+    html += `<div class="aviso">Si eliges un emoji, sustituye por completo al globo con camiseta. Es opcional — si no eliges nada, te quedas con el globo de tu equipo. Toca uno para verlo grande antes de confirmar.</div><div class="emojis">`;
     EMOJIS.forEach(e => {
       const ocupadoPor = emojiTomadoPor[e];
       const ocupado = !!ocupadoPor;
       html += `<div class="emoji-item ${ocupado ? 'ocupado' : ''}"
         title="${ocupado ? 'Ya elegido por ' + ocupadoPor : ''}"
-        onclick="${ocupado ? '' : `elegirEmoji('${e}')`}">${e}</div>`;
+        onclick="${ocupado ? '' : `previsualizarEmoji('${e}')`}">${e}</div>`;
     });
     html += `</div>`;
   }
@@ -249,14 +311,32 @@ function pintar() {
   document.getElementById('contenido').innerHTML = html;
 }
 
-async function elegirColor(nombre) {
-  if (!confirm('¿Confirmas "' + nombre + '" como tu color? No podrás cambiarlo después.')) return;
-  await guardar('color', nombre);
+function previsualizarColor(nombre) {
+  previewTipo = 'color';
+  previewValor = nombre;
+  pintar();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-async function elegirEmoji(emoji) {
-  if (!confirm('¿Confirmas ' + emoji + ' como tu avatar? Sustituirá a tu globo, y no podrás cambiarlo después.')) return;
-  await guardar('emoji', emoji);
+function previsualizarEmoji(emoji) {
+  previewTipo = 'emoji';
+  previewValor = emoji;
+  pintar();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelarPreview() {
+  previewTipo = null;
+  previewValor = null;
+  pintar();
+}
+
+async function confirmarEleccion() {
+  const tipo = previewTipo, valor = previewValor;
+  if (!confirm('¿Confirmas del todo? No podrás cambiarlo después.')) return;
+  previewTipo = null;
+  previewValor = null;
+  await guardar(tipo, valor);
 }
 
 async function guardar(tipo, valor) {
