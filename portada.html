@@ -173,6 +173,34 @@ function haloParaColor(hex) {
   return `-1px -1px 0 ${borde}, 1px -1px 0 ${borde}, -1px 1px 0 ${borde}, 1px 1px 0 ${borde}, 0 0 4px ${halo}`;
 }
 
+function numOp(v) {
+  return parseFloat(String(v || '0').replace(',', '.')) || 0;
+}
+
+function calcularCandidatosGranFinal(clasif, campeonesRows) {
+  const camp1 = campeonesRows.find(r => String(r[1]) === '1');
+  const camp2 = campeonesRows.find(r => String(r[1]) === '2');
+  const hayVuelta2Definitiva = !!camp2;
+
+  function maxPorCriterio(filas, obtenerValor) {
+    if (filas.length === 0) return { nombres: [], valor: 0 };
+    const valorMax = Math.max(...filas.map(obtenerValor));
+    return { nombres: filas.filter(r => obtenerValor(r) === valorMax).map(r => (r[1] || '').toUpperCase()) };
+  }
+
+  const activos = clasif.filter(r => (r[5] || '').toLowerCase() !== 'eliminado');
+  const camp2Provisional = maxPorCriterio(activos, r => numOp(r[2]));
+  const mejorAciertos = maxPorCriterio(clasif, r => numOp(r[2]));
+  const mejorPremios = maxPorCriterio(clasif, r => numOp(r[4]));
+
+  return [
+    { nombres: camp1 ? [String(camp1[2] || '').toUpperCase()] : [], definitivo: !!camp1 },
+    { nombres: hayVuelta2Definitiva ? [String(camp2[2] || '').toUpperCase()] : camp2Provisional.nombres, definitivo: hayVuelta2Definitiva },
+    { nombres: mejorAciertos.nombres, definitivo: hayVuelta2Definitiva },
+    { nombres: mejorPremios.nombres, definitivo: hayVuelta2Definitiva },
+  ];
+}
+
 async function leerHoja(nombre) {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${nombre}?key=${API_KEY}`;
   const res = await fetch(url);
@@ -313,21 +341,25 @@ function mezclarPorEquipo(lista) {
   return resultado;
 }
 
-function colocarOrla(nombresOrdenados) {
+function colocarOrla(grupoDefinitivo, grupoProvisional, grupoResto) {
   const orla = document.getElementById('orla');
   const w = orla.clientWidth, h = orla.clientHeight;
   const cx = w / 2, cy = h / 2;
 
+  // El centro (radio 0) solo tiene sentido con 1 persona; si hay más de una con mérito
+  // "definitivo" a la vez, se reparten en un anillo pequeño para no solaparse.
+  const radioDefinitivo = grupoDefinitivo.length > 1 ? Math.min(w, h) * 0.14 : 0;
+
   const anillos = [
-    { radio: 0,               gente: nombresOrdenados.slice(0, 1),               tam: w * 0.26 },
-    { radio: Math.min(w,h)*0.30, gente: mezclarPorEquipo(nombresOrdenados.slice(1, 5)), tam: w * 0.20 },
-    { radio: Math.min(w,h)*0.46, gente: mezclarPorEquipo(nombresOrdenados.slice(5)),    tam: w * 0.155 },
+    { radio: radioDefinitivo,     gente: mezclarPorEquipo(grupoDefinitivo),  tam: w * 0.26 },
+    { radio: Math.min(w,h)*0.30, gente: mezclarPorEquipo(grupoProvisional), tam: w * 0.20 },
+    { radio: Math.min(w,h)*0.46, gente: mezclarPorEquipo(grupoResto),       tam: w * 0.155 },
   ];
 
   anillos.forEach((anillo, ai) => {
     const n = anillo.gente.length;
     anillo.gente.forEach((nombre, i) => {
-      const angulo = (ai === 0) ? 0 : (Math.PI * 2 * i / n) - Math.PI / 2 + (ai === 2 ? 0.3 : 0);
+      const angulo = (ai === 0 && n === 1) ? 0 : (Math.PI * 2 * i / n) - Math.PI / 2 + (ai === 2 ? 0.3 : 0);
       const x = cx + anillo.radio * Math.cos(angulo);
       const y = cy + anillo.radio * Math.sin(angulo) * 0.85;
 
@@ -341,10 +373,20 @@ function colocarOrla(nombresOrdenados) {
 
 async function init() {
   try {
-    const clasifRows = await leerHoja('Clasificacion');
+    const [clasifRows, campeonesRows] = await Promise.all([
+      leerHoja('Clasificacion'),
+      leerHoja('Campeones'),
+    ]);
     const clasif = clasifRows.slice(1).filter(r => r[1]);
     const nombresOrdenados = clasif.map(r => String(r[1]).trim().toUpperCase());
-    colocarOrla(nombresOrdenados);
+
+    const candidatos = calcularCandidatosGranFinal(clasif, campeonesRows.slice(1));
+    const grupoDefinitivo = [...new Set(candidatos.filter(c => c.definitivo).flatMap(c => c.nombres))];
+    const grupoProvisional = [...new Set(candidatos.filter(c => !c.definitivo).flatMap(c => c.nombres))]
+      .filter(n => !grupoDefinitivo.includes(n));
+    const grupoResto = nombresOrdenados.filter(n => !grupoDefinitivo.includes(n) && !grupoProvisional.includes(n));
+
+    colocarOrla(grupoDefinitivo, grupoProvisional, grupoResto);
   } catch (e) {
     document.getElementById('orla').innerHTML = `<div style="text-align:center; padding-top:40px; opacity:0.8;">Error cargando Clasificación: ${e}</div>`;
   }
