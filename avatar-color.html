@@ -109,7 +109,13 @@
     font-weight: 700; font-size: 13px;
     text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
   }
-  .preview-emoji-grande { font-size: 80px; text-align: center; margin-bottom: 8px; }
+  .preview-emoji-grande { font-size: 80px; text-align: center; margin-bottom: 4px; }
+  .preview-pedestal {
+    display: inline-block; margin: 0 auto 8px; padding: 3px 14px;
+    background: var(--tinta); color: white; border-radius: 20px;
+    font-weight: 700; font-size: 13px;
+  }
+  .preview-pedestal-wrap { text-align: center; }
   .preview-botones { display: flex; gap: 10px; margin-top: 12px; }
   .preview-botones button {
     flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;
@@ -235,7 +241,8 @@ function pintarPreview() {
   if (!previewTipo) return '';
   let contenidoPreview = '';
   if (previewTipo === 'emoji') {
-    contenidoPreview = `<div class="preview-emoji-grande">${previewValor}</div>`;
+    contenidoPreview = `<div class="preview-emoji-grande">${previewValor}</div>
+      <div class="preview-pedestal-wrap"><span class="preview-pedestal">${JUGADOR}</span></div>`;
   } else {
     contenidoPreview = `<div class="preview-globo" style="background:${fondoEquipo(miDato.equipo)}">
       <div class="preview-ojos"><span></span><span></span></div>
