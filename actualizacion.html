@@ -456,7 +456,7 @@
   
   .progreso-proxima { margin-top: 10px; font-size: 12px; color: var(--gris); }
   
-  .numero-fijo-linea { padding: 10px 0; border-bottom: 1px solid #f0ede6; }
+  .numero-fijo-linea { padding: 10px 16px; border-bottom: 1px solid #f0ede6; }
   .numero-fijo-linea:last-child { border-bottom: none; }
   .numero-fijo-linea strong { display: block; font-size: 11px; letter-spacing: 0.5px; color: var(--gris); margin-bottom: 4px; }
   .numero-fijo-valor { font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 600; letter-spacing: 1px; color: var(--tinta); }
@@ -635,7 +635,7 @@
       </div>
       <div class="card-body">
         <div class="progreso-info">
-          <span>Jornada actual <strong id="ini-jornada">-</strong></span>
+          <span>Jornada actual <strong id="ini-jornada">-</strong> <span id="ini-jornada-liga" style="font-size:12px; color:var(--gris); font-weight:400;"></span></span>
           <span>Jugadas <strong id="ini-jugadas">-</strong> de <strong id="ini-total">-</strong></span>
         </div>
         <div class="progreso-bar">
@@ -1051,6 +1051,9 @@ async function cargarInicio(config, clasif, jornadas, calendario, calendarioCier
 
   const pct = jTotal ? Math.round((jugadas / jTotal) * 100) : 0;
   document.getElementById('ini-jornada').textContent = jornadaActual !== null ? jornadaActual : '-';
+  const filaActual = jornadaActual !== null ? calendario.find(r => parseInt(r[0]) === jornadaActual) : null;
+  const ligaActual = filaActual ? (filaActual[2] || '') : '';
+  document.getElementById('ini-jornada-liga').textContent = ligaActual ? `(Liga 1ª: ${ligaActual})` : '';
   document.getElementById('ini-jugadas').textContent = jugadas;
   document.getElementById('ini-total').textContent = jTotal || '-';
   document.getElementById('ini-barra').style.width = pct + '%';
