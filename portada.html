@@ -341,33 +341,49 @@ function mezclarPorEquipo(lista) {
   return resultado;
 }
 
-function colocarOrla(grupoDefinitivo, grupoProvisional, grupoResto) {
+// Posiciones fijas (1 centro + 4 anillo intermedio + 9 anillo exterior), como fracción
+// del tamaño del contenedor — completamente independientes de quién ocupe cada una.
+// Preparado para poder añadir otras "formas" (triángulo, cuadrado...) más adelante,
+// alternando cuál se usa según el mes; hoy solo existe 'circulo'.
+function posicionesForma(nombreForma, w, h) {
+  const cx = w / 2, cy = h / 2;
+  const posiciones = [{ x: cx, y: cy }]; // slot 0: centro
+
+  const radioIntermedio = Math.min(w, h) * 0.30;
+  for (let i = 0; i < 4; i++) {
+    const angulo = (Math.PI * 2 * i / 4) - Math.PI / 2;
+    posiciones.push({ x: cx + radioIntermedio * Math.cos(angulo), y: cy + radioIntermedio * Math.sin(angulo) * 0.85 });
+  }
+
+  const radioExterior = Math.min(w, h) * 0.46;
+  for (let i = 0; i < 9; i++) {
+    const angulo = (Math.PI * 2 * i / 9) - Math.PI / 2 + 0.3;
+    posiciones.push({ x: cx + radioExterior * Math.cos(angulo), y: cy + radioExterior * Math.sin(angulo) * 0.85 });
+  }
+  return posiciones; // 14 posiciones en total
+}
+
+function colocarOrla(ordenPorMerito) {
   const orla = document.getElementById('orla');
   const w = orla.clientWidth, h = orla.clientHeight;
-  const cx = w / 2, cy = h / 2;
 
-  // El centro (radio 0) solo tiene sentido con 1 persona; si hay más de una con mérito
-  // "definitivo" a la vez, se reparten en un anillo pequeño para no solaparse.
-  const radioDefinitivo = grupoDefinitivo.length > 1 ? Math.min(w, h) * 0.14 : 0;
+  // El tamaño depende solo del mérito (puesto 1 al 14 de la lista recibida)
+  const tamMax = w * 0.26, tamMin = w * 0.13;
+  const tamPorNombre = {};
+  ordenPorMerito.forEach((nombre, rank) => {
+    tamPorNombre[nombre] = tamMax - (rank / (ordenPorMerito.length - 1)) * (tamMax - tamMin);
+  });
 
-  const anillos = [
-    { radio: radioDefinitivo,     gente: mezclarPorEquipo(grupoDefinitivo),  tam: w * 0.26 },
-    { radio: Math.min(w,h)*0.30, gente: mezclarPorEquipo(grupoProvisional), tam: w * 0.20 },
-    { radio: Math.min(w,h)*0.46, gente: mezclarPorEquipo(grupoResto),       tam: w * 0.155 },
-  ];
+  // La posición depende solo de mezclar equipos, nunca del mérito
+  const ordenMezclado = mezclarPorEquipo(ordenPorMerito);
+  const posiciones = posicionesForma('circulo', w, h);
 
-  anillos.forEach((anillo, ai) => {
-    const n = anillo.gente.length;
-    anillo.gente.forEach((nombre, i) => {
-      const angulo = (ai === 0 && n === 1) ? 0 : (Math.PI * 2 * i / n) - Math.PI / 2 + (ai === 2 ? 0.3 : 0);
-      const x = cx + anillo.radio * Math.cos(angulo);
-      const y = cy + anillo.radio * Math.sin(angulo) * 0.85;
-
-      const globo = crearGlobo(nombre, anillo.tam);
-      globo.style.left = x + 'px';
-      globo.style.top = y + 'px';
-      orla.appendChild(globo);
-    });
+  ordenMezclado.forEach((nombre, i) => {
+    const pos = posiciones[i] || posiciones[posiciones.length - 1];
+    const globo = crearGlobo(nombre, tamPorNombre[nombre]);
+    globo.style.left = pos.x + 'px';
+    globo.style.top = pos.y + 'px';
+    orla.appendChild(globo);
   });
 }
 
@@ -386,7 +402,10 @@ async function init() {
       .filter(n => !grupoDefinitivo.includes(n));
     const grupoResto = nombresOrdenados.filter(n => !grupoDefinitivo.includes(n) && !grupoProvisional.includes(n));
 
-    colocarOrla(grupoDefinitivo, grupoProvisional, grupoResto);
+    // Orden único de mérito, 1º (más grande) al 14º (más pequeño): primero quien tenga
+    // algo ya definitivo, luego quien lidere algo provisional, luego el resto por Clasificación.
+    const ordenPorMerito = [...grupoDefinitivo, ...grupoProvisional, ...grupoResto];
+    colocarOrla(ordenPorMerito);
   } catch (e) {
     document.getElementById('orla').innerHTML = `<div style="text-align:center; padding-top:40px; opacity:0.8;">Error cargando Clasificación: ${e}</div>`;
   }
