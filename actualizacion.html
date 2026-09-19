@@ -613,6 +613,12 @@
 .calendario-volver { background: var(--gris); }
 .calendario-selector { display: flex; gap: 20px; align-items: center; font-size: 14px; flex-wrap: wrap; }
 
+.aviso-provisional {
+  background: #fff3e0; border-left: 4px solid #e67e22; border-radius: 8px;
+  padding: 12px 16px; margin-bottom: 16px; font-size: 14px; color: #7a4a00;
+}
+.aviso-provisional strong { color: #c0392b; }
+
 </style>
 </head>
 <body>
@@ -692,7 +698,9 @@
           <div class="loading"><div class="spinner"></div>Cargando...</div>
         </div>
       </div>
-
+      
+      <div id="jor-eliminado-provisional" style="display:none;"></div>
+      
       <div class="card">
         <div class="card-header">Pronósticos</div>
         <div class="card-body pronos-scroll" id="jor-pronos">
@@ -1184,6 +1192,25 @@ function cargarClasificacion(clasif) {
 }
 let calJugadores = [], calJugadorEliminado = [], calJornadas = [], calMarcadores = [],
     calCalendarioCierre = [], calFechasCierre = [], calActivasTodas = [], calJornadaActualReal = null;
+
+function calcularEliminadoProvisional(clasif) {
+  const activos = clasif.filter(r => (r[5] || '').toString().toLowerCase() !== 'eliminado' && r[1]);
+  if (activos.length === 0) return null;
+
+  const minAciertos = Math.min(...activos.map(r => numOp(r[2])));
+  let candidatos = activos.filter(r => numOp(r[2]) === minAciertos);
+
+  if (candidatos.length > 1) {
+    const minPremios = Math.min(...candidatos.map(r => numOp(r[4])));
+    candidatos = candidatos.filter(r => numOp(r[4]) === minPremios);
+  }
+  if (candidatos.length > 1) {
+    const minP15 = Math.min(...candidatos.map(r => numOp(r[3])));
+    candidatos = candidatos.filter(r => numOp(r[3]) === minP15);
+  }
+  candidatos.sort((a, b) => String(a[1]).localeCompare(String(b[1])));
+  return String(candidatos[0][1]).trim().toUpperCase();
+}
 // ============================================================
 // CARGAR JORNADA
 // ============================================================
@@ -1240,7 +1267,19 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     </div>`;
   });
   document.getElementById('jor-partidos').innerHTML = htmlPartidos;
-  
+  const conResultado = filas.filter(f => f[4]).length;
+  const elEliminadoProv = document.getElementById('jor-eliminado-provisional');
+  if (conResultado >= 8 && conResultado < 15) {
+    const nombreProv = calcularEliminadoProvisional(clasif);
+    if (nombreProv) {
+      elEliminadoProv.style.display = 'block';
+      elEliminadoProv.innerHTML = `<div class="aviso-provisional">⚠️ Si la jornada acabara ahora: <strong>ELIMINADO — ${nombreProv}</strong> <span style="opacity:0.8;">(puede cambiar con los resultados que faltan)</span></div>`;
+    } else {
+      elEliminadoProv.style.display = 'none';
+    }
+  } else {
+    elEliminadoProv.style.display = 'none';
+  }
   // Jugadores y eliminados: se calcula siempre, lo necesitan tanto la jornada
   // actual (si ya cerró) como la jornada anterior (más abajo)
   const jugadores = config.jugadores || [];
