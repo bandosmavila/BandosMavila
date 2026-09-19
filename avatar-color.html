@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi avatar - Bandosmávila</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --verde: #1a6b3c;
+    --verde-claro: #2d9e5f;
+    --crema: #f5f0e8;
+    --tinta: #1a1a1a;
+    --gris: #6b6b6b;
+    --borde: #e0dcd0;
+    --rojo: #c0392b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--crema);
+    color: var(--tinta);
+    margin: 0;
+    padding: 16px;
+  }
+  .header, #contenido {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .header {
+    background: var(--verde);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  .header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    margin: 0;
+    letter-spacing: 1px;
+  }
+  .header p { margin: 4px 0 0; opacity: 0.85; font-size: 14px; }
+  .card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--borde);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .card-header {
+    background: var(--verde);
+    color: white;
+    padding: 12px 16px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 0.5px;
+  }
+  .card-body { padding: 16px; }
+  .aviso {
+    background: #fff8e1;
+    border: 1px solid #f0d878;
+    color: #7a5c00;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-size: 14px;
+  }
+  .aviso.error { background: #fdecea; border-color: #f5b7b1; color: var(--rojo); }
+  .aviso.ok { background: #eaf7ee; border-color: #a8d9b8; color: var(--verde); }
+  .loading, .eliminado-msg { text-align: center; padding: 40px 20px; color: var(--gris); }
+  .partido { padding: 14px 16px; border-bottom: 1px solid #f0ede6; }
+  .partido:last-child { border-bottom: none; }
+  .opcion {
+    text-align: center; padding: 10px 0; border: 2px solid var(--borde); border-radius: 8px;
+    font-weight: 700; cursor: pointer; user-select: none;
+  }
+  .paleta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .color-item {
+    aspect-ratio: 1; border-radius: 10px; cursor: pointer; position: relative;
+    display: flex; align-items: flex-end; justify-content: center;
+    font-size: 10px; color: white; text-shadow: 0 0 3px rgba(0,0,0,0.8); padding-bottom: 4px;
+    border: 2px solid transparent;
+  }
+  .color-item.ocupado { opacity: 0.25; cursor: not-allowed; }
+  .color-item.mio { border-color: var(--tinta); }
+  .emojis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .emoji-item {
+    aspect-ratio: 1; border-radius: 10px; cursor: pointer; background: #f5f0e8;
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+    border: 2px solid transparent;
+  }
+  .emoji-item.ocupado { opacity: 0.25; cursor: not-allowed; }
+  .emoji-item.mio { border-color: var(--verde); background: #eaf7ee; }
+  .estado-linea { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
+  .estado-linea strong { font-size: 32px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>MI AVATAR</h1>
+  <p id="subtitulo">Cargando...</p>
+</div>
+
+<div id="contenido">
+  <div class="loading">Cargando...</div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycby1Kj3flwsFSYUe6-T6iYFh6fNANnFvUxFGzCfWk2RxzZ47-lOSGT-9xNNe-1vPfTKt/exec';
+const CLAVE = 'Ad0lf013';
+
+const COLORES = [
+  { nombre: 'Rojo teja', hex: '#c0392b' },
+  { nombre: 'Naranja', hex: '#e67e22' },
+  { nombre: 'Amarillo', hex: '#f1c40f' },
+  { nombre: 'Verde lima', hex: '#8bc34a' },
+  { nombre: 'Verde azulado', hex: '#16a085' },
+  { nombre: 'Azul', hex: '#2980b9' },
+  { nombre: 'Azul violeta', hex: '#5b6ee1' },
+  { nombre: 'Morado', hex: '#8e44ad' },
+  { nombre: 'Fucsia', hex: '#d81b60' },
+  { nombre: 'Rosa', hex: '#ff6f91' },
+  { nombre: 'Marrón', hex: '#795548' },
+  { nombre: 'Gris azulado', hex: '#607d8b' },
+  { nombre: 'Azul marino', hex: '#34495e' },
+  { nombre: 'Rojo coral', hex: '#e74c3c' },
+  { nombre: 'Turquesa', hex: '#00bcd4' },
+  { nombre: 'Dorado tierra', hex: '#a67c52' },
+];
+
+const EMOJIS = [
+  '🐶','🐱','🦊','🐻','🐼','🐨','🦁','🐯','🐸','🐵','🦄','🐔','🐧','🦉','🐢','🐙',
+  '🐰','🐮','🐷','🐺','🦒','🐘','🦔','🐴',
+  '😎','🤓','😜','🤠','🥳','😴','🤖','👻','🎃','💀','🥸','🤩','😇','🥶','🧐','🤡'
+];
+
+const params = new URLSearchParams(window.location.search);
+let JUGADOR = (params.get('jugador') || localStorage.getItem('bandosmavila_jugador') || '').toUpperCase();
+
+let listaCompleta = [];
+let miDato = null;
+
+function elegirJugador(nombre) {
+  JUGADOR = nombre;
+  localStorage.setItem('bandosmavila_jugador', nombre);
+  cargarDatos();
+}
+
+function cambiarJugador() {
+  localStorage.removeItem('bandosmavila_jugador');
+  JUGADOR = '';
+  cargarDatos();
+}
+
+async function cargarDatos() {
+  document.getElementById('contenido').innerHTML = '<div class="loading">Cargando...</div>';
+  try {
+    const url = `${API_URL}?clave=${CLAVE}&accion=datosAvatar`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (!data.ok) {
+      document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">Error cargando los datos.</div>';
+      return;
+    }
+    listaCompleta = data.jugadores;
+
+    if (!JUGADOR) {
+      mostrarSelector();
+      return;
+    }
+
+    miDato = listaCompleta.find(j => j.nombre === JUGADOR);
+    if (!miDato) {
+      document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">No se te encuentra en la lista. Habla con Fide.</div>';
+      return;
+    }
+
+    document.getElementById('subtitulo').innerHTML = JUGADOR + ' · <a href="#" onclick="cambiarJugador();return false;" style="color:white;text-decoration:underline;">cambiar</a>';
+    pintar();
+  } catch (e) {
+    document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">Error de conexión. Recarga la página.</div>';
+  }
+}
+
+function mostrarSelector() {
+  document.getElementById('subtitulo').textContent = 'Elige tu nombre';
+  let html = '<div class="card"><div class="card-header">¿QUIÉN ERES?</div><div class="card-body">';
+  listaCompleta.forEach(j => {
+    html += `<div class="partido"><div class="opcion" onclick="elegirJugador('${j.nombre}')">${j.nombre}</div></div>`;
+  });
+  html += '</div></div>';
+  document.getElementById('contenido').innerHTML = html;
+}
+
+function pintar() {
+  const colorTomadoPor = {};
+  const emojiTomadoPor = {};
+  listaCompleta.forEach(j => {
+    if (j.color) colorTomadoPor[j.color] = j.nombre;
+    if (j.emoji) emojiTomadoPor[j.emoji] = j.nombre;
+  });
+
+  let html = `<div class="card">
+    <div class="card-header">TU ESTADO ACTUAL</div>
+    <div class="card-body">
+      <div class="estado-linea"><span>Equipo</span><span>${miDato.equipo || '—'}</span></div>
+      <div class="estado-linea"><span>Color</span><span>${miDato.color || 'Sin elegir (globo por defecto)'}</span></div>
+      <div class="estado-linea"><span>Emoji</span><strong>${miDato.emoji || '—'}</strong></div>
+    </div>
+  </div>`;
+
+  // COLOR
+  html += `<div class="card"><div class="card-header">TU COLOR</div><div class="card-body">`;
+  if (miDato.color) {
+    html += `<div class="aviso ok">Ya elegiste tu color: <strong>${miDato.color}</strong>. No se puede cambiar.</div>`;
+  } else {
+    html += `<div class="aviso">Elige un color para tu globo. Una vez confirmado, no podrás cambiarlo.</div><div class="paleta">`;
+    COLORES.forEach(c => {
+      const ocupadoPor = colorTomadoPor[c.nombre];
+      const ocupado = !!ocupadoPor;
+      html += `<div class="color-item ${ocupado ? 'ocupado' : ''}" style="background:${c.hex}"
+        title="${ocupado ? c.nombre + ' — ya elegido por ' + ocupadoPor : c.nombre}"
+        onclick="${ocupado ? '' : `elegirColor('${c.nombre}')`}">${c.nombre}</div>`;
+    });
+    html += `</div>`;
+  }
+  html += `</div>`;
+
+  // EMOJI
+  html += `<div class="card"><div class="card-header">TU EMOJI (sustituye al globo)</div><div class="card-body">`;
+  if (miDato.emoji) {
+    html += `<div class="aviso ok">Ya elegiste tu emoji: <strong>${miDato.emoji}</strong>. No se puede cambiar.</div>`;
+  } else {
+    html += `<div class="aviso">Si eliges un emoji, sustituye por completo al globo con camiseta. Es opcional — si no eliges nada, te quedas con el globo de tu equipo. Una vez confirmado, no se puede cambiar.</div><div class="emojis">`;
+    EMOJIS.forEach(e => {
+      const ocupadoPor = emojiTomadoPor[e];
+      const ocupado = !!ocupadoPor;
+      html += `<div class="emoji-item ${ocupado ? 'ocupado' : ''}"
+        title="${ocupado ? 'Ya elegido por ' + ocupadoPor : ''}"
+        onclick="${ocupado ? '' : `elegirEmoji('${e}')`}">${e}</div>`;
+    });
+    html += `</div>`;
+  }
+  html += `</div>`;
+
+  document.getElementById('contenido').innerHTML = html;
+}
+
+async function elegirColor(nombre) {
+  if (!confirm('¿Confirmas "' + nombre + '" como tu color? No podrás cambiarlo después.')) return;
+  await guardar('color', nombre);
+}
+
+async function elegirEmoji(emoji) {
+  if (!confirm('¿Confirmas ' + emoji + ' como tu avatar? Sustituirá a tu globo, y no podrás cambiarlo después.')) return;
+  await guardar('emoji', emoji);
+}
+
+async function guardar(tipo, valor) {
+  document.getElementById('contenido').innerHTML = '<div class="loading">Guardando...</div>';
+  try {
+    const url = `${API_URL}?clave=${CLAVE}&accion=guardarAvatar&jugador=${encodeURIComponent(JUGADOR)}&tipo=${tipo}&valor=${encodeURIComponent(valor)}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (!data.ok) {
+      alert(data.error);
+    }
+  } catch (e) {
+    alert('Error de conexión, inténtalo de nuevo.');
+  }
+  cargarDatos();
+}
+
+cargarDatos();
+</script>
+</body>
+</html>
