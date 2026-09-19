@@ -619,6 +619,13 @@
 }
 .aviso-provisional strong { color: #c0392b; }
 
+.info-cierre {
+  background: #eaf3ea; border-left: 4px solid var(--verde);
+  border-radius: 8px; padding: 10px 16px; margin-bottom: 16px;
+  font-size: 13px; color: var(--gris);
+}
+.info-cierre strong { color: var(--verde); }
+
 </style>
 </head>
 <body>
@@ -707,6 +714,8 @@
           <div class="loading"><div class="spinner"></div>Cargando...</div>
         </div>
       </div>
+      
+      <div id="jor-resultado-anterior" style="display:none;"></div>
 
       <button class="calendario-btn" onclick="abrirCalendario()">📅 CALENDARIO</button>
     </div>
@@ -1215,7 +1224,7 @@ function calcularEliminadoProvisional(clasif) {
 // CARGAR JORNADA
 // ============================================================
 
-function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierreRows, fechasCierreRows, clasif) {
+function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierreRows, fechasCierreRows, clasif, eliminacionesLog) {
   const activas = calendarioActivo(calendario);
   const jornadaActual = calcularJornadaMostrar(jornadas, calendarioCierreRows, fechasCierreRows);
 
@@ -1267,6 +1276,18 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     </div>`;
   });
   document.getElementById('jor-partidos').innerHTML = htmlPartidos;
+    // Resultado real de la jornada anterior (ya cerrada), como recordatorio persistente
+  const numsParaAnterior = [...new Set(jornadas.map(r => parseInt(r[0])).filter(n => !!n))].sort((a, b) => a - b);
+  const posParaAnterior = numsParaAnterior.indexOf(jornadaActual);
+  const jornadaAnteriorNum = posParaAnterior > 0 ? numsParaAnterior[posParaAnterior - 1] : null;
+  const elResultadoAnterior = document.getElementById('jor-resultado-anterior');
+  const filaLog = jornadaAnteriorNum ? eliminacionesLog.find(r => parseInt(r[0]) === jornadaAnteriorNum) : null;
+  if (filaLog) {
+    elResultadoAnterior.style.display = 'block';
+    elResultadoAnterior.innerHTML = `<div class="info-cierre">Jornada ${jornadaAnteriorNum}: <strong>${filaLog[1]}</strong></div>`;
+  } else {
+    elResultadoAnterior.style.display = 'none';
+  }
   const conResultado = filas.filter(f => f[4]).length;
   const elEliminadoProv = document.getElementById('jor-eliminado-provisional');
   if (conResultado >= 8 && conResultado < 15) {
@@ -1872,7 +1893,7 @@ function cerrarPodium() {
   
 async function init() {
   try {
-    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows, paganinisRows, podiumRows, campeonesCierreRows, frasesRows] = await Promise.all([
+    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows, paganinisRows, podiumRows, campeonesCierreRows, frasesRows, eliminacionesLogRows] = await Promise.all([
       leerHoja('Config'),
       leerHoja('Clasificacion'),
       leerHoja('Jornadas'),
@@ -1891,6 +1912,7 @@ async function init() {
       leerHoja('PodiumGranFinal'),
       leerHojaSerial('Campeones'),
       leerHoja('Frases'),
+      leerHoja('EliminacionesLog'),
     ]);
     const config = parsearConfig(configRows);
     const clasif = clasificRows.slice(1).filter(r => r[1]);
@@ -1901,7 +1923,7 @@ async function init() {
     cargarTrono(campeonesRows.slice(1), podiumRows.slice(1), campeonesCierreRows);
     cargarClasificacion(clasif);
     cargarRankingFinal(rankingRows.slice(1));
-    cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1), calendarioCierreRows, fechasCierreRows, clasif);
+    cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1), calendarioCierreRows, fechasCierreRows, clasif, eliminacionesLogRows.slice(1));
     cargarEconomico(resumenRows.slice(1), operacionesRows.slice(1), paganinisRows.slice(1), config);
     cargarHistorico(historicoRows.slice(1));
     cargarEstatutos(estatutosRows.slice(1));
