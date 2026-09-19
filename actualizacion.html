@@ -596,6 +596,14 @@
 }
 .premios-confeti::before { left: 30%; }
 .premios-confeti::after { left: 65%; background: var(--rojo); animation-delay: 0.6s; }
+.candidato-fila { padding: 10px 16px; border-bottom: 1px solid #f0ede6; }
+.candidato-fila:last-child { border-bottom: none; }
+.candidato-categoria { font-size: 11px; letter-spacing: 0.5px; color: var(--gris); margin-bottom: 3px; }
+.candidato-nombres { font-weight: 700; font-size: 15px; color: var(--tinta); }
+.candidato-dato { font-size: 12px; color: var(--gris); margin-left: 6px; }
+.candidato-badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 8px; margin-left: 8px; vertical-align: middle; }
+.candidato-badge.definitivo { background: var(--dorado, #c9a227); color: white; }
+.candidato-badge.provisional { background: #e8e4d8; color: var(--gris); }
 </style>
 </head>
 <body>
@@ -646,11 +654,9 @@
     </div>
 
     <div class="card">
-      <div class="card-header">Clasificación actual <span class="badge">Top 5</span></div>
-      <div class="card-body">
-        <table class="tabla-clasif" id="ini-top5">
-          <tr><td colspan="5" class="loading"><div class="spinner"></div>Cargando...</td></tr>
-        </table>
+      <div class="card-header">Candidatos a la Gran Final</div>
+      <div class="card-body" id="ini-candidatos">
+        <div class="loading"><div class="spinner"></div>Cargando...</div>
       </div>
     </div>
 
@@ -1035,10 +1041,39 @@ function mostrarNumerosFijos(config) {
   `;
   document.getElementById('ini-numeros-fijos').innerHTML = html;
 }
+
+function numOp(v) {
+  return parseFloat(String(v || '0').replace(',', '.')) || 0;
+}
+
+function calcularCandidatosGranFinal(clasif, campeonesRows) {
+  const camp1 = campeonesRows.find(r => String(r[1]) === '1');
+  const camp2 = campeonesRows.find(r => String(r[1]) === '2');
+  const hayVuelta2Definitiva = !!camp2;
+
+  function maxPorCriterio(filas, obtenerValor) {
+    if (filas.length === 0) return { nombres: [], valor: 0 };
+    const valorMax = Math.max(...filas.map(obtenerValor));
+    const nombres = filas.filter(r => obtenerValor(r) === valorMax).map(r => r[1] || '');
+    return { nombres, valor: valorMax };
+  }
+
+  const activos = clasif.filter(r => (r[5] || '').toLowerCase() !== 'eliminado');
+  const camp2Provisional = maxPorCriterio(activos, r => numOp(r[2]));
+  const mejorAciertos = maxPorCriterio(clasif, r => numOp(r[2]));
+  const mejorPremios = maxPorCriterio(clasif, r => numOp(r[4]));
+
+  return [
+    { categoria: 'CAMPEÓN VUELTA 1', nombres: camp1 ? [camp1[2] || ''] : ['—'], definitivo: !!camp1, dato: '' },
+    { categoria: 'CAMPEÓN VUELTA 2', nombres: hayVuelta2Definitiva ? [camp2[2] || ''] : camp2Provisional.nombres, definitivo: hayVuelta2Definitiva, dato: hayVuelta2Definitiva ? '' : camp2Provisional.valor + ' ac.' },
+    { categoria: 'MEJOR ACIERTOS', nombres: mejorAciertos.nombres, definitivo: hayVuelta2Definitiva, dato: mejorAciertos.valor + ' ac.' },
+    { categoria: 'MEJOR PREMIOS', nombres: mejorPremios.nombres, definitivo: hayVuelta2Definitiva, dato: mejorPremios.valor.toFixed(0) + '€' },
+  ];
+}
 // ============================================================
 // CARGAR INICIO (QUITAR ESTE COMENTARIO??)
 // ============================================================
-async function cargarInicio(config, clasif, jornadas, calendario, calendarioCierreRows, fechasCierreRows) {
+async function cargarInicio(config, clasif, jornadas, calendario, calendarioCierreRows, fechasCierreRows, campeonesRows) {
   document.getElementById('temporada-badge').textContent = config['Temporada'] || '';
 
   const activas = calendarioActivo(calendario);
@@ -1058,25 +1093,18 @@ async function cargarInicio(config, clasif, jornadas, calendario, calendarioCier
   document.getElementById('ini-total').textContent = jTotal || '-';
   document.getElementById('ini-barra').style.width = pct + '%';
 
-  const top5 = clasif.slice(0, 5);
-  let html = '<thead><tr><th>Pos</th><th>Jugador</th><th style="text-align:right">Ac</th><th style="text-align:right">P15</th><th style="text-align:right">€</th></tr></thead><tbody>';
-  top5.forEach((row, i) => {
-    const pos = i + 1;
-    const nombre = row[1] || '';
-    const estado = (row[5] || '').toLowerCase();
-    const eliminado = estado === 'eliminado';
-    const cls = eliminado ? 'eliminado' : 'nombre-jugador';
-    const posCls = pos <= 3 ? `pos-${pos}` : '';
-    html += `<tr>
-      <td class="pos-num ${posCls}">${pos}</td>
-      <td><span class="${cls}">${nombre}</span></td>
-      <td class="num-stat">${row[2] || 0}</td>
-      <td class="num-stat">${row[3] || 0}</td>
-      <td class="num-stat">${row[4] ? parseFloat(row[4]).toFixed(0)+'€' : '0€'}</td>
-    </tr>`;
+  const candidatos = calcularCandidatosGranFinal(clasif, campeonesRows);
+  let htmlCand = '';
+  candidatos.forEach(c => {
+    htmlCand += `<div class="candidato-fila">
+      <div class="candidato-categoria">${c.categoria}</div>
+      <div class="candidato-nombres">${c.nombres.join(', ')}
+        <span class="candidato-badge ${c.definitivo ? 'definitivo' : 'provisional'}">${c.definitivo ? 'DEFINITIVO' : 'PROVISIONAL'}</span>
+        ${c.dato ? `<span class="candidato-dato">${c.dato}</span>` : ''}
+      </div>
+    </div>`;
   });
-  html += '</tbody>';
-  document.getElementById('ini-top5').innerHTML = html;
+  document.getElementById('ini-candidatos').innerHTML = htmlCand;
 
   const elProxima = document.getElementById('ini-proxima-linea');
   if (proxima) {
@@ -1731,7 +1759,7 @@ async function init() {
     const calendario = calendarioRows.slice(1);
     mostrarFraseDia(frasesRows.slice(1));
 
-    cargarInicio(config, clasif, jornadasRows.slice(1), calendario, calendarioCierreRows, fechasCierreRows);
+    cargarInicio(config, clasif, jornadasRows.slice(1), calendario, calendarioCierreRows, fechasCierreRows, campeonesRows);
     cargarTrono(campeonesRows.slice(1), podiumRows.slice(1), campeonesCierreRows);
     cargarClasificacion(clasif);
     cargarRankingFinal(rankingRows.slice(1));
