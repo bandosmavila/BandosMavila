@@ -652,6 +652,12 @@
         <div class="loading"><div class="spinner"></div>Cargando...</div>
       </div>
     </div>
+    <div class="card">
+      <div class="card-header">Nuestros números fijos</div>
+      <div class="card-body" id="ini-numeros-fijos">
+        <div class="loading"><div class="spinner"></div>Cargando...</div>
+      </div>
+    </div>
   </div>
 
   <!-- JORNADA -->
@@ -1011,7 +1017,23 @@ function calcularJornadaMostrar(jornadasRows, calendarioCierreRows, fechasCierre
   }
   return nums[nums.length - 1];
 }
-
+function mostrarNumerosFijos(config) {
+  const html = `
+    <div class="numero-fijo-linea"><strong>PRIMITIVA</strong>
+      ${config['Primitiva Serie 1'] || '-'}<br>${config['Primitiva Serie 2'] || '-'}
+    </div>
+    <div class="numero-fijo-linea"><strong>BONOLOTO</strong>
+      ${config['Bonoloto'] || '-'}
+    </div>
+    <div class="numero-fijo-linea"><strong>EUROMILLÓN</strong>
+      ${config['Euromillon'] || '-'} &nbsp;|&nbsp; Estrellas: ${config['Euromillon Estrellas'] || '-'}
+    </div>
+    <div class="numero-fijo-linea"><strong>LOTERÍA</strong>
+      ${config['Loteria'] || 'Aleatorio'}
+    </div>
+  `;
+  document.getElementById('ini-numeros-fijos').innerHTML = html;
+}
 // ============================================================
 // CARGAR INICIO (QUITAR ESTE COMENTARIO??)
 // ============================================================
@@ -1064,6 +1086,7 @@ async function cargarInicio(config, clasif, jornadas, calendario, calendarioCier
     });
     document.getElementById('ini-proxima').innerHTML = htmlProxima;
   }
+  mostrarNumerosFijos(config);
 }
 // ============================================================
 // CARGAR CLASIFICACION
