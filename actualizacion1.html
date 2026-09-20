@@ -1826,7 +1826,7 @@ function cargarEstatutos(estatutos) {
 // ============================================================
 // CARGAR ELIMINACION
 // ============================================================
-function cargarRankingFinal(rows) {
+function cargarRankingFinal(rows, avatarPorNombre) {
   if (!rows || rows.length === 0) {
     document.getElementById('card-ranking-final').style.display = 'none';
     return;
@@ -1843,7 +1843,7 @@ function cargarRankingFinal(rows) {
   let html = '<thead><tr><th>Puesto</th><th>Nombre</th><th style="text-align:right">Vuelta</th></tr></thead><tbody>';
   filas.forEach(f => {
     const esCampeon = f.puesto === 1;
-    html += `<tr class="${esCampeon ? 'fila-pena' : ''}"><td>${f.puesto}</td><td>${f.nombre}</td><td style="text-align:right">${f.vuelta}</td></tr>`;
+    html += `<tr class="${esCampeon ? 'fila-pena' : ''}"><td>${f.puesto}</td><td>${renderAvatarMini(f.nombre, avatarPorNombre)}</td><td style="text-align:right">${f.vuelta}</td></tr>`;
   });
   html += '</tbody>';
   document.getElementById('tabla-ranking-final').innerHTML = html;
@@ -1980,7 +1980,7 @@ async function init() {
     cargarInicio(config, clasif, jornadasRows.slice(1), calendario, calendarioCierreRows, fechasCierreRows, campeonesRows, avatarPorNombre);
     cargarTrono(campeonesRows.slice(1), podiumRows.slice(1), campeonesCierreRows);
     cargarClasificacion(clasif, avatarPorNombre);
-    cargarRankingFinal(rankingRows.slice(1));
+    cargarRankingFinal(rankingRows.slice(1), avatarPorNombre);
     cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1), calendarioCierreRows, fechasCierreRows, clasif, eliminacionesLogRows.slice(1));
     cargarEconomico(resumenRows.slice(1), operacionesRows.slice(1), paganinisRows.slice(1), config);
     cargarHistorico(historicoRows.slice(1));
