@@ -1973,6 +1973,7 @@ async function init() {
     ]);
     const config = parsearConfig(configRows);
     const clasif = clasificRows.slice(1).filter(r => r[1]);
+    const calendario = calendarioRows.slice(1);
     const avatarPorNombre = mapaAvatarPorNombre(avatarColorRows.slice(1));
     mostrarFraseDia(frasesRows.slice(1));
 
