@@ -703,7 +703,7 @@
   <h1 class="pt-titulo">PEÑA BANDOSMÁVILA</h1>
   <div class="pt-musica-linea">
     <button class="pt-btn-play" id="ptBtnPlay" onclick="toggleMusicaPortada()">▶</button>
-    <span>Música: <span id="pt-autor-musica">Pendiente</span></span>
+    <span>Música: <span id="pt-autor-musica">Kevin MacLeod</span></span>
   </div>
 
   <div class="pt-orla" id="pt-orla"></div>
@@ -999,7 +999,7 @@
 const SHEET_ID = '1Gcbt0ND0K1fmBdqwf55DuoGKakrZR9s7eP2r0RIG9hY';
 const API_KEY  = 'AIzaSyA6zHLUiBURBem0lVORI8X1y-ovSGg2UXs'; // Se añadirá después
 
-function cargarLoteria(rows) {
+function cargarLoteria(rows, avatarPorNombre) {
   let total = 0;
   let html = '<thead><tr><th>Nombre</th><th>Número</th><th style="text-align:center">Observaciones</th><th>Premio</th></tr></thead><tbody>';
   rows.forEach(row => {
@@ -1010,7 +1010,8 @@ function cargarLoteria(rows) {
     const premio = parseFloat(row[3]) || 0;
     total += premio;
     const esPena = nombre.toUpperCase() === 'PEÑA';
-    html += `<tr class="${esPena ? 'fila-pena' : ''}"><td>${nombre}</td><td>${numero}</td><td style="text-align:center">${lugar}</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio > 0 ? premio.toFixed(2) + '€' : '-'}</td></tr>`;
+    const celdaNombre = esPena ? nombre : renderAvatarMini(nombre.trim().toUpperCase(), avatarPorNombre);
+    html += `<tr class="${esPena ? 'fila-pena' : ''}"><td>${celdaNombre}</td><td>${numero}</td><td style="text-align:center">${lugar}</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio > 0 ? premio.toFixed(2) + '€' : '-'}</td></tr>`;
   });
   html += `<tr class="fila-total"><td colspan="3">Total premios</td><td class="importe-positivo">${total.toFixed(2)}€</td></tr>`;
   html += '</tbody>';
@@ -1214,7 +1215,7 @@ function haloMini(hex) {
 function mapaAvatarPorNombre(avatarColorRows) {
   const mapa = {};
   avatarColorRows.forEach(r => {
-    const nombre = String(r[0] || '').trim().toUpperCase();
+    const nombre = normalizarNombre(r[0]);
     if (nombre) mapa[nombre] = { equipo: r[1] || '', color: r[2] || '', emoji: r[3] || '' };
   });
   return mapa;
@@ -1223,7 +1224,7 @@ function mapaAvatarPorNombre(avatarColorRows) {
 function mezclarPorEquipo(lista, avatarPorNombre) {
   const porEquipo = {};
   lista.forEach(nombre => {
-    const eq = ((avatarPorNombre[nombre] || {}).equipo || 'otro').toUpperCase();
+    const eq = ((avatarPorNombre[normalizarNombre(nombre)] || {}).equipo || 'otro').toUpperCase();
     (porEquipo[eq] = porEquipo[eq] || []).push(nombre);
   });
   const grupos = Object.values(porEquipo);
@@ -1237,7 +1238,7 @@ function mezclarPorEquipo(lista, avatarPorNombre) {
 }
 
 function crearGloboPortada(nombre, tam, avatarPorNombre) {
-  const dato = avatarPorNombre[nombre] || {};
+  const dato = avatarPorNombre[normalizarNombre(nombre)] || {};
   const fondo = ESTILO_EQUIPO_MINI[String(dato.equipo || '').toUpperCase()] || '#cccccc';
   const colorHex = COLORES_MINI[dato.color] || '#ffffff';
 
@@ -1392,9 +1393,11 @@ function toggleMusicaPortada() {
 function cerrarPortada() {
   document.getElementById('portada-overlay').style.display = 'none';
 }
-
+function normalizarNombre(s) {
+  return String(s || '').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
 function renderAvatarMini(nombre, avatarPorNombre) {
-  const dato = avatarPorNombre[nombre] || {};
+  const dato = avatarPorNombre[normalizarNombre(nombre)] || {};
   const inicial = nombre.substring(0, 6);
   if (dato.emoji) {
     return `<span class="avatar-mini"><span class="avatar-mini-emoji">${dato.emoji}</span><span class="avatar-mini-pedestal">${inicial}</span></span>`;
@@ -2010,7 +2013,7 @@ function cargarEconomico(resumen, operaciones, paganinis, config) {
 // ============================================================
 // CARGAR HISTORICO
 // ============================================================
-function cargarHistorico(historico) {
+function cargarHistorico(historico, avatarPorNombre) {
   // Ranking: cuántas veces ha sido campeón cada uno, contando todas las filas
   const conteo = {};
   historico.forEach(row => {
@@ -2027,7 +2030,7 @@ function cargarHistorico(historico) {
     ranking.forEach(([nombre, titulos], i) => {
       html += `<div class="ranking-item">
         <span class="ranking-pos">${i + 1}</span>
-        <span class="ranking-nombre">${nombre}</span>
+        <span class="ranking-nombre">${renderAvatarMini(nombre.trim().toUpperCase(), avatarPorNombre)}</span>
         <span class="ranking-titulos">${titulos} ${titulos === 1 ? 'título' : 'títulos'}</span>
       </div>`;
     });
@@ -2041,12 +2044,15 @@ function cargarHistorico(historico) {
     const campeon = row[1] || '-';
     const v1 = row[2] || '';
     const v2 = row[3] || '';
-    const sub = [v1 ? '1ª: ' + v1 : '', v2 ? '2ª: ' + v2 : ''].filter(Boolean).join(' · ');
+    const subHtml = [
+      v1 ? `<span style="font-size:9px;">1ª:</span> ${renderAvatarMini(v1.trim().toUpperCase(), avatarPorNombre)}` : '',
+      v2 ? `<span style="font-size:9px;">2ª:</span> ${renderAvatarMini(v2.trim().toUpperCase(), avatarPorNombre)}` : ''
+    ].filter(Boolean).join(' ');
     html += `<div class="historico-item">
       <div class="historico-year">${año}</div>
       <div class="historico-info">
-        <div class="historico-campeon">${campeon}</div>
-        ${sub ? `<div class="historico-sub">${sub}</div>` : ''}
+        <div class="historico-campeon">${campeon ? renderAvatarMini(campeon.trim().toUpperCase(), avatarPorNombre) : '-'}</div>
+        ${subHtml ? `<div class="historico-sub">${subHtml}</div>` : ''}
       </div>
       <div class="trofeo">🏆</div>
     </div>`;
@@ -2232,9 +2238,9 @@ async function init() {
     cargarRankingFinal(rankingRows.slice(1), avatarPorNombre);
     cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1), calendarioCierreRows, fechasCierreRows, clasif, eliminacionesLogRows.slice(1));
     cargarEconomico(resumenRows.slice(1), operacionesRows.slice(1), paganinisRows.slice(1), config);
-    cargarHistorico(historicoRows.slice(1));
+    cargarHistorico(historicoRows.slice(1), avatarPorNombre);
     cargarEstatutos(estatutosRows.slice(1));
-    cargarLoteria(loteriaRows.slice(1));
+    cargarLoteria(loteriaRows.slice(1), avatarPorNombre);
     cargarPortada(clasif, campeonesRows.slice(1), avatarPorNombre);
 
   } catch(e) {
