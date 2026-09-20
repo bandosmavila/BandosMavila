@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Bandosmávila">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Dancing+Script:wght@600&display=swap');
 
   :root {
     --verde:    #1a6b3c;
@@ -638,9 +638,85 @@
 .avatar-mini-emoji { font-size: 26px; text-align: center; }
 .avatar-mini-pedestal { font-size: 7px; font-weight: 700; background: #1a1a1a; color: white; border-radius: 8px; padding: 1px 5px; margin-top: 2px; }
 
+  #portada-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: radial-gradient(circle at 50% 30%, #1e7a45, var(--verde) 70%);
+    color: white; display: flex; flex-direction: column; align-items: center;
+    padding: 40px 16px 20px; overflow: hidden;
+  }
+  .pt-titulo {
+    font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px; text-align: center;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  .pt-musica-linea { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 13px; opacity: 0.9; }
+  .pt-btn-play {
+    width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.5); color: white; font-size: 13px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pt-btn-play:active { transform: scale(0.92); }
+  .pt-orla { position: relative; flex: 1; width: min(94vw, 780px); max-width: 92vh; aspect-ratio: 1 / 1; margin: 6px auto 0; }
+
+  .pt-globo-wrap {
+    position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center;
+    animation-name: pt-flotar; animation-iteration-count: infinite; animation-timing-function: ease-in-out;
+  }
+  @keyframes pt-flotar {
+    0%, 100% { transform: translate(-50%, -50%) translateY(0) rotate(-2deg); }
+    50%      { transform: translate(-50%, -50%) translateY(-6%) rotate(2deg); }
+  }
+  .pt-globo { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .pt-globo-cuerpo {
+    position: absolute; inset: 0; border-radius: 50% 50% 50% 50% / 55% 55% 45% 45%;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4), inset 0 -10px 14px rgba(0,0,0,0.28);
+    overflow: hidden; z-index: 0;
+  }
+  .pt-globo-cuerpo::before {
+    content: ''; position: absolute; top: 8%; left: 14%; width: 55%; height: 45%;
+    background: radial-gradient(circle, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.15) 55%, transparent 75%);
+    border-radius: 50%; pointer-events: none; z-index: 3;
+  }
+  .pt-globo-ojos { display: flex; position: relative; z-index: 2; }
+  .pt-globo-ojos span { background: var(--tinta); border-radius: 50%; display: block; }
+  .pt-globo-extremidad {
+    position: absolute; z-index: 1; pointer-events: none;
+    stroke: #c9a37a; stroke-width: 5.5; stroke-linecap: round; fill: none;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35));
+  }
+  .pt-globo-nombre {
+    position: relative; z-index: 2; font-weight: 700; text-align: center; line-height: 1;
+  }
+  .pt-entrar {
+    position: absolute; bottom: 14px; right: 18px; display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 30px; padding: 8px 16px; font-size: 13px; letter-spacing: 0.5px; cursor: pointer; color: white;
+  }
+  .pt-firma-wrap { text-align: center; margin-bottom: 6px; }
+  .pt-firma { font-family: 'Dancing Script', cursive; font-size: 20px; opacity: 0.75; }
+  .pt-rubrica { width: 70px; height: 14px; margin: 2px auto 0; opacity: 0.55; }
+
 </style>
 </head>
 <body>
+
+<div id="portada-overlay">
+  <h1 class="pt-titulo">PEÑA BANDOSMÁVILA</h1>
+  <div class="pt-musica-linea">
+    <button class="pt-btn-play" id="ptBtnPlay" onclick="toggleMusicaPortada()">▶</button>
+    <span>Música: <span id="pt-autor-musica">Pendiente</span></span>
+  </div>
+
+  <div class="pt-orla" id="pt-orla"></div>
+
+  <div class="pt-firma-wrap">
+    <div class="pt-firma">Claude</div>
+    <svg class="pt-rubrica" viewBox="0 0 100 20"><path d="M2 15 C 20 2, 35 18, 50 8 S 80 2, 98 12" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+  </div>
+
+  <div class="pt-entrar" onclick="cerrarPortada()">Entrar <span>→</span></div>
+
+  <audio id="pt-audio" src="musica-temporal.mp3" loop></audio>
+</div>
 
 <header>
   <div class="header-top">
@@ -1142,6 +1218,179 @@ function mapaAvatarPorNombre(avatarColorRows) {
     if (nombre) mapa[nombre] = { equipo: r[1] || '', color: r[2] || '', emoji: r[3] || '' };
   });
   return mapa;
+}
+
+function mezclarPorEquipo(lista, avatarPorNombre) {
+  const porEquipo = {};
+  lista.forEach(nombre => {
+    const eq = ((avatarPorNombre[nombre] || {}).equipo || 'otro').toUpperCase();
+    (porEquipo[eq] = porEquipo[eq] || []).push(nombre);
+  });
+  const grupos = Object.values(porEquipo);
+  const resultado = [];
+  let quedan = true;
+  while (quedan) {
+    quedan = false;
+    grupos.forEach(g => { if (g.length) { resultado.push(g.shift()); quedan = true; } });
+  }
+  return resultado;
+}
+
+function crearGloboPortada(nombre, tam, avatarPorNombre) {
+  const dato = avatarPorNombre[nombre] || {};
+  const fondo = ESTILO_EQUIPO_MINI[String(dato.equipo || '').toUpperCase()] || '#cccccc';
+  const colorHex = COLORES_MINI[dato.color] || '#ffffff';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pt-globo-wrap';
+  const duracion = (3.2 + Math.random() * 2.2).toFixed(2);
+  const retraso = (Math.random() * -4).toFixed(2);
+  wrap.style.animationDuration = duracion + 's';
+  wrap.style.animationDelay = retraso + 's';
+
+  const globo = document.createElement('div');
+  globo.className = 'pt-globo';
+  globo.style.width = tam + 'px';
+  globo.style.height = (tam * 1.15) + 'px';
+
+  const cuerpo = document.createElement('div');
+  cuerpo.className = 'pt-globo-cuerpo';
+  cuerpo.style.background = fondo;
+  globo.appendChild(cuerpo);
+
+  const ojos = document.createElement('div');
+  ojos.className = 'pt-globo-ojos';
+  ojos.style.gap = (tam * 0.16) + 'px';
+  ojos.style.marginTop = -(tam * 0.12) + 'px';
+  for (let i = 0; i < 2; i++) {
+    const ojo = document.createElement('span');
+    ojo.style.width = ojo.style.height = (tam * 0.10) + 'px';
+    ojos.appendChild(ojo);
+  }
+
+  function crearBrazo(lado) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const anchoSvg = tam * 0.30, altoSvg = tam * 0.28;
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 30 28');
+    svg.setAttribute('class', 'pt-globo-extremidad');
+    svg.style.width = anchoSvg + 'px';
+    svg.style.height = altoSvg + 'px';
+    svg.style.top = (tam * 0.42) + 'px';
+    if (lado === 'izq') svg.style.left = -(anchoSvg * 0.42) + 'px';
+    else { svg.style.right = -(anchoSvg * 0.42) + 'px'; svg.style.transform = 'scaleX(-1)'; }
+    const brazo = document.createElementNS(ns, 'path');
+    brazo.setAttribute('d', 'M27 8 L20 12');
+    svg.appendChild(brazo);
+    [[20,12,14,6],[20,12,15,13],[20,12,15,19]].forEach(([x1,y1,x2,y2]) => {
+      const dedo = document.createElementNS(ns, 'path');
+      dedo.setAttribute('d', `M${x1} ${y1} L${x2} ${y2}`);
+      svg.appendChild(dedo);
+    });
+    return svg;
+  }
+  globo.appendChild(crearBrazo('izq'));
+  globo.appendChild(crearBrazo('der'));
+
+  function crearPata(lado) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const anchoSvg = tam * 0.24, altoSvg = tam * 0.22;
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 22');
+    svg.setAttribute('class', 'pt-globo-extremidad');
+    svg.style.width = anchoSvg + 'px';
+    svg.style.height = altoSvg + 'px';
+    svg.style.top = (tam * 1.02) + 'px';
+    if (lado === 'izq') svg.style.left = (tam * 0.20) + 'px';
+    else { svg.style.right = (tam * 0.20) + 'px'; svg.style.transform = 'scaleX(-1)'; }
+    const pierna = document.createElementNS(ns, 'path');
+    pierna.setAttribute('d', 'M12 0 L12 6');
+    svg.appendChild(pierna);
+    [[12,6,6,13],[12,6,12,16],[12,6,18,13]].forEach(([x1,y1,x2,y2]) => {
+      const dedo = document.createElementNS(ns, 'path');
+      dedo.setAttribute('d', `M${x1} ${y1} L${x2} ${y2}`);
+      svg.appendChild(dedo);
+    });
+    return svg;
+  }
+  globo.appendChild(crearPata('izq'));
+  globo.appendChild(crearPata('der'));
+
+  const nombreEl = document.createElement('div');
+  nombreEl.className = 'pt-globo-nombre';
+  nombreEl.style.fontSize = (tam * 0.20) + 'px';
+  nombreEl.style.marginTop = (tam * 0.10) + 'px';
+  nombreEl.style.color = colorHex;
+  nombreEl.style.textShadow = haloMini(colorHex);
+  nombreEl.textContent = nombre.substring(0, 7);
+
+  globo.appendChild(ojos);
+  globo.appendChild(nombreEl);
+  wrap.appendChild(globo);
+  return wrap;
+}
+
+function posicionesFormaPortada(w, h) {
+  const cx = w / 2, cy = h / 2;
+  const posiciones = [{ x: cx, y: cy }];
+  const radioIntermedio = Math.min(w, h) * 0.30;
+  for (let i = 0; i < 4; i++) {
+    const angulo = (Math.PI * 2 * i / 4) - Math.PI / 2;
+    posiciones.push({ x: cx + radioIntermedio * Math.cos(angulo), y: cy + radioIntermedio * Math.sin(angulo) * 0.85 });
+  }
+  const radioExterior = Math.min(w, h) * 0.46;
+  for (let i = 0; i < 9; i++) {
+    const angulo = (Math.PI * 2 * i / 9) - Math.PI / 2 + 0.3;
+    posiciones.push({ x: cx + radioExterior * Math.cos(angulo), y: cy + radioExterior * Math.sin(angulo) * 0.85 });
+  }
+  return posiciones;
+}
+
+function cargarPortada(clasif, campeonesRows, avatarPorNombre) {
+  const orla = document.getElementById('pt-orla');
+  const w = orla.clientWidth, h = orla.clientHeight;
+
+  const nombresOrdenados = clasif.map(r => String(r[1]).trim().toUpperCase());
+  const candidatos = calcularCandidatosGranFinal(clasif, campeonesRows);
+  const grupoDefinitivo = [...new Set(candidatos.filter(c => c.definitivo).flatMap(c => c.nombres))];
+  const grupoProvisional = [...new Set(candidatos.filter(c => !c.definitivo).flatMap(c => c.nombres))]
+    .filter(n => !grupoDefinitivo.includes(n));
+  const grupoResto = nombresOrdenados.filter(n => !grupoDefinitivo.includes(n) && !grupoProvisional.includes(n));
+  const ordenPorMerito = [...grupoDefinitivo, ...grupoProvisional, ...grupoResto];
+
+  const tamMax = w * 0.26, tamMin = w * 0.13;
+  const tamPorNombre = {};
+  ordenPorMerito.forEach((nombre, rank) => {
+    tamPorNombre[nombre] = tamMax - (rank / Math.max(1, ordenPorMerito.length - 1)) * (tamMax - tamMin);
+  });
+
+  const ordenMezclado = mezclarPorEquipo(ordenPorMerito, avatarPorNombre);
+  const posiciones = posicionesFormaPortada(w, h);
+
+  orla.innerHTML = '';
+  ordenMezclado.forEach((nombre, i) => {
+    const pos = posiciones[i] || posiciones[posiciones.length - 1];
+    const globo = crearGloboPortada(nombre, tamPorNombre[nombre], avatarPorNombre);
+    globo.style.left = pos.x + 'px';
+    globo.style.top = pos.y + 'px';
+    orla.appendChild(globo);
+  });
+}
+
+function toggleMusicaPortada() {
+  const audio = document.getElementById('pt-audio');
+  const btn = document.getElementById('ptBtnPlay');
+  if (audio.paused) {
+    audio.play().catch(() => {});
+    btn.textContent = '❚❚';
+  } else {
+    audio.pause();
+    btn.textContent = '▶';
+  }
+}
+
+function cerrarPortada() {
+  document.getElementById('portada-overlay').style.display = 'none';
 }
 
 function renderAvatarMini(nombre, avatarPorNombre) {
@@ -1986,6 +2235,7 @@ async function init() {
     cargarHistorico(historicoRows.slice(1));
     cargarEstatutos(estatutosRows.slice(1));
     cargarLoteria(loteriaRows.slice(1));
+    cargarPortada(clasif, campeonesRows.slice(1), avatarPorNombre);
 
   } catch(e) {
     console.error('Error general:', e);
