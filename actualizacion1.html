@@ -1,0 +1,1944 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peña Bandosmávila</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a6b3c">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bandosmávila">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --verde:    #1a6b3c;
+    --verde-claro: #2d9e5f;
+    --crema:    #f5f0e8;
+    --tinta:    #1a1a1a;
+    --gris:     #6b6b6b;
+    --borde:    #ddd8cc;
+    --rojo:     #c0392b;
+    --amarillo: #f39c12;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--crema);
+    color: var(--tinta);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--verde);
+    color: white;
+    padding: 0;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+  .logo span {
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    letter-spacing: 1px;
+    display: block;
+    opacity: 0.8;
+    margin-top: 2px;
+  }
+  .temporada-badge {
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* NAV */
+  nav {
+    display: flex;
+    overflow-x: auto;
+    border-top: 1px solid rgba(255,255,255,0.15);
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  nav button {
+    flex: 0 0 auto;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    padding: 10px 18px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  nav button.active, nav button:hover {
+    color: white;
+    border-bottom-color: white;
+  }
+
+  /* MAIN */
+  main {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+  }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* CARD */
+  .card {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid var(--borde);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 12px 16px;
+    background: var(--verde);
+    color: white;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 1px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .card-header .badge {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.2);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .card-body { padding: 0; }
+
+  /* LOADING */
+  .loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--gris);
+    font-size: 14px;
+  }
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--borde);
+    border-top-color: var(--verde);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* TABLA CLASIFICACION */
+  .tabla-clasif {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .tabla-clasif th {
+    background: #f5f5f0;
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--borde);
+  }
+  .tabla-clasif td {
+    padding: 10px 10px;
+    border-bottom: 1px solid #f0ede6;
+  }
+  .tabla-clasif tr:last-child td { border-bottom: none; }
+  .tabla-clasif tr:hover td { background: #fafaf7; }
+  .pos-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: var(--gris);
+    width: 28px;
+    text-align: center;
+  }
+  .pos-1 { color: #c9a227; }
+  .pos-2 { color: #7d7d7d; }
+  .pos-3 { color: #a05c2c; }
+  .nombre-jugador { font-weight: 600; }
+  .eliminado { color: var(--gris); text-decoration: line-through; font-weight: 400; }
+  .num-stat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    text-align: right;
+  }
+  .estado-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+  .estado-activo { background: #d4edda; color: #1a6b3c; }
+  .estado-eliminado { background: #f8d7da; color: #c0392b; }
+
+  /* PARTIDOS */
+  .partido-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f0ede6;
+    gap: 8px;
+  }
+  .partido-row:last-child { border-bottom: none; }
+  .partido-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--gris);
+    width: 20px;
+    flex-shrink: 0;
+  }
+  .partido-equipos {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .partido-resultado {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--verde);
+    min-width: 20px;
+    text-align: center;
+  }
+  .partido-p15 {
+    font-size: 11px;
+    color: var(--gris);
+    background: #f0ede6;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* PRONOSTICOS */
+  .pronos-scroll {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .partido-marcador { font-size: 12px; color: var(--gris); margin-right: 6px; font-family: 'JetBrains Mono', monospace; }
+  .tabla-pronos {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    min-width: 500px;
+  }
+  .tabla-pronos th {
+    background: #f5f5f0;
+    padding: 6px 8px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--gris);
+    border-bottom: 1px solid var(--borde);
+  }
+  .tabla-pronos th.partido-col { text-align: center; width: 28px; }
+  .tabla-pronos td {
+    padding: 7px 8px;
+    border-bottom: 1px solid #f0ede6;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+  .tabla-pronos td.partido-col { text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--gris); background: #f0ede6; font-weight: 700; }
+  .tabla-pronos tr:last-child td { border-bottom: none; }
+  .tabla-pronos tfoot td {
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    text-align: center;
+    border-top: 2px solid var(--verde);
+    background: #f7f5ef;
+    color: var(--verde);
+  }
+  .tabla-pronos tfoot td.partido-col { color: var(--tinta); background: #f0ede6; }
+  .tabla-pronos td.acertado { background: var(--verde-claro); color: white; font-weight: 700; }
+  .fallado { color: var(--gris); }
+
+  /* TABLAS ECONOMICO */
+  .tabla-juegos {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .tabla-juegos th {
+    background: #f5f5f0;
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--borde);
+  }
+  .tabla-juegos th:not(:first-child),
+  .tabla-juegos td:not(:first-child) { text-align: right; }
+  .tabla-juegos td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #f0ede6;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+  }
+  .tabla-juegos td:first-child {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    color: var(--tinta);
+  }
+  .tabla-juegos tr:last-child td { border-bottom: none; }
+  .tabla-juegos tr:hover td { background: #fafaf7; }
+  .tabla-juegos tr.fila-pena td {
+    background: var(--verde);
+    color: white;
+    font-weight: 700;
+  }
+  .tabla-juegos tr.fila-total td {
+    font-weight: 700;
+    border-top: 2px solid var(--verde);
+    background: #f7f5ef;
+  }
+  .importe-positivo { color: var(--verde-claro); }
+  .importe-negativo { color: var(--rojo); }
+  .valor-positivo { color: var(--verde-claro); }
+  .valor-negativo { color: var(--rojo); }
+
+  /* BARRA SALDO */
+  .saldo-barra {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #f0ede6;
+    margin-top: 16px;
+  }
+  .saldo-barra-ingresos { background: var(--verde-claro); }
+  .saldo-barra-gastos { background: var(--rojo); }
+  .saldo-leyenda {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--gris);
+  }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+  .dot-verde { background: var(--verde-claro); }
+  .dot-rojo { background: var(--rojo); }
+  /* HISTORICO */
+  .historico-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0ede6;
+    gap: 12px;
+  }
+  .historico-item:last-child { border-bottom: none; }
+  .historico-year {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--verde);
+    width: 50px;
+    flex-shrink: 0;
+  }
+  .historico-info {
+    flex: 1;
+    text-align: center;
+  }
+  .historico-campeon {
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .historico-sub {
+    font-size: 11px;
+    color: var(--gris);
+    margin-top: 2px;
+  }
+  .trofeo { font-size: 20px; margin-left: auto; }
+  .historico-ranking {
+    padding: 12px 16px;
+    border-bottom: 2px solid var(--verde);
+    background: #f7f5ef;
+  }
+  .ranking-item {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 10px;
+    padding: 4px 0;
+  }
+  .ranking-pos {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    color: var(--verde);
+    min-width: 16px;
+    text-align: right;
+  }
+  .ranking-nombre {
+    font-weight: 600;
+    font-size: 13px;
+    min-width: 90px;
+    text-align: left;
+  }
+  .ranking-titulos {
+    font-size: 12px;
+    color: var(--gris);
+    min-width: 60px;
+    text-align: left;
+  }
+
+  /* ESTATUTOS */
+  .estatutos-content {
+    padding: 16px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #333;
+  }
+  .estatutos-content h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--verde);
+    margin: 16px 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .estatutos-content h3:first-child { margin-top: 0; }
+  .estatutos-content p { margin-bottom: 8px; }
+
+  /* PROGRESO */
+  .progreso-bar {
+    height: 6px;
+    background: var(--borde);
+    border-radius: 3px;
+    margin: 8px 16px 16px;
+    overflow: hidden;
+  }
+  .progreso-fill {
+    height: 100%;
+    background: var(--verde-claro);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+  .progreso-info {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 16px 0;
+    font-size: 12px;
+    color: var(--gris);
+  }
+  .progreso-info strong { color: var(--tinta); }
+  
+  .progreso-proxima { margin-top: 10px; font-size: 12px; color: var(--gris); }
+  
+  .numero-fijo-linea { padding: 10px 16px; border-bottom: 1px solid #f0ede6; }
+  .numero-fijo-linea:last-child { border-bottom: none; }
+  .numero-fijo-linea strong { display: block; font-size: 11px; letter-spacing: 0.5px; color: var(--gris); margin-bottom: 4px; }
+  .numero-fijo-valor { font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 600; letter-spacing: 1px; color: var(--tinta); }
+
+  /* JORNADA ACTUAL INFO */
+  .jornada-info {
+    padding: 12px 16px;
+    background: #f5f5f0;
+    font-size: 12px;
+    color: var(--gris);
+    border-bottom: 1px solid var(--borde);
+    display: flex;
+    justify-content: space-between;
+  }
+  .jornada-info strong { color: var(--tinta); }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 11px;
+    color: var(--gris);
+    border-top: 1px solid var(--borde);
+    margin-top: 20px;
+  }
+
+  /* ERROR */
+  .error-msg {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--rojo);
+    font-size: 13px;
+  }
+
+  @media (max-width: 400px) {
+    .logo { font-size: 22px; }
+    .resumen-grid { grid-template-columns: 1fr 1fr; }
+    .resumen-valor { font-size: 15px; }
+    .tabla-clasif { font-size: 11px; }
+    .tabla-clasif th, .tabla-clasif td { padding: 6px 4px; }
+    .col-estado { display: none; }
+  }
+
+  .podio-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 20px;
+}
+.podio-caja {
+  background: var(--crema); border-radius: 16px; padding: 30px 20px 20px;
+  max-width: 480px; width: 100%; position: relative; overflow: hidden;
+}
+.podio-escalones {
+  display: flex; align-items: flex-end; justify-content: center; gap: 12px;
+}
+.podio-columna { display: flex; flex-direction: column; align-items: center; flex: 1; max-width: 100px; }
+.podio-nombre { font-weight: 700; font-size: 13px; margin: 6px 0 8px; text-align: center; color: var(--tinta); }
+.podio-escalon {
+  width: 100%; background: var(--verde); color: #fff;
+  display: flex; align-items: flex-start; justify-content: center; padding-top: 6px;
+  font-family: 'Bebas Neue', sans-serif; font-size: 20px; border-radius: 6px 6px 0 0;
+}
+.globo {
+  width: 56px; height: 66px; border-radius: 50% 50% 50% 50% / 55% 55% 45% 45%;
+  position: relative; display: flex; align-items: center; justify-content: center;
+}
+.globo::after {
+  content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+  width: 2px; height: 10px; background: var(--gris);
+}
+.globo-ojos { display: flex; gap: 10px; margin-top: -6px; }
+.globo-ojos span { width: 6px; height: 6px; background: var(--tinta); border-radius: 50%; display: block; }
+.globo-mano {
+  position: absolute; width: 14px; height: 6px; background: inherit;
+  border-radius: 4px; top: 30px;
+}
+.globo-mano-izq { left: -10px; }
+.globo-mano-der { right: -10px; }
+
+.globo-campeon { animation: saltoCampeon 0.6s ease-in-out infinite; }
+.globo-campeon .globo-mano-izq { animation: brazoArriba 0.6s ease-in-out infinite; transform-origin: right center; }
+.globo-campeon .globo-mano-der { animation: brazoArriba 0.6s ease-in-out infinite reverse; transform-origin: left center; }
+
+.globo-resto .globo-mano-izq { animation: aplaudir 0.5s ease-in-out infinite; transform-origin: right center; }
+.globo-resto .globo-mano-der { animation: aplaudir 0.5s ease-in-out infinite reverse; transform-origin: left center; }
+
+@keyframes saltoCampeon {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-18px) rotate(3deg); }
+}
+@keyframes brazoArriba {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  50% { transform: rotate(-40deg) translateY(-10px); }
+}
+@keyframes aplaudir {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(20deg); }
+}
+
+.podio-confeti {
+  position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+}
+.podio-confeti::before, .podio-confeti::after {
+  content: ''; position: absolute; top: -10px; width: 8px; height: 8px;
+  background: var(--amarillo); opacity: 0.9;
+  animation: caerConfeti 2.5s linear infinite;
+}
+.podio-confeti::before { left: 20%; animation-delay: 0s; background: var(--verde-claro); }
+.podio-confeti::after { left: 70%; animation-delay: 0.8s; background: #c9a227; }
+@keyframes caerConfeti {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(320px) rotate(360deg); opacity: 0; }
+}
+.premios-selector { display: flex; gap: 20px; align-items: center; font-size: 14px; flex-wrap: wrap; }
+.premios-total { text-align: center; padding: 14px; border-radius: 10px; position: relative; overflow: hidden; animation: premioAparece 0.3s ease-out; }
+.premios-fiesta { background: linear-gradient(135deg, #f0d878, #c9a227); }
+.premios-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; justify-content: center; }
+.premio-chip {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: #f5f0e8; border-radius: 10px; padding: 10px 14px; min-width: 80px;
+  animation: premioAparece 0.35s ease-out;
+}
+.premio-icono {
+  width: 32px; height: 32px; border-radius: 50%; color: #fff; font-weight: 700;
+  font-size: 12px; display: flex; align-items: center; justify-content: center;
+}
+.premio-nombre { font-size: 11px; color: var(--gris); text-transform: uppercase; }
+.premio-importe { font-weight: 700; color: var(--verde); }
+@keyframes premioAparece {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.premios-confeti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.premios-confeti::before, .premios-confeti::after {
+  content: ''; position: absolute; top: -10px; width: 6px; height: 6px;
+  background: var(--verde-claro); opacity: 0.9; animation: caerConfeti 2s linear infinite;
+}
+.premios-confeti::before { left: 30%; }
+.premios-confeti::after { left: 65%; background: var(--rojo); animation-delay: 0.6s; }
+.candidato-fila { padding: 10px 16px; border-bottom: 1px solid #f0ede6; }
+.candidato-fila:last-child { border-bottom: none; }
+.candidato-categoria { font-size: 11px; letter-spacing: 0.5px; color: var(--gris); margin-bottom: 3px; }
+.candidato-nombres { font-weight: 700; font-size: 15px; color: var(--tinta); }
+.candidato-dato { font-size: 12px; color: var(--gris); margin-left: 6px; }
+.candidato-badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 8px; margin-left: 8px; vertical-align: middle; }
+.candidato-badge.definitivo { background: var(--dorado, #c9a227); color: white; }
+.candidato-badge.provisional { background: #e8e4d8; color: var(--gris); }
+
+.calendario-btn {
+  display: block; width: 100%; text-align: center; background: var(--verde-claro); color: white;
+  padding: 12px; border: none; border-radius: 10px; margin-top: 8px; margin-bottom: 16px;
+  font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; cursor: pointer;
+}
+.calendario-volver { background: var(--gris); }
+.calendario-selector { display: flex; gap: 20px; align-items: center; font-size: 14px; flex-wrap: wrap; }
+
+.aviso-provisional {
+  background: #fff3e0; border-left: 4px solid #e67e22; border-radius: 8px;
+  padding: 12px 16px; margin-bottom: 16px; font-size: 14px; color: #7a4a00;
+}
+.aviso-provisional strong { color: #c0392b; }
+
+.info-cierre {
+  background: #eaf3ea; border-left: 4px solid var(--verde);
+  border-radius: 8px; padding: 10px 16px; margin-bottom: 16px;
+  font-size: 13px; color: var(--gris);
+}
+.info-cierre strong { color: var(--verde); }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="logo">
+      Bandosmávila
+      <span>Peña de Quiniela</span>
+      <div id="frase-dia" style="font-family:'Inter',sans-serif; font-size:12px; font-weight:400; letter-spacing:normal; opacity:0.75; margin-top:4px;"></div>                           
+    </div>
+    <div class="temporada-badge" id="temporada-badge">...</div>
+  </div>
+  <nav>
+    <button class="active" onclick="mostrarSeccion('inicio')">Inicio</button>
+    <button onclick="mostrarSeccion('jornada')">Jornada</button>
+    <button onclick="mostrarSeccion('clasificacion')">Clasificación</button>
+    <button onclick="mostrarSeccion('economico')">Económico</button>
+    <button onclick="mostrarSeccion('historico')">Histórico</button>
+    <button onclick="mostrarSeccion('loteria')">Lotería</button>
+    <button onclick="mostrarSeccion('estatutos')">Estatutos</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- INICIO -->
+  <div id="sec-inicio" class="section active">
+    <div id="trono-container"></div>
+    <a id="link-pronosticos" href="pronosticos.html" style="display:block; background:var(--verde-claro); color:white; text-align:center; padding:14px; border-radius:10px; margin-bottom:16px; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1px; text-decoration:none;">
+      📝 RELLENAR PRONÓSTICOS
+    </a>
+
+    <div class="card">
+      <div class="card-header">
+        Estado de la temporada
+      </div>
+      <div class="card-body">
+        <div class="progreso-info">
+          <span>Jornada actual <strong id="ini-jornada">-</strong> <span id="ini-jornada-liga" style="font-size:12px; color:var(--gris); font-weight:400;"></span></span>
+          <span>Jugadas <strong id="ini-jugadas">-</strong> de <strong id="ini-total">-</strong></span>
+        </div>
+        <div class="progreso-bar">
+          <div class="progreso-fill" id="ini-barra" style="width:0%"></div>
+        </div>
+        <div class="progreso-proxima" id="ini-proxima-linea"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Candidatos a la Gran Final</div>
+      <div class="card-body" id="ini-candidatos">
+        <div class="loading"><div class="spinner"></div>Cargando...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Nuestros números fijos</div>
+      <div class="card-body" id="ini-numeros-fijos">
+        <div class="loading"><div class="spinner"></div>Cargando...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JORNADA -->
+  <div id="sec-jornada" class="section">
+    <div id="jornada-vista-actual">
+      <div class="card">
+        <div class="card-header">
+          Partidos <span class="badge" id="jor-badge">Jornada -</span>
+        </div>
+        <div class="jornada-info">
+          <span id="jor-competicion">-</span>
+          <span id="jor-fecha">-</span>
+        </div>
+        <div class="card-body" id="jor-partidos">
+          <div class="loading"><div class="spinner"></div>Cargando...</div>
+        </div>
+      </div>
+      
+      <div id="jor-eliminado-provisional" style="display:none;"></div>
+      
+      <div class="card">
+        <div class="card-header">Pronósticos</div>
+        <div class="card-body pronos-scroll" id="jor-pronos">
+          <div class="loading"><div class="spinner"></div>Cargando...</div>
+        </div>
+      </div>
+      
+      <div id="jor-resultado-anterior" style="display:none;"></div>
+
+      <button class="calendario-btn" onclick="abrirCalendario()">📅 CALENDARIO</button>
+    </div>
+
+    <div id="jornada-vista-calendario" style="display:none;">
+      <button class="calendario-btn calendario-volver" onclick="cerrarCalendario()">← Volver a la jornada actual</button>
+
+      <div class="card">
+        <div class="card-header" style="cursor:pointer;" onclick="toggleTablaCalendario()">
+          Calendario de la vuelta <span id="calendario-toggle-icono">▼</span>
+        </div>
+        <div class="card-body" id="calendario-tabla-wrap" style="display:none; max-height:320px; overflow-y:auto; padding:0;">
+          <table class="tabla-pronos" id="calendario-tabla"></table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Consultar jornada</div>
+        <div class="card-body">
+          <div class="calendario-selector">
+            <label><input type="radio" name="calendario-modo" value="actual" checked onchange="mostrarJornadaCalendario()"> Actual</label>
+            <label><input type="radio" name="calendario-modo" value="numero" onchange="mostrarJornadaCalendario()"> Nº
+              <input type="number" id="calendario-num" style="width:56px;" onchange="document.querySelector('input[name=calendario-modo][value=numero]').checked=true; mostrarJornadaCalendario();">
+            </label>
+          </div>
+          <div id="calendario-resultado" style="margin-top:14px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLASIFICACION -->
+  <div id="sec-clasificacion" class="section">
+    <div class="card">
+      <div class="card-header">Clasificación general</div>
+      <div class="card-body">
+        <table class="tabla-clasif" id="tabla-clasif-completa">
+          <tr><td colspan="5" class="loading"><div class="spinner"></div>Cargando...</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="card" id="card-ranking-final" style="display:none;">
+      <div class="card-header">Ranking Final</div>
+      <div class="card-body">
+        <table class="tabla-juegos" id="tabla-ranking-final"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ECONOMICO -->
+  <div id="sec-economico" class="section">
+<div class="card">
+  <div class="card-header">Saldo de la Peña <span class="badge" id="eco-temporada-badge">-</span></div>
+  <div class="card-body" style="text-align:center; padding: 28px 16px;">
+    <div class="resumen-valor" id="eco-saldo" style="font-size:36px;">-</div>
+    <div class="saldo-barra" id="eco-saldo-barra">
+      <div class="saldo-barra-ingresos" id="eco-barra-ingresos" style="width:50%;"></div>
+      <div class="saldo-barra-gastos" id="eco-barra-gastos" style="width:50%;"></div>
+    </div>
+    <div class="saldo-leyenda">
+      <span><i class="dot dot-verde"></i>Ingresos <b id="eco-total-ingresos">-</b></span>
+      <span><i class="dot dot-rojo"></i>Gastos <b id="eco-total-gastos">-</b></span>
+    </div>
+    <div class="progreso-info" style="margin-top:18px;">
+      <span>Semanas jugadas</span>
+      <span><strong id="eco-semanas">-</strong></span>
+    </div>
+    <div class="progreso-bar">
+      <div class="progreso-fill" id="eco-semanas-barra" style="width:0%"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Cuota</div>
+  <div class="card-body" style="text-align:center; padding: 20px 16px;">
+    <div class="resumen-valor" id="eco-cuota-actual" style="font-size:28px;">-</div>
+    <div style="color:var(--gris); font-size:13px; margin-top:6px;">
+      Previsión próximo año: <strong id="eco-prevision-cuota">-</strong>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Paganinis (cuota de socios)</div>
+  <div class="card-body">
+    <table class="tabla-juegos" id="eco-paganinis">
+      <tr><th>Jugador</th><th>Estado</th></tr>
+    </table>
+  </div>
+</div>
+
+    <div class="card">
+      <div class="card-header">Detalle</div>
+      <div class="card-body">
+        <table class="tabla-juegos" id="eco-detalle">
+          <tr><th>Concepto</th><th>Importe</th></tr>
+        </table>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-header">Resumen por juego</div>
+      <div class="card-body">
+        <table class="tabla-juegos" id="eco-resumen-juego">
+          <tr><th>Juego</th><th>Gastado</th><th>Premiado</th></tr>
+        </table>
+      </div>
+    </div>
+  <div class="card">
+    <div class="card-header">Premios de la semana</div>
+    <div class="card-body">
+      <div class="premios-selector">
+        <label><input type="radio" name="premios-modo" value="ultima" checked onchange="mostrarPremiosSemana()"> Última</label>
+        <label><input type="radio" name="premios-modo" value="numero" onchange="mostrarPremiosSemana()"> Semana
+          <input type="number" id="premios-semana-num" min="1" max="53" value="1" style="width:56px;" onchange="document.querySelector('input[name=premios-modo][value=numero]').checked=true; mostrarPremiosSemana();">
+        </label>
+      </div>
+      <div id="premios-semana-resultado" style="margin-top:14px;"></div>
+    </div>
+  </div>
+    <div class="card">
+      <div class="card-header" style="cursor:pointer;" onclick="toggleDetalleSemanal()">
+        Detalle semanal (auditoría) <span id="eco-toggle-icono">▼</span>
+      </div>
+      <div class="card-body" id="eco-detalle-semanal-body" style="display:none; max-height:400px; overflow-y:auto; padding:0;">
+        <table class="tabla-juegos" id="eco-detalle-semanal">
+          <tr><th>Sem.</th><th>Fecha</th><th>Juego</th><th>Coste</th><th>Premio</th></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORICO -->
+  <div id="sec-historico" class="section">
+    <div class="card">
+      <div class="card-header">Campeones históricos</div>
+      <div class="card-body" id="historico-lista">
+        <div class="loading"><div class="spinner"></div>Cargando...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOTERIA -->
+  <div id="sec-loteria" class="section">
+    <div class="card">
+      <div class="card-header">Lotería de Navidad</div>
+      <div class="card-body" style="padding: 0 16px 16px;">
+        <a id="link-loteria" href="https://docs.google.com/forms/d/e/1FAIpQLSeMpogs3atGPzNhdQj8d_OuVolzY33mBAfSnRfYyAbWSgqDoA/viewform" style="display:block; background:var(--verde-claro); color:white; text-align:center; padding:14px; border-radius:10px; margin:16px 0; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1px; text-decoration:none;">
+          🎄 APORTAR MI DÉCIMO
+        </a>
+        <script>
+          document.getElementById('link-loteria').addEventListener('click', function(e) {
+            var esStandalone = window.matchMedia('(display-mode: standalone)').matches;
+            var esAndroid = /Android/i.test(navigator.userAgent);
+            if (esStandalone && esAndroid) {
+              e.preventDefault();
+              var url = this.href.replace(/^https?:\/\//, '');
+              window.location = 'intent://' + url + '#Intent;scheme=https;package=com.android.chrome;end';
+            }
+          });
+        </script>
+        <table class="tabla-juegos" id="loteria-tabla">
+          <tr><th>Nombre</th><th>Número</th><th>Lugar</th><th>Premio</th></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESTATUTOS -->
+  <div id="sec-estatutos" class="section">
+    <div class="card">
+      <div class="card-header">Estatutos Peña Bandosmávila</div>
+      <div class="card-body">
+        <div class="estatutos-content" id="estatutos-content">
+          <div class="loading"><div class="spinner"></div>Cargando...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Peña Bandosmávila · Datos actualizados desde Google Sheets
+</footer>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN — solo cambia esto
+// ============================================================
+const SHEET_ID = '1Gcbt0ND0K1fmBdqwf55DuoGKakrZR9s7eP2r0RIG9hY';
+const API_KEY  = 'AIzaSyA6zHLUiBURBem0lVORI8X1y-ovSGg2UXs'; // Se añadirá después
+
+function cargarLoteria(rows) {
+  let total = 0;
+  let html = '<thead><tr><th>Nombre</th><th>Número</th><th style="text-align:center">Observaciones</th><th>Premio</th></tr></thead><tbody>';
+  rows.forEach(row => {
+    const nombre = row[0] || '';
+    if (!nombre || nombre.toUpperCase() === 'TOTAL') return;
+    const numero = row[1] || '-';
+    const lugar = row[2] || '';
+    const premio = parseFloat(row[3]) || 0;
+    total += premio;
+    const esPena = nombre.toUpperCase() === 'PEÑA';
+    html += `<tr class="${esPena ? 'fila-pena' : ''}"><td>${nombre}</td><td>${numero}</td><td style="text-align:center">${lugar}</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio > 0 ? premio.toFixed(2) + '€' : '-'}</td></tr>`;
+  });
+  html += `<tr class="fila-total"><td colspan="3">Total premios</td><td class="importe-positivo">${total.toFixed(2)}€</td></tr>`;
+  html += '</tbody>';
+  document.getElementById('loteria-tabla').innerHTML = html;
+}
+  
+// ============================================================
+// NAVEGACIÓN
+// ============================================================
+function mostrarSeccion(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ============================================================
+// LEER DATOS DE GOOGLE SHEETS
+// ============================================================
+async function leerHoja(nombre) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${nombre}?key=${API_KEY}`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    return data.values || [];
+  } catch(e) {
+    console.error('Error leyendo hoja:', nombre, e);
+    return [];
+  }
+}
+
+
+async function leerHojaSerial(nombre) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${nombre}?key=${API_KEY}&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    return data.values || [];
+  } catch(e) {
+    console.error('Error leyendo hoja (serial):', nombre, e);
+    return [];
+  }
+}
+
+function serialToDate(serial) {
+  // Número de serie de fecha de Google Sheets (días desde 1899-12-30) -> Date normal
+  return new Date(Math.round((serial - 25569) * 86400 * 1000));
+}
+
+// Réplica exacta de calcularCierreJornadaAPI() del Apps Script BandosMavilaAPI,
+// para saber en el navegador si ya ha cerrado el plazo de envío de una jornada.
+function calcularCierreJornada(jornadaQuiniela, calendarioCierreRows, fechasCierreRows) {
+  let fechaOficialSerial = null;
+  for (let i = 1; i < calendarioCierreRows.length; i++) {
+    if (parseInt(calendarioCierreRows[i][0]) === jornadaQuiniela) {
+      fechaOficialSerial = calendarioCierreRows[i][1];
+      break;
+    }
+  }
+  if (fechaOficialSerial === null || fechaOficialSerial === undefined || fechaOficialSerial === '') return null;
+
+  const fechaOficial = serialToDate(fechaOficialSerial);
+  const esFinde = fechaOficial.getDay() === 0; // domingo
+
+  if (esFinde) {
+    let fechaViernes = null;
+    for (let j = 1; j < fechasCierreRows.length; j++) {
+      if (parseInt(fechasCierreRows[j][0]) !== jornadaQuiniela) continue;
+      const serialF = fechasCierreRows[j][2];
+      if (serialF === undefined || serialF === '') continue;
+      const f = serialToDate(serialF);
+      if (f.getDay() === 5) { fechaViernes = f; break; }
+    }
+    if (fechaViernes) {
+      fechaViernes.setHours(16, 0, 0, 0);
+      return fechaViernes;
+    } else {
+      const viernesRef = new Date(fechaOficial);
+      viernesRef.setDate(viernesRef.getDate() - 2);
+      viernesRef.setDate(viernesRef.getDate() + 1);
+      viernesRef.setHours(0, 0, 0, 0);
+      return viernesRef;
+    }
+  } else {
+    const martes = new Date(fechaOficial);
+    while (martes.getDay() !== 2) {
+      martes.setDate(martes.getDate() - 1);
+    }
+    martes.setHours(16, 0, 0, 0);
+    return martes;
+  }
+}
+
+// ============================================================
+// PARSEAR CONFIG
+// ============================================================
+function parsearConfig(rows) {
+  const config = {};
+  const jugadores = [];
+  let enJugadores = false;
+  rows.forEach(row => {
+    if (!row[0]) return;
+    if (row[0] === 'JUGADORES') { enJugadores = true; return; }
+    if (enJugadores) {
+      if (row[0]) jugadores.push(row[0]);
+    } else {
+      config[row[0]] = row[1] || '';
+    }
+  });
+  config.jugadores = jugadores;
+  return config;
+}
+
+// ============================================================
+// JORNADAS QUE SE JUEGAN, Y CUÁL TOCA AHORA (sin depender de Config)
+// ============================================================
+function calendarioActivo(calendario) {
+  return calendario
+    .filter(r => String(r[3]).toUpperCase() === 'TRUE')
+    .map(r => ({ jornada: parseInt(r[0]), fecha: r[1] || '', ligaPrimera: r[2] || '', dobles: r[4] !== '' && r[4] !== undefined ? r[4] : null }))
+    .sort((a, b) => a.jornada - b.jornada);
+}
+function calcularJornadaActual(jornadas) {
+  // La primera (más baja) jornada con partidos pero sin sus 15 resultados aún
+  const porJornada = {};
+  jornadas.forEach(r => {
+    const j = parseInt(r[0]);
+    if (!j) return;
+    if (!porJornada[j]) porJornada[j] = { total: 0, conResultado: 0 };
+    porJornada[j].total++;
+    if (r[4]) porJornada[j].conResultado++;
+  });
+  const nums = Object.keys(porJornada).map(Number).sort((a, b) => a - b);
+  for (const j of nums) {
+    if (porJornada[j].conResultado < 15) return j;
+  }
+  return nums.length ? nums[nums.length - 1] : null;
+}
+
+// Sustituye a calcularJornadaActual para decidir qué jornada mostrar en pantalla:
+// la más reciente cuyo plazo de envío ya ha cerrado (no depende de si hay resultados).
+function calcularJornadaMostrar(jornadasRows, calendarioCierreRows, fechasCierreRows) {
+  const nums = [...new Set(jornadasRows.map(r => parseInt(r[0])).filter(n => !!n))].sort((a, b) => a - b);
+  if (nums.length === 0) return null;
+  const ahora = new Date();
+  for (const j of nums) {
+    const cierre = calcularCierreJornada(j, calendarioCierreRows, fechasCierreRows);
+    const yaCerro = cierre && ahora >= cierre;
+    const filasJ = jornadasRows.filter(r => parseInt(r[0]) === j);
+    const conResultado = filasJ.filter(r => r[4]).length;
+    const totalResultados = filasJ.length;
+    const terminada = yaCerro && totalResultados > 0 && conResultado === totalResultados;
+    if (!terminada) return j; // la primera que no está del todo cerrada Y resuelta
+  }
+  return nums[nums.length - 1];
+}
+function mostrarNumerosFijos(config) {
+  const html = `
+    <div class="numero-fijo-linea"><strong>PRIMITIVA</strong>
+      <div class="numero-fijo-valor">${config['Primitiva Serie 1'] || '-'}</div>
+      <div class="numero-fijo-valor">${config['Primitiva Serie 2'] || '-'}</div>
+    </div>
+    <div class="numero-fijo-linea"><strong>BONOLOTO</strong>
+      <div class="numero-fijo-valor">${config['Bonoloto'] || '-'}</div>
+    </div>
+    <div class="numero-fijo-linea"><strong>EUROMILLÓN</strong>
+      <div class="numero-fijo-valor">${config['Euromillon'] || '-'} &nbsp;|&nbsp; Estrellas: ${config['Euromillon Estrellas'] || '-'}</div>
+    </div>
+    <div class="numero-fijo-linea"><strong>LOTERÍA</strong>
+      <div class="numero-fijo-valor">${config['Loteria'] || 'Aleatorio'}</div>
+    </div>
+  `;
+  document.getElementById('ini-numeros-fijos').innerHTML = html;
+}
+
+function numOp(v) {
+  return parseFloat(String(v || '0').replace(',', '.')) || 0;
+}
+
+function calcularCandidatosGranFinal(clasif, campeonesRows) {
+  const camp1 = campeonesRows.find(r => String(r[1]) === '1');
+  const camp2 = campeonesRows.find(r => String(r[1]) === '2');
+  const hayVuelta2Definitiva = !!camp2;
+
+  function maxPorCriterio(filas, obtenerValor) {
+    if (filas.length === 0) return { nombres: [], valor: 0 };
+    const valorMax = Math.max(...filas.map(obtenerValor));
+    const nombres = filas.filter(r => obtenerValor(r) === valorMax).map(r => r[1] || '');
+    return { nombres, valor: valorMax };
+  }
+
+  const activos = clasif.filter(r => (r[5] || '').toLowerCase() !== 'eliminado');
+  const camp2Provisional = maxPorCriterio(activos, r => numOp(r[2]));
+  const mejorAciertos = maxPorCriterio(clasif, r => numOp(r[2]));
+  const mejorPremios = maxPorCriterio(clasif, r => numOp(r[4]));
+
+  return [
+    { categoria: 'CAMPEÓN VUELTA 1', nombres: camp1 ? [camp1[2] || ''] : ['—'], definitivo: !!camp1, dato: '' },
+    { categoria: 'CAMPEÓN VUELTA 2', nombres: hayVuelta2Definitiva ? [camp2[2] || ''] : camp2Provisional.nombres, definitivo: hayVuelta2Definitiva, dato: hayVuelta2Definitiva ? '' : camp2Provisional.valor + ' ac.' },
+    { categoria: 'MEJOR ACIERTOS', nombres: mejorAciertos.nombres, definitivo: hayVuelta2Definitiva, dato: mejorAciertos.valor + ' ac.' },
+    { categoria: 'MEJOR PREMIOS', nombres: mejorPremios.nombres, definitivo: hayVuelta2Definitiva, dato: mejorPremios.valor.toFixed(0) + '€' },
+  ];
+}
+// ============================================================
+// CARGAR INICIO (QUITAR ESTE COMENTARIO??)
+// ============================================================
+async function cargarInicio(config, clasif, jornadas, calendario, calendarioCierreRows, fechasCierreRows, campeonesRows) {
+  document.getElementById('temporada-badge').textContent = config['Temporada'] || '';
+
+  const activas = calendarioActivo(calendario);
+  const jornadaActual = calcularJornadaMostrar(jornadas, calendarioCierreRows, fechasCierreRows);
+  const posActual = jornadaActual !== null ? activas.findIndex(a => a.jornada === jornadaActual) : -1;
+  const jActualRel = posActual >= 0 ? posActual + 1 : null;
+  const jugadas = posActual >= 0 ? posActual : 0;
+  const jTotal = activas.length;
+  const proxima = posActual >= 0 && posActual + 1 < activas.length ? activas[posActual + 1] : null;
+
+  const pct = jTotal ? Math.round((jugadas / jTotal) * 100) : 0;
+  document.getElementById('ini-jornada').textContent = jornadaActual !== null ? jornadaActual : '-';
+  const filaActual = jornadaActual !== null ? calendario.find(r => parseInt(r[0]) === jornadaActual) : null;
+  const ligaActual = filaActual ? (filaActual[2] || '') : '';
+  document.getElementById('ini-jornada-liga').textContent = ligaActual ? `(Liga 1ª: ${ligaActual})` : '';
+  document.getElementById('ini-jugadas').textContent = jugadas;
+  document.getElementById('ini-total').textContent = jTotal || '-';
+  document.getElementById('ini-barra').style.width = pct + '%';
+
+  const candidatos = calcularCandidatosGranFinal(clasif, campeonesRows);
+  let htmlCand = '';
+  candidatos.forEach(c => {
+    htmlCand += `<div class="candidato-fila">
+      <div class="candidato-categoria">${c.categoria}</div>
+      <div class="candidato-nombres">${c.nombres.join(', ')}
+        <span class="candidato-badge ${c.definitivo ? 'definitivo' : 'provisional'}">${c.definitivo ? 'DEFINITIVO' : 'PROVISIONAL'}</span>
+        ${c.dato ? `<span class="candidato-dato">${c.dato}</span>` : ''}
+      </div>
+    </div>`;
+  });
+  document.getElementById('ini-candidatos').innerHTML = htmlCand;
+
+  const elProxima = document.getElementById('ini-proxima-linea');
+  if (proxima) {
+    elProxima.textContent = 'Próxima: Jornada ' + proxima.jornada + ' (Quiniela)' +
+      (proxima.ligaPrimera ? ' · Liga 1ª: Jornada ' + proxima.ligaPrimera : '') +
+      (proxima.fecha ? ' · ' + proxima.fecha : '');
+  } else {
+    elProxima.textContent = '';
+  }
+  mostrarNumerosFijos(config);
+}
+// ============================================================
+// CARGAR CLASIFICACION
+// ============================================================
+function cargarClasificacion(clasif) {
+  let html = '<thead><tr><th>Pos</th><th>Jugador</th><th style="text-align:right">Aciertos</th><th style="text-align:right">Pleno15</th><th style="text-align:right">Premios</th><th class="col-estado">Estado</th></tr></thead><tbody>';
+  clasif.forEach((row, i) => {
+    const pos = i + 1;
+    const nombre = row[1] || '';
+    const estado = (row[5] || 'activo').toLowerCase();
+    const eliminado = estado === 'eliminado';
+    const cls = eliminado ? 'eliminado' : 'nombre-jugador';
+    const posCls = pos <= 3 ? `pos-${pos}` : '';
+    const estadoBadge = eliminado
+      ? '<span class="estado-badge estado-eliminado">Eliminado</span>'
+      : '<span class="estado-badge estado-activo">Activo</span>';
+    html += `<tr>
+      <td class="pos-num ${posCls}">${pos}</td>
+      <td><span class="${cls}">${nombre}</span></td>
+      <td class="num-stat">${row[2] || 0}</td>
+      <td class="num-stat">${row[3] || 0}</td>
+      <td class="num-stat">${row[4] ? parseFloat(row[4]).toFixed(0)+'€' : '0€'}</td>
+      <td class="col-estado">${estadoBadge}</td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('tabla-clasif-completa').innerHTML = html;
+}
+let calJugadores = [], calJugadorEliminado = [], calJornadas = [], calMarcadores = [],
+    calCalendarioCierre = [], calFechasCierre = [], calActivasTodas = [], calJornadaActualReal = null;
+
+function calcularEliminadoProvisional(clasif) {
+  const activos = clasif.filter(r => (r[5] || '').toString().toLowerCase() !== 'eliminado' && r[1]);
+  if (activos.length === 0) return null;
+
+  const minAciertos = Math.min(...activos.map(r => numOp(r[2])));
+  let candidatos = activos.filter(r => numOp(r[2]) === minAciertos);
+
+  if (candidatos.length > 1) {
+    const minPremios = Math.min(...candidatos.map(r => numOp(r[4])));
+    candidatos = candidatos.filter(r => numOp(r[4]) === minPremios);
+  }
+  if (candidatos.length > 1) {
+    const minP15 = Math.min(...candidatos.map(r => numOp(r[3])));
+    candidatos = candidatos.filter(r => numOp(r[3]) === minP15);
+  }
+  candidatos.sort((a, b) => String(a[1]).localeCompare(String(b[1])));
+  return String(candidatos[0][1]).trim().toUpperCase();
+}
+// ============================================================
+// CARGAR JORNADA
+// ============================================================
+
+function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierreRows, fechasCierreRows, clasif, eliminacionesLog) {
+  const activas = calendarioActivo(calendario);
+  const jornadaActual = calcularJornadaMostrar(jornadas, calendarioCierreRows, fechasCierreRows);
+
+  if (jornadaActual === null) {
+    document.getElementById('jor-badge').textContent = 'Jornada -';
+    document.getElementById('jor-partidos').innerHTML = '<div class="loading">Sin datos de jornada</div>';
+    return;
+  }
+
+  const posActual = activas.findIndex(a => a.jornada === jornadaActual);
+  const jornadaRel = posActual >= 0 ? posActual + 1 : jornadaActual;
+  const ligaPrimera = posActual >= 0 ? activas[posActual].ligaPrimera : '';
+
+  const filas = jornadas.filter(r => parseInt(r[0]) === jornadaActual);
+
+  const dobles = posActual >= 0 ? activas[posActual].dobles : null;
+  const textoDobles = dobles !== null ? (' · ' + dobles + (dobles === 1 ? ' doble' : ' dobles')) : '';
+  document.getElementById('jor-badge').textContent = 'Jornada ' + jornadaActual +
+    (ligaPrimera ? ' (Liga 1ª: Jornada ' + ligaPrimera + ')' : '') + textoDobles;
+
+  if (filas.length === 0) {
+    document.getElementById('jor-partidos').innerHTML = '<div class="loading">Sin datos de jornada</div>';
+    return;
+  }
+
+  // Marcadores reales (marcador -> partido), solo de la jornada actual
+  const marcadorPorPartido = {};
+  marcadores.forEach(row => {
+    if (parseInt(row[0]) === jornadaActual) {
+      marcadorPorPartido[row[1]] = row[2] || '';
+    }
+  });
+
+  // Partidos
+  let htmlPartidos = '';
+  filas.forEach((row, i) => {
+    const num = i + 1;
+    const local = row[2] || '';
+    const visitante = row[3] || '';
+    const resultado = row[4] || '';
+    const marcador = marcadorPorPartido[num] || '';
+    const esP15 = num === 15;
+    htmlPartidos += `<div class="partido-row">
+      <span class="partido-num">${num}</span>
+      <span class="partido-equipos">${local} — ${visitante}</span>
+      ${esP15 ? '<span class="partido-p15">P15</span>' : ''}
+      ${marcador ? `<span class="partido-marcador">${marcador}</span>` : ''}
+      <span class="partido-resultado">${resultado}</span>
+    </div>`;
+  });
+  document.getElementById('jor-partidos').innerHTML = htmlPartidos;
+    // Resultado real de la jornada anterior (ya cerrada), como recordatorio persistente
+  const numsParaAnterior = [...new Set(jornadas.map(r => parseInt(r[0])).filter(n => !!n))].sort((a, b) => a - b);
+  const posParaAnterior = numsParaAnterior.indexOf(jornadaActual);
+  const jornadaAnteriorNum = posParaAnterior > 0 ? numsParaAnterior[posParaAnterior - 1] : null;
+  const elResultadoAnterior = document.getElementById('jor-resultado-anterior');
+  const filaLog = jornadaAnteriorNum ? eliminacionesLog.find(r => parseInt(r[0]) === jornadaAnteriorNum) : null;
+  if (filaLog) {
+    elResultadoAnterior.style.display = 'block';
+    elResultadoAnterior.innerHTML = `<div class="info-cierre">Jornada ${jornadaAnteriorNum}: <strong>${filaLog[1]}</strong></div>`;
+  } else {
+    elResultadoAnterior.style.display = 'none';
+  }
+  const conResultado = filas.filter(f => f[4]).length;
+  const elEliminadoProv = document.getElementById('jor-eliminado-provisional');
+  if (conResultado >= 8 && conResultado < 15) {
+    const nombreProv = calcularEliminadoProvisional(clasif);
+    if (nombreProv) {
+      elEliminadoProv.style.display = 'block';
+      elEliminadoProv.innerHTML = `<div class="aviso-provisional">⚠️ Si la jornada acabara ahora: <strong>ELIMINADO — ${nombreProv}</strong> <span style="opacity:0.8;">(puede cambiar con los resultados que faltan)</span></div>`;
+    } else {
+      elEliminadoProv.style.display = 'none';
+    }
+  } else {
+    elEliminadoProv.style.display = 'none';
+  }
+  // Jugadores y eliminados: se calcula siempre, lo necesitan tanto la jornada
+  // actual (si ya cerró) como la jornada anterior (más abajo)
+  const jugadores = config.jugadores || [];
+  const eliminadosSet = new Set(
+    clasif
+      .filter(r => (r[5] || '').toString().toLowerCase() === 'eliminado')
+      .map(r => (r[1] || '').toString().trim().toUpperCase())
+  );
+  const jugadorEliminado = jugadores.map(j => eliminadosSet.has(j.toString().trim().toUpperCase()));
+
+  // Pronósticos de la jornada actual: ocultos para todos hasta que cierre el plazo de envío
+  const cierre = calcularCierreJornada(jornadaActual, calendarioCierreRows, fechasCierreRows);
+  const cerrado = cierre ? (new Date() >= cierre) : false;
+
+  if (!cerrado) {
+    const mensajeCierre = cierre
+      ? `Los pronósticos se mostrarán cuando cierre el plazo de envío (${cierre.toLocaleDateString('es-ES')} a las ${cierre.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'})}).`
+      : 'Los pronósticos se mostrarán cuando cierre el plazo de envío de esta jornada.';
+    document.getElementById('jor-pronos').innerHTML = `<div class="loading">${mensajeCierre}</div>`;
+  } else {
+    let htmlPronos = '<table class="tabla-pronos"><thead><tr><th class="partido-col">Nº</th>';
+    jugadores.forEach((j, ji) => {
+      if (jugadorEliminado[ji]) return;
+      htmlPronos += `<th>${j.substring(0,4)}</th>`;
+    });
+    htmlPronos += '</tr></thead><tbody>';
+
+    const aciertosJugador = jugadores.map(() => 0);
+
+    filas.forEach((row, i) => {
+      const resultado = row[4] || '';
+      htmlPronos += `<tr><td class="partido-col">${i + 1}</td>`;
+      jugadores.forEach((j, ji) => {
+        if (jugadorEliminado[ji]) return;
+        const prono = row[5 + ji] || '';
+        let cls = '';
+        if (resultado && prono) {
+          cls = (prono === resultado || resultado.includes(prono) || prono.includes(resultado)) ? 'acertado' : 'fallado';
+          if (cls === 'acertado') aciertosJugador[ji]++;
+        }
+        htmlPronos += `<td class="${cls}">${prono.replace(/\s/g, '')}</td>`;
+      });
+      htmlPronos += '</tr>';
+    });
+    htmlPronos += '</tbody><tfoot><tr><td class="partido-col">Ac.</td>';
+    jugadores.forEach((j, ji) => {
+      if (jugadorEliminado[ji]) return;
+      htmlPronos += `<td>${aciertosJugador[ji]}</td>`;
+    });
+    htmlPronos += '</tr></tfoot></table>';
+    document.getElementById('jor-pronos').innerHTML = htmlPronos;
+  }
+// Guardamos los datos que necesitará el Calendario, para no tener que recalcularlos
+calJugadores = jugadores;
+calJugadorEliminado = jugadorEliminado;
+calJornadas = jornadas;
+calMarcadores = marcadores;
+calCalendarioCierre = calendarioCierreRows;
+calFechasCierre = fechasCierreRows;
+calJornadaActualReal = jornadaActual;
+
+const jIni = parseInt(config['Jornada Inicio']) || 1;
+const totalJor = parseInt(config['Total jornadas']) || 999;
+const jFin = jIni + totalJor - 1;
+calActivasTodas = calendario
+  .filter(r => { const j = parseInt(r[0]); return j >= jIni && j <= jFin; })
+  .map(r => ({ jornada: parseInt(r[0]), fecha: r[1] || '', ligaPrimera: r[2] || '' }))
+  .sort((a, b) => a.jornada - b.jornada);
+}
+function abrirCalendario() {
+  document.getElementById('jornada-vista-actual').style.display = 'none';
+  document.getElementById('jornada-vista-calendario').style.display = 'block';
+  construirTablaCalendario();
+  const numInput = document.getElementById('calendario-num');
+  if (calActivasTodas.length) {
+    numInput.min = calActivasTodas[0].jornada;
+    numInput.max = calActivasTodas[calActivasTodas.length - 1].jornada;
+  }
+  numInput.value = calJornadaActualReal || 1;
+  document.querySelector('input[name="calendario-modo"][value="actual"]').checked = true;
+  mostrarJornadaCalendario();
+}
+
+function cerrarCalendario() {
+  document.getElementById('jornada-vista-calendario').style.display = 'none';
+  document.getElementById('jornada-vista-actual').style.display = 'block';
+}
+
+function toggleTablaCalendario() {
+  const wrap = document.getElementById('calendario-tabla-wrap');
+  const icono = document.getElementById('calendario-toggle-icono');
+  const abierto = wrap.style.display !== 'none';
+  wrap.style.display = abierto ? 'none' : 'block';
+  icono.textContent = abierto ? '▼' : '▲';
+}
+
+function construirTablaCalendario() {
+  let html = '<thead><tr><th class="partido-col">Quiniela</th><th>Liga 1ª</th><th>Fecha</th></tr></thead><tbody>';
+  calActivasTodas.forEach(a => {
+    const esActual = a.jornada === calJornadaActualReal;
+    html += `<tr${esActual ? ' style="font-weight:700; color:var(--verde);"' : ''}>
+      <td class="partido-col">${a.jornada}</td>
+      <td>${a.ligaPrimera || '-'}</td>
+      <td>${a.fecha || '-'}</td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('calendario-tabla').innerHTML = html;
+}
+
+function mostrarJornadaCalendario() {
+  const modo = document.querySelector('input[name="calendario-modo"]:checked').value;
+  const numInput = document.getElementById('calendario-num');
+  let jornadaElegida = modo === 'actual' ? calJornadaActualReal : (parseInt(numInput.value) || calJornadaActualReal);
+  if (modo === 'numero') numInput.value = jornadaElegida;
+
+  const entradaCal = calActivasTodas.find(a => a.jornada === jornadaElegida);
+  const filas = calJornadas.filter(r => parseInt(r[0]) === jornadaElegida);
+
+  let html = `<div style="margin-bottom:10px; font-size:13px; color:var(--gris);">
+    Jornada ${jornadaElegida} (Quiniela)${entradaCal && entradaCal.ligaPrimera ? ' · Liga 1ª: Jornada ' + entradaCal.ligaPrimera : ''}${entradaCal && entradaCal.fecha ? ' · ' + entradaCal.fecha : ''}
+  </div>`;
+
+  if (filas.length === 0) {
+    html += '<div class="loading">Aún no hay partidos descargados para esta jornada.</div>';
+    document.getElementById('calendario-resultado').innerHTML = html;
+    return;
+  }
+
+  const marcadorPorPartido = {};
+  calMarcadores.forEach(row => {
+    if (parseInt(row[0]) === jornadaElegida) marcadorPorPartido[row[1]] = row[2] || '';
+  });
+
+  filas.forEach((row, i) => {
+    const num = i + 1;
+    const marcador = marcadorPorPartido[num] || '';
+    html += `<div class="partido-row">
+      <span class="partido-num">${num}</span>
+      <span class="partido-equipos">${row[2] || ''} — ${row[3] || ''}</span>
+      ${num === 15 ? '<span class="partido-p15">P15</span>' : ''}
+      ${marcador ? `<span class="partido-marcador">${marcador}</span>` : ''}
+      <span class="partido-resultado">${row[4] || ''}</span>
+    </div>`;
+  });
+
+  const cierre = calcularCierreJornada(jornadaElegida, calCalendarioCierre, calFechasCierre);
+  const cerrado = cierre ? (new Date() >= cierre) : false;
+
+  if (!cerrado) {
+    html += `<div class="loading" style="margin-top:10px;">Los pronósticos de esta jornada aún no están visibles.</div>`;
+  } else {
+    let htmlPronos = '<table class="tabla-pronos"><thead><tr><th class="partido-col">Nº</th>';
+    calJugadores.forEach((j, ji) => {
+      if (calJugadorEliminado[ji]) return;
+      htmlPronos += `<th>${j.substring(0,4)}</th>`;
+    });
+    htmlPronos += '</tr></thead><tbody>';
+    filas.forEach((row, i) => {
+      const resultado = row[4] || '';
+      htmlPronos += `<tr><td class="partido-col">${i + 1}</td>`;
+      calJugadores.forEach((j, ji) => {
+        if (calJugadorEliminado[ji]) return;
+        const prono = row[5 + ji] || '';
+        let cls = '';
+        if (resultado && prono) {
+          cls = (prono === resultado || resultado.includes(prono) || prono.includes(resultado)) ? 'acertado' : 'fallado';
+        }
+        htmlPronos += `<td class="${cls}">${prono.replace(/\s/g, '')}</td>`;
+      });
+      htmlPronos += '</tr>';
+    });
+    htmlPronos += '</tbody></table>';
+    html += `<div style="margin-top:12px; overflow-x:auto;">${htmlPronos}</div>`;
+  }
+
+  document.getElementById('calendario-resultado').innerHTML = html;
+}
+// ============================================================
+// CARGAR ECONOMICO
+// ============================================================
+function toggleDetalleSemanal() {
+  const body = document.getElementById('eco-detalle-semanal-body');
+  const icono = document.getElementById('eco-toggle-icono');
+  const abierto = body.style.display !== 'none';
+  body.style.display = abierto ? 'none' : 'block';
+  icono.textContent = abierto ? '▼' : '▲';
+}
+function numOp(v) {
+  return parseFloat(String(v || '0').replace(',', '.')) || 0;
+}
+let operacionesGlobal = [];
+let ultimaSemanaGlobal = 1;
+
+const ICONOS_JUEGO = {
+  'BONOLOTO':   { color: '#1a6b3c', simbolo: 'B' },
+  'PRIMITIVA':  { color: '#c0392b', simbolo: 'P' },
+  'EUROMILLÓN': { color: '#2d9e5f', simbolo: 'E' },
+  'LOTERÍA':    { color: '#f39c12', simbolo: '€' },
+  'QUINIELA':   { color: '#1a1a1a', simbolo: '1X2' },
+};
+
+function mostrarPremiosSemana() {
+  const modo = document.querySelector('input[name="premios-modo"]:checked').value;
+  const numInput = document.getElementById('premios-semana-num');
+  let semana = modo === 'ultima' ? ultimaSemanaGlobal : parseInt(numInput.value) || 1;
+  if (semana < 1) semana = 1;
+  if (semana > 53) semana = 53;
+  if (modo === 'numero') numInput.value = semana;
+
+  const filas = operacionesGlobal.filter(r => parseInt(r[0]) === semana);
+
+  if (filas.length !== 5) {
+    document.getElementById('premios-semana-resultado').innerHTML =
+      `<div style="color:var(--gris); text-align:center; padding:16px; font-size:14px;">
+        La semana ${semana} todavía no se ha traspasado desde OP_Claude (o está incompleta).
+      </div>`;
+    return;
+  }
+
+  let total = 0;
+  const porJuego = [];
+  filas.forEach(row => {
+    const premio = numOp(row[4]);
+    total += premio;
+    if (premio > 0) porJuego.push({ juego: row[2] || '', premio });
+  });
+
+  const esFiesta = total >= 50;
+  let html = `<div class="premios-total ${esFiesta ? 'premios-fiesta' : ''}">
+    <div style="font-size:12px; color:var(--gris); letter-spacing:1px;">SEMANA ${semana} · TOTAL PREMIOS</div>
+    <div style="font-family:'Bebas Neue',sans-serif; font-size:32px;">${total.toFixed(2)}€</div>
+    ${esFiesta ? '<div class="premios-confeti"></div>' : ''}
+  </div>`;
+
+  if (porJuego.length === 0) {
+    html += `<div style="color:var(--gris); text-align:center; padding:12px; font-size:14px;">Sin premios esa semana</div>`;
+  } else {
+    html += '<div class="premios-chips">';
+    porJuego.forEach(p => {
+      const icono = ICONOS_JUEGO[p.juego.toUpperCase()] || { color: 'var(--gris)', simbolo: '?' };
+      html += `<div class="premio-chip">
+        <div class="premio-icono" style="background:${icono.color};">${icono.simbolo}</div>
+        <div class="premio-nombre">${p.juego}</div>
+        <div class="premio-importe">${p.premio.toFixed(2)}€</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  document.getElementById('premios-semana-resultado').innerHTML = html;
+}
+
+function cargarEconomico(resumen, operaciones, paganinis, config) {
+  operacionesGlobal = operaciones;
+  const conteoPorSemana = {};
+  const bonolotoJugado = {};
+  operaciones.forEach(r => {
+    const s = parseInt(r[0]);
+    if (isNaN(s)) return;
+    conteoPorSemana[s] = (conteoPorSemana[s] || 0) + 1;
+    if (String(r[2]).toUpperCase() === 'BONOLOTO' && numOp(r[3]) > 0) bonolotoJugado[s] = true;
+  });
+  const semanasCompletas = Object.keys(conteoPorSemana).map(Number).filter(s => conteoPorSemana[s] === 5 && bonolotoJugado[s]);
+  ultimaSemanaGlobal = semanasCompletas.length ? Math.max(...semanasCompletas) : 1;
+  const datos = {};
+  resumen.forEach(row => {
+    if (row[0]) datos[row[0]] = row[1];
+  });
+
+  const num = (k) => {
+    const v = datos[k];
+    if (v === undefined || v === '') return null;
+    return parseFloat(String(v).replace(',', '.'));
+  };
+
+  document.getElementById('eco-temporada-badge').textContent = datos['Temporada'] || '-';
+
+  // Aportaciones: calculado en vivo desde Paganinis (suma de lo ya pagado)
+  let aportaciones = 0;
+  paganinis.forEach(row => {
+    aportaciones += parseFloat(String(row[1] || '0').replace(',', '.')) || 0;
+  });
+
+  // Juegos y Premios: calculados en vivo desde Operaciones
+  let gastosJuegos = 0, premios = 0;
+  operaciones.forEach(row => {
+    gastosJuegos += numOp(row[3]);
+    premios += numOp(row[4]);
+  });
+
+  const saldoAnterior = num('Saldo anterior') || 0;
+  const otros = num('Otros') || 0;
+
+  const totalIngresos = saldoAnterior + aportaciones + premios;
+  const totalGastos = gastosJuegos + otros;
+  const saldo = totalIngresos - totalGastos;
+
+  const saldoEl = document.getElementById('eco-saldo');
+  saldoEl.textContent = (saldo >= 0 ? '+' : '') + saldo.toFixed(2) + '€';
+  saldoEl.className = 'resumen-valor ' + (saldo >= 0 ? 'valor-positivo' : 'valor-negativo');
+
+  // Barra Ingresos vs Gastos
+  const sumaTotal = totalIngresos + totalGastos;
+  const pctIngresos = sumaTotal > 0 ? (totalIngresos / sumaTotal * 100) : 50;
+  document.getElementById('eco-barra-ingresos').style.width = pctIngresos + '%';
+  document.getElementById('eco-barra-gastos').style.width = (100 - pctIngresos) + '%';
+  document.getElementById('eco-total-ingresos').textContent = totalIngresos.toFixed(2) + '€';
+  document.getElementById('eco-total-gastos').textContent = totalGastos.toFixed(2) + '€';
+
+  let html = '<thead><tr><th>Concepto</th><th>Importe</th></tr></thead><tbody>';
+  html += `<tr><td>Saldo anterior</td><td class="importe-positivo">+${saldoAnterior.toFixed(2)}€</td></tr>`;
+  html += `<tr><td>Aportaciones</td><td class="importe-positivo">+${aportaciones.toFixed(2)}€</td></tr>`;
+  html += `<tr><td>Premios</td><td class="importe-positivo">+${premios.toFixed(2)}€</td></tr>`;
+  html += `<tr class="fila-total"><td>Total Ingresos</td><td class="importe-positivo">${totalIngresos.toFixed(2)}€</td></tr>`;
+  html += `<tr><td>Juegos</td><td class="importe-negativo">-${gastosJuegos.toFixed(2)}€</td></tr>`;
+  html += `<tr><td>Otros</td><td class="importe-negativo">${otros === 0 ? '-' : '-' + otros.toFixed(2) + '€'}</td></tr>`;
+  html += `<tr class="fila-total"><td>Total Gastos</td><td class="importe-negativo">-${totalGastos.toFixed(2)}€</td></tr>`;
+  html += '</tbody>';
+  document.getElementById('eco-detalle').innerHTML = html;
+
+  // Semanas jugadas: solo contamos semanas con Bonoloto realmente jugada (coste > 0),
+  // para no contar de más filas ya presentes en Operaciones sin jugar todavía
+  const semanasJugadas = new Set(
+    operaciones
+      .filter(row => String(row[2]).toUpperCase() === 'BONOLOTO' && numOp(row[3]) > 0)
+      .map(row => row[0])
+  ).size;
+  const semanasTotales = parseInt(config['Semanas Totales']) || 53;
+  const pctTemporada = Math.round((semanasJugadas / semanasTotales) * 100);
+
+  // Cuota actual y previsión para el año que viene
+  const cuotaActual = num('Cuota actual');
+  document.getElementById('eco-cuota-actual').textContent = cuotaActual !== null ? cuotaActual.toFixed(2) + '€' : '-';
+
+  const fechaCierreTemporada = config['Fecha Cierre Temporada']
+    ? new Date(config['Fecha Cierre Temporada'].split('/').reverse().join('-'))
+    : null;
+  const diasParaCierre = fechaCierreTemporada
+    ? Math.round((fechaCierreTemporada - new Date()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  if (diasParaCierre !== null && diasParaCierre <= 20 && semanasJugadas > 0) {
+    const gastoPrevisto = Math.ceil(gastosJuegos * (semanasTotales / semanasJugadas));
+    const necesario = gastoPrevisto - saldo;
+    const numMiembros = parseInt(config['Miembros']) || 14;
+    let previsionCuota = Math.ceil((necesario / numMiembros) / 5) * 5;
+    if (previsionCuota < 10) previsionCuota = 10;
+    document.getElementById('eco-prevision-cuota').textContent = previsionCuota.toFixed(2) + '€ (orientativo)';
+  } else {
+    document.getElementById('eco-prevision-cuota').textContent = 'aún no disponible';
+  }
+  // Paganinis: quién ha pagado, quién falta
+  let htmlPaganinis = '<thead><tr><th>Jugador</th><th>Estado</th></tr></thead><tbody>';
+  paganinis.forEach(row => {
+    const nombre = row[0] || '';
+    if (!nombre) return;
+    const importe = parseFloat(String(row[1] || '').replace(',', '.'));
+    const pagado = row[1] !== '' && row[1] !== undefined && !isNaN(importe);
+    htmlPaganinis += `<tr><td>${nombre}</td><td class="${pagado ? 'importe-positivo' : ''}">${pagado ? importe.toFixed(2) + '€ ✓' : 'Pendiente'}</td></tr>`;
+  });
+  htmlPaganinis += '</tbody>';
+  document.getElementById('eco-paganinis').innerHTML = htmlPaganinis;
+
+  // Resumen por juego, calculado a partir de Operaciones
+  const porJuego = {};
+  operaciones.forEach(row => {
+    const juego = row[2] || '';
+    if (!juego) return;
+    if (!porJuego[juego]) porJuego[juego] = { coste: 0, premio: 0 };
+    porJuego[juego].coste += numOp(row[3]);
+    porJuego[juego].premio += numOp(row[4]);
+  });
+  let totalCoste = 0, totalPremio = 0;
+  let htmlJuego = '<thead><tr><th>Juego</th><th>Gastado</th><th>Premiado</th></tr></thead><tbody>';
+  Object.keys(porJuego).forEach(juego => {
+    const d = porJuego[juego];
+    totalCoste += d.coste;
+    totalPremio += d.premio;
+    htmlJuego += `<tr><td>${juego}</td><td class="importe-negativo">${d.coste.toFixed(2)}€</td><td class="${d.premio > 0 ? 'importe-positivo' : ''}">${d.premio.toFixed(2)}€</td></tr>`;
+  });
+  htmlJuego += `<tr class="fila-total"><td>Total</td><td class="importe-negativo">${totalCoste.toFixed(2)}€</td><td class="importe-positivo">${totalPremio.toFixed(2)}€</td></tr>`;
+  htmlJuego += '</tbody>';
+  document.getElementById('eco-resumen-juego').innerHTML = htmlJuego;
+
+  // % de temporada completada, según semanas distintas en Operaciones
+  document.getElementById('eco-semanas').textContent = `${semanasJugadas} de ${semanasTotales} (${pctTemporada}%)`;
+  document.getElementById('eco-semanas-barra').style.width = pctTemporada + '%';
+
+  // Detalle semanal completo, para auditoría
+  let htmlDetalle = '<thead><tr><th>Sem.</th><th>Fecha</th><th>Juego</th><th>Coste</th><th>Premio</th></tr></thead><tbody>';
+  operaciones.forEach(row => {
+    const coste = numOp(row[3]);
+    const premio = numOp(row[4]);
+    htmlDetalle += `<tr><td>${row[0] || ''}</td><td>${row[1] || ''}</td><td>${row[2] || ''}</td><td class="importe-negativo">${coste.toFixed(2)}€</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio.toFixed(2)}€</td></tr>`;
+  });
+  htmlDetalle += '</tbody>';
+  document.getElementById('eco-detalle-semanal').innerHTML = htmlDetalle;
+  document.getElementById('premios-semana-num').value = ultimaSemanaGlobal;
+  mostrarPremiosSemana();
+}
+// ============================================================
+// CARGAR HISTORICO
+// ============================================================
+function cargarHistorico(historico) {
+  // Ranking: cuántas veces ha sido campeón cada uno, contando todas las filas
+  const conteo = {};
+  historico.forEach(row => {
+    if (!row[0] || row[0] === 'Año') return;
+    const nombre = row[1] || '';
+    if (!nombre) return;
+    conteo[nombre] = (conteo[nombre] || 0) + 1;
+  });
+  const ranking = Object.entries(conteo).sort((a, b) => b[1] - a[1]);
+
+  let html = '';
+  if (ranking.length) {
+    html += '<div class="historico-ranking">';
+    ranking.forEach(([nombre, titulos], i) => {
+      html += `<div class="ranking-item">
+        <span class="ranking-pos">${i + 1}</span>
+        <span class="ranking-nombre">${nombre}</span>
+        <span class="ranking-titulos">${titulos} ${titulos === 1 ? 'título' : 'títulos'}</span>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  const filas = [...historico].reverse(); // más reciente primero
+  filas.forEach(row => {
+    if (!row[0] || row[0] === 'Año') return;
+    const año = row[0];
+    const campeon = row[1] || '-';
+    const v1 = row[2] || '';
+    const v2 = row[3] || '';
+    const sub = [v1 ? '1ª: ' + v1 : '', v2 ? '2ª: ' + v2 : ''].filter(Boolean).join(' · ');
+    html += `<div class="historico-item">
+      <div class="historico-year">${año}</div>
+      <div class="historico-info">
+        <div class="historico-campeon">${campeon}</div>
+        ${sub ? `<div class="historico-sub">${sub}</div>` : ''}
+      </div>
+      <div class="trofeo">🏆</div>
+    </div>`;
+  });
+  document.getElementById('historico-lista').innerHTML = html || '<div class="loading">Sin datos</div>';
+}
+
+// ============================================================
+// CARGAR ESTATUTOS
+// ============================================================
+function cargarEstatutos(estatutos) {
+  let html = '';
+  estatutos.forEach(row => {
+    if (!row[0]) { html += '<br>'; return; }
+    const texto = row[0];
+    if (texto.startsWith('CAPÍTULO') || texto === 'PREÁMBULO') {
+      html += `<h3>${texto}</h3>`;
+    } else if (texto === 'ESTATUTOS PEÑA BANDOSMÁVILA') {
+      // título ya en header
+    } else {
+      html += `<p>${texto}</p>`;
+    }
+  });
+  document.getElementById('estatutos-content').innerHTML = html;
+}
+// ============================================================
+// CARGAR ELIMINACION
+// ============================================================
+function cargarRankingFinal(rows) {
+  if (!rows || rows.length === 0) {
+    document.getElementById('card-ranking-final').style.display = 'none';
+    return;
+  }
+  document.getElementById('card-ranking-final').style.display = '';
+
+  // Ordenar de abajo hacia arriba: puesto más alto (más eliminados quedan) primero,
+  // puesto 1 (campeón) al final, igual que el Excel de siempre
+  const filas = rows
+    .filter(r => r[1])
+    .map(r => ({ vuelta: r[0], nombre: r[1], puesto: parseInt(r[2]) }))
+    .sort((a, b) => b.puesto - a.puesto);
+
+  let html = '<thead><tr><th>Puesto</th><th>Nombre</th><th style="text-align:right">Vuelta</th></tr></thead><tbody>';
+  filas.forEach(f => {
+    const esCampeon = f.puesto === 1;
+    html += `<tr class="${esCampeon ? 'fila-pena' : ''}"><td>${f.puesto}</td><td>${f.nombre}</td><td style="text-align:right">${f.vuelta}</td></tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('tabla-ranking-final').innerHTML = html;
+}
+// ============================================================
+// MAIN — cargar todo
+// ============================================================
+let podiumData = null; // guardado para poder reabrir sin recalcular
+let podiumTimer = null;
+
+function cargarTrono(campeones, podium, campeonesCierreRows) {
+  const cont = document.getElementById('trono-container');
+  const ahora = new Date();
+
+  function diasDesde(fecha) {
+    return (ahora - new Date(fecha)) / (1000 * 60 * 60 * 24);
+  }
+  function fechaRealCampeon(filaCampeon) {
+    // Busca la fecha sin ambigüedad (serie) de esta misma fila, cruzando por año+vuelta+nombre
+    const fila = campeonesCierreRows.slice(1).find(r =>
+      String(r[0]) === String(filaCampeon[0]) && r[1] === filaCampeon[1] && r[2] === filaCampeon[2]
+    );
+    if (fila && fila[3]) return serialToDate(fila[3]);
+    return new Date(filaCampeon[3]); // red de seguridad si no se encuentra
+  }
+  const granFinal = [...campeones].reverse().find(r => r[1] === 'GranFinal');
+  const vuelta2 = [...campeones].reverse().find(r => r[1] === '2');
+  const vuelta1 = [...campeones].reverse().find(r => r[1] === '1');
+
+  let html = '';
+
+  if (granFinal && diasDesde(fechaRealCampeon(granFinal)) <= 15) {
+    const anioFinal = String(granFinal[0]);
+    podiumData = podium
+      .filter(r => String(r[0]) === anioFinal)
+      .sort((a, b) => parseInt(a[1]) - parseInt(b[1]))
+      .map(r => r[2]);
+    if (podiumData.length === 0) podiumData = [granFinal[2]]; // red de seguridad si el pódium no llegó a guardarse
+
+    html = `<div class="card podio-trigger" onclick="abrirPodium()" style="background:linear-gradient(135deg,#c9a227,#f0d878); text-align:center; padding:20px; cursor:pointer;">
+      <div style="font-size:13px; letter-spacing:1px; opacity:0.8;">🏆 GRAN CAMPEÓN DE LA TEMPORADA</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:30px; margin-top:2px;">${granFinal[2]}</div>
+      <div style="font-size:12px; margin-top:6px; opacity:0.75;">Toca para ver el pódium</div>
+    </div>`;
+  } else if (vuelta2 && !granFinal) {
+    html = `<div class="card" style="background:var(--verde); color:#fff; text-align:center; padding:20px;">
+      <div style="font-size:12px; letter-spacing:1px; opacity:0.85;">CAMPEÓN VUELTA 2</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:26px; margin-top:2px;">${vuelta2[2]}</div>
+    </div>`;
+  } else if (vuelta1 && diasDesde(fechaRealCampeon(vuelta1)) <= 7) {
+    html = `<div class="card" style="background:var(--verde); color:#fff; text-align:center; padding:20px;">
+      <div style="font-size:12px; letter-spacing:1px; opacity:0.85;">CAMPEÓN VUELTA 1</div>
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:26px; margin-top:2px;">${vuelta1[2]}</div>
+    </div>`;
+  }
+
+  cont.innerHTML = html;
+}
+
+const COLORES_GLOBO = ['#c9a227', 'var(--verde-claro)', 'var(--amarillo)', '#9c9384'];
+
+function abrirPodium() {
+  if (!podiumData || podiumData.length === 0) return;
+
+  let html = '<div class="podio-overlay" id="podio-overlay" onclick="if(event.target===this) cerrarPodium()">';
+  html += '<div class="podio-caja">';
+  html += '<div class="podio-escalones">';
+  podiumData.forEach((nombre, idx) => {
+    const puesto = idx + 1;
+    const esCampeon = puesto === 1;
+    const alturaBase = 100 - idx * 22;
+    html += `<div class="podio-columna">
+      <div class="globo ${esCampeon ? 'globo-campeon' : 'globo-resto'}" style="background:${COLORES_GLOBO[idx] || COLORES_GLOBO[3]};">
+        <div class="globo-ojos"><span></span><span></span></div>
+        <div class="globo-mano globo-mano-izq"></div>
+        <div class="globo-mano globo-mano-der"></div>
+      </div>
+      <div class="podio-nombre">${nombre}</div>
+      <div class="podio-escalon" style="height:${alturaBase}px;">${puesto}º</div>
+    </div>`;
+  });
+  html += '</div>';
+  html += '<div class="podio-confeti"></div>';
+  html += '</div></div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+
+  if (podiumTimer) clearTimeout(podiumTimer);
+  podiumTimer = setTimeout(cerrarPodium, 30000);
+}
+function mostrarFraseDia(frases) {
+  const validas = frases.filter(r => r[0]);
+  if (validas.length === 0) return;
+  const elegida = validas[Math.floor(Math.random() * validas.length)];
+  const el = document.getElementById('frase-dia');
+  if (el) el.textContent = `"${elegida[0]}"${elegida[1] ? ' — ' + elegida[1] : ''}`;
+}
+function cerrarPodium() {
+  const overlay = document.getElementById('podio-overlay');
+  if (overlay) overlay.remove();
+  if (podiumTimer) { clearTimeout(podiumTimer); podiumTimer = null; }
+}
+  
+async function init() {
+  try {
+    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows, paganinisRows, podiumRows, campeonesCierreRows, frasesRows, eliminacionesLogRows] = await Promise.all([
+      leerHoja('Config'),
+      leerHoja('Clasificacion'),
+      leerHoja('Jornadas'),
+      leerHoja('Resumen'),
+      leerHoja('Historico'),
+      leerHoja('Estatutos'),
+      leerHoja('CalendarioQuiniela'),
+      leerHoja('Operaciones'),
+      leerHoja('Campeones'),
+      leerHoja('MarcadoresPartidos'),
+      leerHoja('Loteria'),
+      leerHoja('RankingFinal'),
+      leerHojaSerial('CalendarioQuiniela'),
+      leerHojaSerial('FechasPartidos'),
+      leerHoja('Paganinis'),
+      leerHoja('PodiumGranFinal'),
+      leerHojaSerial('Campeones'),
+      leerHoja('Frases'),
+      leerHoja('EliminacionesLog'),
+    ]);
+    const config = parsearConfig(configRows);
+    const clasif = clasificRows.slice(1).filter(r => r[1]);
+    const calendario = calendarioRows.slice(1);
+    mostrarFraseDia(frasesRows.slice(1));
+
+    cargarInicio(config, clasif, jornadasRows.slice(1), calendario, calendarioCierreRows, fechasCierreRows, campeonesRows.slice(1));
+    cargarTrono(campeonesRows.slice(1), podiumRows.slice(1), campeonesCierreRows);
+    cargarClasificacion(clasif);
+    cargarRankingFinal(rankingRows.slice(1));
+    cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1), calendarioCierreRows, fechasCierreRows, clasif, eliminacionesLogRows.slice(1));
+    cargarEconomico(resumenRows.slice(1), operacionesRows.slice(1), paganinisRows.slice(1), config);
+    cargarHistorico(historicoRows.slice(1));
+    cargarEstatutos(estatutosRows.slice(1));
+    cargarLoteria(loteriaRows.slice(1));
+
+  } catch(e) {
+    console.error('Error general:', e);
+  }
+}
+
+init();
+  
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
