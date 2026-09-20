@@ -1215,7 +1215,7 @@ function haloMini(hex) {
 function mapaAvatarPorNombre(avatarColorRows) {
   const mapa = {};
   avatarColorRows.forEach(r => {
-    const nombre = String(r[0] || '').trim().toUpperCase();
+    const nombre = normalizarNombre(r[0]);
     if (nombre) mapa[nombre] = { equipo: r[1] || '', color: r[2] || '', emoji: r[3] || '' };
   });
   return mapa;
@@ -1224,7 +1224,7 @@ function mapaAvatarPorNombre(avatarColorRows) {
 function mezclarPorEquipo(lista, avatarPorNombre) {
   const porEquipo = {};
   lista.forEach(nombre => {
-    const eq = ((avatarPorNombre[nombre] || {}).equipo || 'otro').toUpperCase();
+    const eq = ((avatarPorNombre[normalizarNombre(nombre)] || {}).equipo || 'otro').toUpperCase();
     (porEquipo[eq] = porEquipo[eq] || []).push(nombre);
   });
   const grupos = Object.values(porEquipo);
@@ -1238,7 +1238,7 @@ function mezclarPorEquipo(lista, avatarPorNombre) {
 }
 
 function crearGloboPortada(nombre, tam, avatarPorNombre) {
-  const dato = avatarPorNombre[nombre] || {};
+  const dato = avatarPorNombre[normalizarNombre(nombre)] || {};
   const fondo = ESTILO_EQUIPO_MINI[String(dato.equipo || '').toUpperCase()] || '#cccccc';
   const colorHex = COLORES_MINI[dato.color] || '#ffffff';
 
@@ -1393,9 +1393,11 @@ function toggleMusicaPortada() {
 function cerrarPortada() {
   document.getElementById('portada-overlay').style.display = 'none';
 }
-
+function normalizarNombre(s) {
+  return String(s || '').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
 function renderAvatarMini(nombre, avatarPorNombre) {
-  const dato = avatarPorNombre[nombre] || {};
+  const dato = avatarPorNombre[normalizarNombre(nombre)] || {};
   const inicial = nombre.substring(0, 6);
   if (dato.emoji) {
     return `<span class="avatar-mini"><span class="avatar-mini-emoji">${dato.emoji}</span><span class="avatar-mini-pedestal">${inicial}</span></span>`;
