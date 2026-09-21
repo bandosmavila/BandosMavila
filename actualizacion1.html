@@ -1015,7 +1015,9 @@ function cargarLoteria(rows, avatarPorNombre) {
     const premio = parseFloat(row[3]) || 0;
     total += premio;
     const esPena = nombre.toUpperCase() === 'PEÑA';
-    const celdaNombre = esPena ? nombre : renderAvatarMini(nombre.trim().toUpperCase(), avatarPorNombre);
+    const celdaNombre = esPena
+      ? '<span class="avatar-mini"><img src="icon-192.png" alt="Peña" style="width:40px; height:40px; border-radius:50%; object-fit:cover;"><span class="avatar-mini-pedestal">PEÑA</span></span>'
+      : renderAvatarMini(nombre.trim().toUpperCase(), avatarPorNombre);
     html += `<tr class="${esPena ? 'fila-pena' : ''}"><td>${celdaNombre}</td><td>${numero}</td><td style="text-align:center">${lugar}</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio > 0 ? premio.toFixed(2) + '€' : '-'}</td></tr>`;
   });
   html += `<tr class="fila-total"><td colspan="3">Total premios</td><td class="importe-positivo">${total.toFixed(2)}€</td></tr>`;
