@@ -1567,9 +1567,7 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
 
   const filas = jornadas.filter(r => parseInt(r[0]) === jornadaActual);
 
-  // Jugadores y eliminados: se calculan ya aquí, porque no dependen de si hay
-  // partidos descargados — el Calendario los necesita aunque la jornada actual
-  // todavía no tenga datos (por ejemplo, durante un parón de liga).
+  // Jugadores y eliminados: no dependen de si hay partidos descargados
   const jugadores = config.jugadores || [];
   const eliminadosSet = new Set(
     clasif
@@ -1578,8 +1576,7 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
   );
   const jugadorEliminado = jugadores.map(j => eliminadosSet.has(j.toString().trim().toUpperCase()));
 
-  // Guardamos los datos que necesitará el Calendario, para no tener que recalcularlos.
-  // SIEMPRE, incluso si esta jornada aún no tiene partidos descargados.
+  // Guardamos los datos que necesitará el Calendario. SIEMPRE, incluso sin datos descargados.
   calJugadores = jugadores;
   calJugadorEliminado = jugadorEliminado;
   calJornadas = jornadas;
@@ -1597,6 +1594,21 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     .map(r => ({ jornada: parseInt(r[0]), fecha: r[1] || '', ligaPrimera: r[2] || '' }))
     .sort((a, b) => a.jornada - b.jornada);
 
+  // Resultado real de la jornada anterior: se calcula y se muestra AQUÍ, antes de
+  // cualquier "return" por falta de datos, para que nunca se quede sin mostrar.
+  const numsParaAnterior = calActivasTodas.map(a => a.jornada);
+  const posParaAnterior = numsParaAnterior.indexOf(jornadaActual);
+  const jornadaAnteriorNum = posParaAnterior > 0 ? numsParaAnterior[posParaAnterior - 1] : null;
+  calJornadaAnteriorReal = jornadaAnteriorNum;
+  const elResultadoAnterior = document.getElementById('jor-resultado-anterior');
+  const filaLog = jornadaAnteriorNum ? eliminacionesLog.find(r => parseInt(r[0]) === jornadaAnteriorNum) : null;
+  if (filaLog) {
+    elResultadoAnterior.style.display = 'block';
+    elResultadoAnterior.innerHTML = `<div class="info-cierre">Jornada ${jornadaAnteriorNum}: <strong>${filaLog[1]}</strong></div>`;
+  } else {
+    elResultadoAnterior.style.display = 'none';
+  }
+
   const dobles = posActual >= 0 ? activas[posActual].dobles : null;
   const textoDobles = dobles !== null ? (' · ' + dobles + (dobles === 1 ? ' doble' : ' dobles')) : '';
   document.getElementById('jor-badge').textContent = 'Jornada ' + jornadaActual +
@@ -1605,7 +1617,6 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
   if (filas.length === 0) {
     document.getElementById('jor-partidos').innerHTML = '<div class="loading">Sin datos de jornada</div>';
     document.getElementById('jor-pronos').innerHTML = '';
-    document.getElementById('jor-resultado-anterior').style.display = 'none';
     document.getElementById('jor-eliminado-provisional').style.display = 'none';
     return;
   }
@@ -1636,20 +1647,6 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     </div>`;
   });
   document.getElementById('jor-partidos').innerHTML = htmlPartidos;
-
-  // Resultado real de la jornada anterior (ya cerrada), como recordatorio persistente
-  const numsParaAnterior = calActivasTodas.map(a => a.jornada);
-  const posParaAnterior = numsParaAnterior.indexOf(jornadaActual);
-  const jornadaAnteriorNum = posParaAnterior > 0 ? numsParaAnterior[posParaAnterior - 1] : null;
-  calJornadaAnteriorReal = jornadaAnteriorNum;
-  const elResultadoAnterior = document.getElementById('jor-resultado-anterior');
-  const filaLog = jornadaAnteriorNum ? eliminacionesLog.find(r => parseInt(r[0]) === jornadaAnteriorNum) : null;
-  if (filaLog) {
-    elResultadoAnterior.style.display = 'block';
-    elResultadoAnterior.innerHTML = `<div class="info-cierre">Jornada ${jornadaAnteriorNum}: <strong>${filaLog[1]}</strong></div>`;
-  } else {
-    elResultadoAnterior.style.display = 'none';
-  }
   document.getElementById('jor-eliminado-provisional').style.display = 'none';
 
   // Pronósticos de la jornada actual: ocultos para todos hasta que cierre el plazo de envío
@@ -1708,6 +1705,7 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     document.getElementById('jor-pronos').innerHTML = htmlPronos;
   }
 }
+
 
 function abrirCalendario() {
   document.getElementById('jornada-vista-actual').style.display = 'none';
