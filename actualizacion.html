@@ -1568,6 +1568,36 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
 
   const filas = jornadas.filter(r => parseInt(r[0]) === jornadaActual);
 
+  // Jugadores y eliminados: se calculan ya aquí, porque no dependen de si hay
+  // partidos descargados — el Calendario los necesita aunque la jornada actual
+  // todavía no tenga datos (por ejemplo, durante un parón de liga).
+  const jugadores = config.jugadores || [];
+  const eliminadosSet = new Set(
+    clasif
+      .filter(r => (r[5] || '').toString().toLowerCase() === 'eliminado')
+      .map(r => (r[1] || '').toString().trim().toUpperCase())
+  );
+  const jugadorEliminado = jugadores.map(j => eliminadosSet.has(j.toString().trim().toUpperCase()));
+
+  // Guardamos los datos que necesitará el Calendario, para no tener que recalcularlos.
+  // SIEMPRE, incluso si esta jornada aún no tiene partidos descargados.
+  calJugadores = jugadores;
+  calJugadorEliminado = jugadorEliminado;
+  calJornadas = jornadas;
+  calMarcadores = marcadores;
+  calCalendarioCierre = calendarioCierreRows;
+  calFechasCierre = fechasCierreRows;
+  calJornadaActualReal = jornadaActual;
+  calEliminacionesLog = eliminacionesLog;
+
+  const jIni = parseInt(config['Jornada Inicio']) || 1;
+  const totalJor = parseInt(config['Total jornadas']) || 999;
+  const jFin = jIni + totalJor - 1;
+  calActivasTodas = calendario
+    .filter(r => { const j = parseInt(r[0]); return j >= jIni && j <= jFin; })
+    .map(r => ({ jornada: parseInt(r[0]), fecha: r[1] || '', ligaPrimera: r[2] || '' }))
+    .sort((a, b) => a.jornada - b.jornada);
+
   const dobles = posActual >= 0 ? activas[posActual].dobles : null;
   const textoDobles = dobles !== null ? (' · ' + dobles + (dobles === 1 ? ' doble' : ' dobles')) : '';
   document.getElementById('jor-badge').textContent = 'Jornada ' + jornadaActual +
@@ -1575,6 +1605,9 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
 
   if (filas.length === 0) {
     document.getElementById('jor-partidos').innerHTML = '<div class="loading">Sin datos de jornada</div>';
+    document.getElementById('jor-pronos').innerHTML = '';
+    document.getElementById('jor-resultado-anterior').style.display = 'none';
+    document.getElementById('jor-eliminado-provisional').style.display = 'none';
     return;
   }
 
@@ -1604,7 +1637,8 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     </div>`;
   });
   document.getElementById('jor-partidos').innerHTML = htmlPartidos;
-    // Resultado real de la jornada anterior (ya cerrada), como recordatorio persistente
+
+  // Resultado real de la jornada anterior (ya cerrada), como recordatorio persistente
   const numsParaAnterior = [...new Set(jornadas.map(r => parseInt(r[0])).filter(n => !!n))].sort((a, b) => a - b);
   const posParaAnterior = numsParaAnterior.indexOf(jornadaActual);
   const jornadaAnteriorNum = posParaAnterior > 0 ? numsParaAnterior[posParaAnterior - 1] : null;
@@ -1617,15 +1651,6 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     elResultadoAnterior.style.display = 'none';
   }
   document.getElementById('jor-eliminado-provisional').style.display = 'none';
-  // Jugadores y eliminados: se calcula siempre, lo necesitan tanto la jornada
-  // actual (si ya cerró) como la jornada anterior (más abajo)
-  const jugadores = config.jugadores || [];
-  const eliminadosSet = new Set(
-    clasif
-      .filter(r => (r[5] || '').toString().toLowerCase() === 'eliminado')
-      .map(r => (r[1] || '').toString().trim().toUpperCase())
-  );
-  const jugadorEliminado = jugadores.map(j => eliminadosSet.has(j.toString().trim().toUpperCase()));
 
   // Pronósticos de la jornada actual: ocultos para todos hasta que cierre el plazo de envío
   const cierre = calcularCierreJornada(jornadaActual, calendarioCierreRows, fechasCierreRows);
@@ -1661,7 +1686,8 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
       });
       htmlPronos += '</tr>';
     });
-  // ELIMINADO PROVISIONAL — desactivado por decisión propia, código correcto y listo por si se quiere reactivar
+
+    /* ELIMINADO PROVISIONAL — desactivado por decisión propia, código correcto y listo por si se quiere reactivar
     const conResultadoAP = filas.filter(f => f[4]).length;
     if (conResultadoAP >= 8 && conResultadoAP < 15) {
       const nombreProv = calcularEliminadoProvisional(jugadores, jugadorEliminado, aciertosJugador, clasif);
@@ -1671,8 +1697,8 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
         elEliminadoProv.innerHTML = `<div class="aviso-provisional">⚠️ Si la jornada acabara ahora: <strong>ELIMINADO — ${nombreProv}</strong> <span style="opacity:0.8;">(puede cambiar con los resultados que faltan)</span></div>`;
       }
     }
+    */
 
-  
     htmlPronos += '</tbody><tfoot><tr><td class="partido-col">Ac.</td>';
     jugadores.forEach((j, ji) => {
       if (jugadorEliminado[ji]) return;
@@ -1681,6 +1707,7 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     htmlPronos += '</tr></tfoot></table>';
     document.getElementById('jor-pronos').innerHTML = htmlPronos;
   }
+}
 // Guardamos los datos que necesitará el Calendario, para no tener que recalcularlos
 calJugadores = jugadores;
 calJugadorEliminado = jugadorEliminado;
