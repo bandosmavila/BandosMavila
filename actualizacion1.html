@@ -1157,10 +1157,12 @@ function calcularJornadaActual(jornadas) {
 function calcularJornadaMostrar(jornadasRows, calendarioCierreRows, fechasCierreRows, calendario, config) {
   // Recorremos las jornadas YA CONOCIDAS de la vuelta (con partidos de Primera),
   // no solo las que ya se hayan descargado — así no se queda "ciega" durante un parón.
-  const jIni = parseInt(config['Jornada Inicio']) || 1;
-  const totalJor = parseInt(config['Total jornadas']) || 999;
-  const jFin = jIni + totalJor - 1;
-  const nums = calendarioActivo(calendario).map(a => a.jornada).filter(j => j >= jIni && j <= jFin);
+  const ligaIni = parseInt(config['Jornada Inicio']) || 1;
+  const ligaTotal = parseInt(config['Total jornadas']) || 999;
+  const ligaFin = ligaIni + ligaTotal - 1;
+  const nums = calendarioActivo(calendario)
+    .filter(a => { const lp = parseInt(a.ligaPrimera); return lp >= ligaIni && lp <= ligaFin; })
+    .map(a => a.jornada);
   if (nums.length === 0) return null;
 
   const ahora = new Date();
@@ -1590,11 +1592,11 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
   calJornadaActualReal = jornadaActual;
   calEliminacionesLog = eliminacionesLog;
 
-  const jIni = parseInt(config['Jornada Inicio']) || 1;
-  const totalJor = parseInt(config['Total jornadas']) || 999;
-  const jFin = jIni + totalJor - 1;
+  const ligaIni = parseInt(config['Jornada Inicio']) || 1;
+  const ligaTotal = parseInt(config['Total jornadas']) || 999;
+  const ligaFin = ligaIni + ligaTotal - 1;
   calActivasTodas = calendario
-    .filter(r => { const j = parseInt(r[0]); return j >= jIni && j <= jFin; })
+    .filter(r => { const lp = parseInt(r[2]); return lp >= ligaIni && lp <= ligaFin; })
     .map(r => ({ jornada: parseInt(r[0]), fecha: r[1] || '', ligaPrimera: r[2] || '' }))
     .sort((a, b) => a.jornada - b.jornada);
 
