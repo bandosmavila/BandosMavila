@@ -1153,9 +1153,16 @@ function calcularJornadaActual(jornadas) {
 
 // Sustituye a calcularJornadaActual para decidir qué jornada mostrar en pantalla:
 // la más reciente cuyo plazo de envío ya ha cerrado (no depende de si hay resultados).
-function calcularJornadaMostrar(jornadasRows, calendarioCierreRows, fechasCierreRows) {
-  const nums = [...new Set(jornadasRows.map(r => parseInt(r[0])).filter(n => !!n))].sort((a, b) => a - b);
+  
+function calcularJornadaMostrar(jornadasRows, calendarioCierreRows, fechasCierreRows, calendario, config) {
+  // Recorremos las jornadas YA CONOCIDAS de la vuelta (con partidos de Primera),
+  // no solo las que ya se hayan descargado — así no se queda "ciega" durante un parón.
+  const jIni = parseInt(config['Jornada Inicio']) || 1;
+  const totalJor = parseInt(config['Total jornadas']) || 999;
+  const jFin = jIni + totalJor - 1;
+  const nums = calendarioActivo(calendario).map(a => a.jornada).filter(j => j >= jIni && j <= jFin);
   if (nums.length === 0) return null;
+
   const ahora = new Date();
   for (const j of nums) {
     const cierre = calcularCierreJornada(j, calendarioCierreRows, fechasCierreRows);
@@ -1164,10 +1171,11 @@ function calcularJornadaMostrar(jornadasRows, calendarioCierreRows, fechasCierre
     const conResultado = filasJ.filter(r => r[4]).length;
     const totalResultados = filasJ.length;
     const terminada = yaCerro && totalResultados > 0 && conResultado === totalResultados;
-    if (!terminada) return j; // la primera que no está del todo cerrada Y resuelta
+    if (!terminada) return j;
   }
   return nums[nums.length - 1];
 }
+
 function mostrarNumerosFijos(config) {
   const html = `
     <div class="numero-fijo-linea"><strong>PRIMITIVA</strong>
@@ -1444,7 +1452,7 @@ async function cargarInicio(config, clasif, jornadas, calendario, calendarioCier
   document.getElementById('temporada-badge').textContent = config['Temporada'] || '';
 
   const activas = calendarioActivo(calendario);
-  const jornadaActual = calcularJornadaMostrar(jornadas, calendarioCierreRows, fechasCierreRows);
+  const jornadaActual = calcularJornadaMostrar(jornadas, calendarioCierreRows, fechasCierreRows, calendario, config);
   const posActual = jornadaActual !== null ? activas.findIndex(a => a.jornada === jornadaActual) : -1;
   const jActualRel = posActual >= 0 ? posActual + 1 : null;
   const jugadas = posActual >= 0 ? posActual : 0;
@@ -1545,7 +1553,7 @@ function calcularEliminadoProvisional(jugadores, jugadorEliminado, aciertosJugad
 
 function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierreRows, fechasCierreRows, clasif, eliminacionesLog) {
   const activas = calendarioActivo(calendario);
-  const jornadaActual = calcularJornadaMostrar(jornadas, calendarioCierreRows, fechasCierreRows);
+  const jornadaActual = calcularJornadaMostrar(jornadas, calendarioCierreRows, fechasCierreRows, calendario, config);
 
   if (jornadaActual === null) {
     document.getElementById('jor-badge').textContent = 'Jornada -';
