@@ -805,7 +805,7 @@
       
       <div id="jor-resultado-anterior" style="display:none;"></div>
 
-      <button class="calendario-btn" onclick="abrirCalendario()">📅 CALENDARIO</button>
+      <button class="calendario-btn" onclick="abrirCalendario()">📅 Jornada Anterior / Calendario</button>
     </div>
 
     <div id="jornada-vista-calendario" style="display:none;">
@@ -824,10 +824,7 @@
         <div class="card-header">Consultar jornada</div>
         <div class="card-body">
           <div class="calendario-selector">
-            <label><input type="radio" name="calendario-modo" value="actual" checked onchange="mostrarJornadaCalendario()"> Actual</label>
-            <label><input type="radio" name="calendario-modo" value="numero" onchange="mostrarJornadaCalendario()"> Nº
-              <input type="number" id="calendario-num" style="width:56px;" onchange="document.querySelector('input[name=calendario-modo][value=numero]').checked=true; mostrarJornadaCalendario();">
-            </label>
+            <label>Jornada: <input type="number" id="calendario-num" style="width:56px;" onchange="mostrarJornadaCalendario();"></label>
           </div>
           <div id="calendario-resultado" style="margin-top:14px;"></div>
         </div>
@@ -1522,7 +1519,7 @@ function cargarClasificacion(clasif, avatarPorNombre) {
 }
 let calJugadores = [], calJugadorEliminado = [], calJornadas = [], calMarcadores = [],
     calCalendarioCierre = [], calFechasCierre = [], calActivasTodas = [], calJornadaActualReal = null,
-    calEliminacionesLog = [];
+    calEliminacionesLog = [], calJornadaAnteriorReal = null;
 
 function calcularEliminadoProvisional(jugadores, jugadorEliminado, aciertosJugador, clasif) {
   const activos = [];
@@ -1644,6 +1641,7 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
   const numsParaAnterior = [...new Set(jornadas.map(r => parseInt(r[0])).filter(n => !!n))].sort((a, b) => a - b);
   const posParaAnterior = numsParaAnterior.indexOf(jornadaActual);
   const jornadaAnteriorNum = posParaAnterior > 0 ? numsParaAnterior[posParaAnterior - 1] : null;
+  calJornadaAnteriorReal = jornadaAnteriorNum;
   const elResultadoAnterior = document.getElementById('jor-resultado-anterior');
   const filaLog = jornadaAnteriorNum ? eliminacionesLog.find(r => parseInt(r[0]) === jornadaAnteriorNum) : null;
   if (filaLog) {
@@ -1720,8 +1718,7 @@ function abrirCalendario() {
     numInput.min = calActivasTodas[0].jornada;
     numInput.max = calActivasTodas[calActivasTodas.length - 1].jornada;
   }
-  numInput.value = calJornadaActualReal || 1;
-  document.querySelector('input[name="calendario-modo"][value="actual"]').checked = true;
+  numInput.value = calJornadaAnteriorReal || calJornadaActualReal || 1;
   mostrarJornadaCalendario();
 }
 
@@ -1769,10 +1766,9 @@ function jugadoresEliminadosAntesDe(jornada) {
 }
 
 function mostrarJornadaCalendario() {
-  const modo = document.querySelector('input[name="calendario-modo"]:checked').value;
   const numInput = document.getElementById('calendario-num');
-  let jornadaElegida = modo === 'actual' ? calJornadaActualReal : (parseInt(numInput.value) || calJornadaActualReal);
-  if (modo === 'numero') numInput.value = jornadaElegida;
+  let jornadaElegida = parseInt(numInput.value) || calJornadaAnteriorReal || calJornadaActualReal;
+  numInput.value = jornadaElegida;
 
   const entradaCal = calActivasTodas.find(a => a.jornada === jornadaElegida);
   const filas = calJornadas.filter(r => parseInt(r[0]) === jornadaElegida);
