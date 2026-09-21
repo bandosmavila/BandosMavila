@@ -1519,7 +1519,8 @@ function cargarClasificacion(clasif, avatarPorNombre) {
   document.getElementById('tabla-clasif-completa').innerHTML = html;
 }
 let calJugadores = [], calJugadorEliminado = [], calJornadas = [], calMarcadores = [],
-    calCalendarioCierre = [], calFechasCierre = [], calActivasTodas = [], calJornadaActualReal = null;
+    calCalendarioCierre = [], calFechasCierre = [], calActivasTodas = [], calJornadaActualReal = null,
+    calEliminacionesLog = [];
 
 function calcularEliminadoProvisional(jugadores, jugadorEliminado, aciertosJugador, clasif) {
   const activos = [];
@@ -1688,6 +1689,7 @@ calMarcadores = marcadores;
 calCalendarioCierre = calendarioCierreRows;
 calFechasCierre = fechasCierreRows;
 calJornadaActualReal = jornadaActual;
+calEliminacionesLog = eliminacionesLog;
 
 const jIni = parseInt(config['Jornada Inicio']) || 1;
 const totalJor = parseInt(config['Total jornadas']) || 999;
@@ -1737,6 +1739,22 @@ function construirTablaCalendario() {
   html += '</tbody>';
   document.getElementById('calendario-tabla').innerHTML = html;
 }
+function calcularNombreEliminado(resultado) {
+  const m = String(resultado || '').match(/^eliminado:\s*(.+)$/i);
+  return m ? m[1].trim().toUpperCase() : null;
+}
+
+function jugadoresEliminadosAntesDe(jornada) {
+  const set = new Set();
+  calEliminacionesLog.forEach(r => {
+    const j = parseInt(r[0]);
+    if (j < jornada) {
+      const nombre = calcularNombreEliminado(r[1]);
+      if (nombre) set.add(nombre);
+    }
+  });
+  return set;
+}
 
 function mostrarJornadaCalendario() {
   const modo = document.querySelector('input[name="calendario-modo"]:checked').value;
@@ -1780,28 +1798,44 @@ function mostrarJornadaCalendario() {
   if (!cerrado) {
     html += `<div class="loading" style="margin-top:10px;">Los pronósticos de esta jornada aún no están visibles.</div>`;
   } else {
+    const eliminadosAntes = jugadoresEliminadosAntesDe(jornadaElegida);
+
     let htmlPronos = '<table class="tabla-pronos"><thead><tr><th class="partido-col">Nº</th>';
     calJugadores.forEach((j, ji) => {
-      if (calJugadorEliminado[ji]) return;
+      if (eliminadosAntes.has(j.toUpperCase())) return;
       htmlPronos += `<th>${j.substring(0,4)}</th>`;
     });
     htmlPronos += '</tr></thead><tbody>';
+
+    const aciertosCal = calJugadores.map(() => 0);
+
     filas.forEach((row, i) => {
       const resultado = row[4] || '';
       htmlPronos += `<tr><td class="partido-col">${i + 1}</td>`;
       calJugadores.forEach((j, ji) => {
-        if (calJugadorEliminado[ji]) return;
+        if (eliminadosAntes.has(j.toUpperCase())) return;
         const prono = row[5 + ji] || '';
         let cls = '';
         if (resultado && prono) {
           cls = (prono === resultado || resultado.includes(prono) || prono.includes(resultado)) ? 'acertado' : 'fallado';
+          if (cls === 'acertado') aciertosCal[ji]++;
         }
         htmlPronos += `<td class="${cls}">${prono.replace(/\s/g, '')}</td>`;
       });
       htmlPronos += '</tr>';
     });
-    htmlPronos += '</tbody></table>';
+    htmlPronos += '</tbody><tfoot><tr><td class="partido-col">Ac.</td>';
+    calJugadores.forEach((j, ji) => {
+      if (eliminadosAntes.has(j.toUpperCase())) return;
+      htmlPronos += `<td>${aciertosCal[ji]}</td>`;
+    });
+    htmlPronos += '</tr></tfoot></table>';
     html += `<div style="margin-top:12px; overflow-x:auto;">${htmlPronos}</div>`;
+
+    const filaLogEsta = calEliminacionesLog.find(r => parseInt(r[0]) === jornadaElegida);
+    if (filaLogEsta) {
+      html += `<div class="info-cierre" style="margin-top:12px;">${filaLogEsta[1]}</div>`;
+    }
   }
 
   document.getElementById('calendario-resultado').innerHTML = html;
