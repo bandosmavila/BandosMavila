@@ -720,7 +720,7 @@
 
 <header>
   <div class="header-top">
-    <div class="logo">
+    <div class="logo" onclick="abrirPortadaDeNuevo()" style="cursor:pointer;" title="Volver a la portada">
       Bandosmávila
       <span>Peña de Quiniela</span>
       <div id="frase-dia" style="font-family:'Inter',sans-serif; font-size:12px; font-weight:400; letter-spacing:normal; opacity:0.75; margin-top:4px;"></div>                           
@@ -1392,6 +1392,9 @@ function toggleMusicaPortada() {
 
 function cerrarPortada() {
   document.getElementById('portada-overlay').style.display = 'none';
+}
+function abrirPortadaDeNuevo() {
+  document.getElementById('portada-overlay').style.display = 'flex';
 }
 function normalizarNombre(s) {
   return String(s || '').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
