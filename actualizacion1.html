@@ -1169,7 +1169,7 @@ function calcularJornadaMostrar(jornadasRows, calendarioCierreRows, fechasCierre
     const filasJ = jornadasRows.filter(r => parseInt(r[0]) === j);
     const conResultado = filasJ.filter(r => r[4]).length;
     const totalResultados = filasJ.length;
-    const terminada = yaCerro && totalResultados > 0 && conResultado === totalResultados;
+    const terminada = yaCerro && (totalResultados === 0 || conResultado === totalResultados);
     if (!terminada) return j;
   }
   return nums[nums.length - 1];
