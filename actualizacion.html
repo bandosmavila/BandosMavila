@@ -1708,24 +1708,7 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     document.getElementById('jor-pronos').innerHTML = htmlPronos;
   }
 }
-// Guardamos los datos que necesitará el Calendario, para no tener que recalcularlos
-calJugadores = jugadores;
-calJugadorEliminado = jugadorEliminado;
-calJornadas = jornadas;
-calMarcadores = marcadores;
-calCalendarioCierre = calendarioCierreRows;
-calFechasCierre = fechasCierreRows;
-calJornadaActualReal = jornadaActual;
-calEliminacionesLog = eliminacionesLog;
 
-const jIni = parseInt(config['Jornada Inicio']) || 1;
-const totalJor = parseInt(config['Total jornadas']) || 999;
-const jFin = jIni + totalJor - 1;
-calActivasTodas = calendario
-  .filter(r => { const j = parseInt(r[0]); return j >= jIni && j <= jFin; })
-  .map(r => ({ jornada: parseInt(r[0]), fecha: r[1] || '', ligaPrimera: r[2] || '' }))
-  .sort((a, b) => a.jornada - b.jornada);
-}
 function abrirCalendario() {
   document.getElementById('jornada-vista-actual').style.display = 'none';
   document.getElementById('jornada-vista-calendario').style.display = 'block';
