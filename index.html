@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Bandosmávila">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Dancing+Script:wght@600&display=swap');
 
   :root {
     --verde:    #1a6b3c;
@@ -175,6 +175,7 @@
   }
   .tabla-clasif tr:last-child td { border-bottom: none; }
   .tabla-clasif tr:hover td { background: #fafaf7; }
+  .tabla-clasif td:nth-child(2) { width: 90px; }
   .pos-num {
     font-family: 'JetBrains Mono', monospace;
     font-weight: 600;
@@ -281,7 +282,7 @@
   .tabla-pronos tfoot td.partido-col { color: var(--tinta); background: #f0ede6; }
   .tabla-pronos td.acertado { background: var(--verde-claro); color: white; font-weight: 700; }
   .fallado { color: var(--gris); }
-
+#eco-detalle-semanal td:nth-child(2) { font-size: 11px; line-height: 1.3; }
   /* TABLAS ECONOMICO */
   .tabla-juegos {
     width: 100%;
@@ -324,6 +325,10 @@
     border-top: 2px solid var(--verde);
     background: #f7f5ef;
   }
+
+  #tabla-ranking-final td:nth-child(2) { text-align: center; }
+  #eco-detalle-semanal td:nth-child(2) { font-size: 11px; line-height: 1.3; }
+  
   .importe-positivo { color: var(--verde-claro); }
   .importe-negativo { color: var(--rojo); }
   .valor-positivo { color: var(--verde-claro); }
@@ -453,6 +458,13 @@
     color: var(--gris);
   }
   .progreso-info strong { color: var(--tinta); }
+  
+  .progreso-proxima { margin-top: 10px; font-size: 12px; color: var(--gris); }
+  
+  .numero-fijo-linea { padding: 10px 16px; border-bottom: 1px solid #f0ede6; }
+  .numero-fijo-linea:last-child { border-bottom: none; }
+  .numero-fijo-linea strong { display: block; font-size: 11px; letter-spacing: 0.5px; color: var(--gris); margin-bottom: 4px; }
+  .numero-fijo-valor { font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 600; letter-spacing: 1px; color: var(--tinta); }
 
   /* JORNADA ACTUAL INFO */
   .jornada-info {
@@ -589,13 +601,131 @@
 }
 .premios-confeti::before { left: 30%; }
 .premios-confeti::after { left: 65%; background: var(--rojo); animation-delay: 0.6s; }
+.candidato-fila { padding: 10px 16px; border-bottom: 1px solid #f0ede6; }
+.candidato-fila:last-child { border-bottom: none; }
+.candidato-categoria { font-size: 11px; letter-spacing: 0.5px; color: var(--gris); margin-bottom: 3px; }
+.candidato-nombres { font-weight: 700; font-size: 15px; color: var(--tinta); }
+.candidato-dato { font-size: 12px; color: var(--gris); margin-left: 6px; }
+.candidato-badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 8px; margin-left: 8px; vertical-align: middle; }
+.candidato-badge.definitivo { background: var(--dorado, #c9a227); color: white; }
+.candidato-badge.provisional { background: #e8e4d8; color: var(--gris); }
+
+.calendario-btn {
+  display: block; width: 100%; text-align: center; background: var(--verde-claro); color: white;
+  padding: 12px; border: none; border-radius: 10px; margin-top: 8px; margin-bottom: 16px;
+  font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; cursor: pointer;
+}
+.calendario-volver { background: var(--gris); }
+.calendario-selector { display: flex; gap: 20px; align-items: center; font-size: 14px; flex-wrap: wrap; }
+
+.aviso-provisional {
+  background: #fff3e0; border-left: 4px solid #e67e22; border-radius: 8px;
+  padding: 12px 16px; margin-bottom: 16px; font-size: 14px; color: #7a4a00;
+}
+.aviso-provisional strong { color: #c0392b; }
+
+.info-cierre {
+  background: #eaf3ea; border-left: 4px solid var(--verde);
+  border-radius: 8px; padding: 10px 16px; margin-bottom: 16px;
+  font-size: 13px; color: var(--gris);
+}
+.info-cierre strong { color: var(--verde); }
+
+.avatar-mini { display: inline-flex; flex-direction: column; align-items: center; margin: 0 3px; vertical-align: middle; }
+.avatar-mini-globo {
+  width: 40px; height: 46px; border-radius: 50% 50% 50% 50% / 55% 55% 45% 45%;
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.25); overflow: hidden;
+}
+.avatar-mini-ojos { display: flex; gap: 5px; margin-top: -4px; }
+.avatar-mini-ojos span { width: 3px; height: 3px; background: #1a1a1a; border-radius: 50%; display: block; }
+.avatar-mini-nombre { font-size: 7px; font-weight: 700; text-align: center; margin-top: 3px; line-height: 1; }
+.avatar-mini-emoji { font-size: 26px; text-align: center; }
+.avatar-mini-pedestal { font-size: 7px; font-weight: 700; background: #1a1a1a; color: white; border-radius: 8px; padding: 1px 5px; margin-top: 2px; }
+
+  #portada-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: radial-gradient(circle at 50% 30%, #1e7a45, var(--verde) 70%);
+    color: white; display: flex; flex-direction: column; align-items: center;
+    padding: 40px 16px 20px; overflow: hidden;
+  }
+  .pt-titulo {
+    font-family: 'Bebas Neue', sans-serif; font-size: 42px; letter-spacing: 2px; text-align: center;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  .pt-musica-linea { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 13px; opacity: 0.9; }
+  .pt-btn-play {
+    width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.5); color: white; font-size: 13px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pt-btn-play:active { transform: scale(0.92); }
+  .pt-orla { position: relative; flex: 1; width: min(94vw, 780px); max-width: 92vh; aspect-ratio: 1 / 1; margin: 6px auto 0; }
+
+  .pt-globo-wrap {
+    position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center;
+    animation-name: pt-flotar; animation-iteration-count: infinite; animation-timing-function: ease-in-out;
+  }
+  @keyframes pt-flotar {
+    0%, 100% { transform: translate(-50%, -50%) translateY(0) rotate(-2deg); }
+    50%      { transform: translate(-50%, -50%) translateY(-6%) rotate(2deg); }
+  }
+  .pt-globo { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .pt-globo-cuerpo {
+    position: absolute; inset: 0; border-radius: 50% 50% 50% 50% / 55% 55% 45% 45%;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4), inset 0 -10px 14px rgba(0,0,0,0.28);
+    overflow: hidden; z-index: 0;
+  }
+  .pt-globo-cuerpo::before {
+    content: ''; position: absolute; top: 8%; left: 14%; width: 55%; height: 45%;
+    background: radial-gradient(circle, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.15) 55%, transparent 75%);
+    border-radius: 50%; pointer-events: none; z-index: 3;
+  }
+  .pt-globo-ojos { display: flex; position: relative; z-index: 2; }
+  .pt-globo-ojos span { background: var(--tinta); border-radius: 50%; display: block; }
+  .pt-globo-extremidad {
+    position: absolute; z-index: 1; pointer-events: none;
+    stroke: #c9a37a; stroke-width: 5.5; stroke-linecap: round; fill: none;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35));
+  }
+  .pt-globo-nombre {
+    position: relative; z-index: 2; font-weight: 700; text-align: center; line-height: 1;
+  }
+  .pt-entrar {
+    position: absolute; bottom: 14px; right: 18px; display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 30px; padding: 8px 16px; font-size: 13px; letter-spacing: 0.5px; cursor: pointer; color: white;
+  }
+  .pt-firma-wrap { text-align: center; margin-bottom: 6px; }
+  .pt-firma { font-family: 'Dancing Script', cursive; font-size: 20px; opacity: 0.75; }
+  .pt-rubrica { width: 70px; height: 14px; margin: 2px auto 0; opacity: 0.55; }
+
 </style>
 </head>
 <body>
 
+<div id="portada-overlay">
+  <h1 class="pt-titulo">PEÑA BANDOSMÁVILA</h1>
+  <div class="pt-musica-linea">
+    <button class="pt-btn-play" id="ptBtnPlay" onclick="toggleMusicaPortada()">▶</button>
+    <span>Música: <span id="pt-autor-musica">Kevin MacLeod</span></span>
+  </div>
+
+  <div class="pt-orla" id="pt-orla"></div>
+
+  <div class="pt-firma-wrap">
+    <div class="pt-firma">Claude</div>
+    <svg class="pt-rubrica" viewBox="0 0 100 20"><path d="M2 15 C 20 2, 35 18, 50 8 S 80 2, 98 12" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+  </div>
+
+  <div class="pt-entrar" onclick="cerrarPortada()">Entrar <span>→</span></div>
+
+  <audio id="pt-audio" src="musica-temporal.mp3" loop></audio>
+</div>
+
 <header>
   <div class="header-top">
-    <div class="logo">
+    <div class="logo" onclick="abrirPortadaDeNuevo()" style="cursor:pointer;" title="Volver a la portada">
       Bandosmávila
       <span>Peña de Quiniela</span>
       <div id="frase-dia" style="font-family:'Inter',sans-serif; font-size:12px; font-weight:400; letter-spacing:normal; opacity:0.75; margin-top:4px;"></div>                           
@@ -628,27 +758,26 @@
       </div>
       <div class="card-body">
         <div class="progreso-info">
-          <span>Jornada actual <strong id="ini-jornada">-</strong></span>
+          <span>Jornada actual <strong id="ini-jornada">-</strong> <span id="ini-jornada-liga" style="font-size:12px; color:var(--gris); font-weight:400;"></span></span>
           <span>Jugadas <strong id="ini-jugadas">-</strong> de <strong id="ini-total">-</strong></span>
         </div>
         <div class="progreso-bar">
           <div class="progreso-fill" id="ini-barra" style="width:0%"></div>
         </div>
+        <div class="progreso-proxima" id="ini-proxima-linea"></div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header">Clasificación actual <span class="badge">Top 5</span></div>
-      <div class="card-body">
-        <table class="tabla-clasif" id="ini-top5">
-          <tr><td colspan="5" class="loading"><div class="spinner"></div>Cargando...</td></tr>
-        </table>
+      <div class="card-header">Candidatos a la Gran Final</div>
+      <div class="card-body" id="ini-candidatos">
+        <div class="loading"><div class="spinner"></div>Cargando...</div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header">Próxima jornada</div>
-      <div class="card-body" id="ini-proxima">
+      <div class="card-header">Nuestros números fijos</div>
+      <div class="card-body" id="ini-numeros-fijos">
         <div class="loading"><div class="spinner"></div>Cargando...</div>
       </div>
     </div>
@@ -656,23 +785,53 @@
 
   <!-- JORNADA -->
   <div id="sec-jornada" class="section">
-    <div class="card">
-      <div class="card-header">
-        Partidos <span class="badge" id="jor-badge">Jornada -</span>
+    <div id="jornada-vista-actual">
+      <div class="card">
+        <div class="card-header">
+          Partidos <span class="badge" id="jor-badge">Jornada -</span>
+        </div>
+        <div class="jornada-info">
+          <span id="jor-competicion">-</span>
+          <span id="jor-fecha">-</span>
+        </div>
+        <div class="card-body" id="jor-partidos">
+          <div class="loading"><div class="spinner"></div>Cargando...</div>
+        </div>
       </div>
-      <div class="jornada-info">
-        <span id="jor-competicion">-</span>
-        <span id="jor-fecha">-</span>
+      
+      <div id="jor-eliminado-provisional" style="display:none;"></div>
+      
+      <div class="card">
+        <div class="card-header">Pronósticos</div>
+        <div class="card-body pronos-scroll" id="jor-pronos">
+          <div class="loading"><div class="spinner"></div>Cargando...</div>
+        </div>
       </div>
-      <div class="card-body" id="jor-partidos">
-        <div class="loading"><div class="spinner"></div>Cargando...</div>
-      </div>
+    
+
+      <button class="calendario-btn" onclick="abrirCalendario()">📅 Jornada Anterior / Calendario</button>
     </div>
 
-    <div class="card">
-      <div class="card-header">Pronósticos</div>
-      <div class="card-body pronos-scroll" id="jor-pronos">
-        <div class="loading"><div class="spinner"></div>Cargando...</div>
+    <div id="jornada-vista-calendario" style="display:none;">
+      <button class="calendario-btn calendario-volver" onclick="cerrarCalendario()">← Volver a la jornada actual</button>
+
+      <div class="card">
+        <div class="card-header" style="cursor:pointer;" onclick="toggleTablaCalendario()">
+          Calendario de la vuelta <span id="calendario-toggle-icono">▼</span>
+        </div>
+        <div class="card-body" id="calendario-tabla-wrap" style="display:none; max-height:320px; overflow-y:auto; padding:0;">
+          <table class="tabla-pronos" id="calendario-tabla"></table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Consultar jornada</div>
+        <div class="card-body">
+          <div class="calendario-selector">
+            <label>Jornada (Liga 1ª): <input type="number" id="calendario-num" style="width:56px;" onchange="mostrarJornadaCalendario();"></label>
+          </div>
+          <div id="calendario-resultado" style="margin-top:14px;"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -783,8 +942,14 @@
   <!-- HISTORICO -->
   <div id="sec-historico" class="section">
     <div class="card">
-      <div class="card-header">Campeones históricos</div>
-      <div class="card-body" id="historico-lista">
+      <div class="card-header">Campeones históricos (ranking)</div>
+      <div class="card-body" id="historico-ranking-lista">
+        <div class="loading"><div class="spinner"></div>Cargando...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Campeones por año</div>
+      <div class="card-body" id="historico-anios-lista">
         <div class="loading"><div class="spinner"></div>Cargando...</div>
       </div>
     </div>
@@ -841,7 +1006,7 @@
 const SHEET_ID = '1Gcbt0ND0K1fmBdqwf55DuoGKakrZR9s7eP2r0RIG9hY';
 const API_KEY  = 'AIzaSyA6zHLUiBURBem0lVORI8X1y-ovSGg2UXs'; // Se añadirá después
 
-function cargarLoteria(rows) {
+function cargarLoteria(rows, avatarPorNombre) {
   let total = 0;
   let html = '<thead><tr><th>Nombre</th><th>Número</th><th style="text-align:center">Observaciones</th><th>Premio</th></tr></thead><tbody>';
   rows.forEach(row => {
@@ -852,7 +1017,10 @@ function cargarLoteria(rows) {
     const premio = parseFloat(row[3]) || 0;
     total += premio;
     const esPena = nombre.toUpperCase() === 'PEÑA';
-    html += `<tr class="${esPena ? 'fila-pena' : ''}"><td>${nombre}</td><td>${numero}</td><td style="text-align:center">${lugar}</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio > 0 ? premio.toFixed(2) + '€' : '-'}</td></tr>`;
+    const celdaNombre = esPena
+      ? '<span class="avatar-mini"><img src="icon-192.png" alt="Peña" style="width:40px; height:40px; border-radius:50%; object-fit:cover;"><span class="avatar-mini-pedestal">PEÑA</span></span>'
+      : renderAvatarMini(nombre.trim().toUpperCase(), avatarPorNombre);
+    html += `<tr class="${esPena ? 'fila-pena' : ''}"><td>${celdaNombre}</td><td>${numero}</td><td style="text-align:center">${lugar}</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio > 0 ? premio.toFixed(2) + '€' : '-'}</td></tr>`;
   });
   html += `<tr class="fila-total"><td colspan="3">Total premios</td><td class="importe-positivo">${total.toFixed(2)}€</td></tr>`;
   html += '</tbody>';
@@ -970,13 +1138,11 @@ function parsearConfig(rows) {
 // JORNADAS QUE SE JUEGAN, Y CUÁL TOCA AHORA (sin depender de Config)
 // ============================================================
 function calendarioActivo(calendario) {
-  // Solo las jornadas de CalendarioQuiniela que incluyen Primera, ordenadas
   return calendario
     .filter(r => String(r[3]).toUpperCase() === 'TRUE')
-    .map(r => ({ jornada: parseInt(r[0]), ligaPrimera: r[2] || '', dobles: r[4] !== '' && r[4] !== undefined ? r[4] : null }))
+    .map(r => ({ jornada: parseInt(r[0]), fecha: r[1] || '', ligaPrimera: r[2] || '', dobles: r[4] !== '' && r[4] !== undefined ? r[4] : null }))
     .sort((a, b) => a.jornada - b.jornada);
 }
-
 function calcularJornadaActual(jornadas) {
   // La primera (más baja) jornada con partidos pero sin sus 15 resultados aún
   const porJornada = {};
@@ -996,9 +1162,18 @@ function calcularJornadaActual(jornadas) {
 
 // Sustituye a calcularJornadaActual para decidir qué jornada mostrar en pantalla:
 // la más reciente cuyo plazo de envío ya ha cerrado (no depende de si hay resultados).
-function calcularJornadaMostrar(jornadasRows, calendarioCierreRows, fechasCierreRows) {
-  const nums = [...new Set(jornadasRows.map(r => parseInt(r[0])).filter(n => !!n))].sort((a, b) => a - b);
+  
+function calcularJornadaMostrar(jornadasRows, calendarioCierreRows, fechasCierreRows, calendario, config) {
+  // Recorremos las jornadas YA CONOCIDAS de la vuelta (con partidos de Primera),
+  // no solo las que ya se hayan descargado — así no se queda "ciega" durante un parón.
+  const ligaIni = parseInt(config['Jornada Inicio']) || 1;
+  const ligaTotal = parseInt(config['Total jornadas']) || 999;
+  const ligaFin = ligaIni + ligaTotal - 1;
+  const nums = calendarioActivo(calendario)
+    .filter(a => { const lp = parseInt(a.ligaPrimera); return lp >= ligaIni && lp <= ligaFin; })
+    .map(a => a.jornada);
   if (nums.length === 0) return null;
+
   const ahora = new Date();
   for (const j of nums) {
     const cierre = calcularCierreJornada(j, calendarioCierreRows, fechasCierreRows);
@@ -1006,20 +1181,289 @@ function calcularJornadaMostrar(jornadasRows, calendarioCierreRows, fechasCierre
     const filasJ = jornadasRows.filter(r => parseInt(r[0]) === j);
     const conResultado = filasJ.filter(r => r[4]).length;
     const totalResultados = filasJ.length;
-    const terminada = yaCerro && totalResultados > 0 && conResultado === totalResultados;
-    if (!terminada) return j; // la primera que no está del todo cerrada Y resuelta
+    const terminada = yaCerro && (totalResultados === 0 || conResultado === totalResultados);
+    if (!terminada) return j;
   }
   return nums[nums.length - 1];
 }
 
+function mostrarNumerosFijos(config) {
+  const html = `
+    <div class="numero-fijo-linea"><strong>PRIMITIVA</strong>
+      <div class="numero-fijo-valor">${config['Primitiva Serie 1'] || '-'}</div>
+      <div class="numero-fijo-valor">${config['Primitiva Serie 2'] || '-'}</div>
+    </div>
+    <div class="numero-fijo-linea"><strong>BONOLOTO</strong>
+      <div class="numero-fijo-valor">${config['Bonoloto'] || '-'}</div>
+    </div>
+    <div class="numero-fijo-linea"><strong>EUROMILLÓN</strong>
+      <div class="numero-fijo-valor">${config['Euromillon'] || '-'} &nbsp;|&nbsp; Estrellas: ${config['Euromillon Estrellas'] || '-'}</div>
+    </div>
+    <div class="numero-fijo-linea"><strong>LOTERÍA</strong>
+      <div class="numero-fijo-valor">${config['Loteria'] || 'Aleatorio'}</div>
+    </div>
+  `;
+  document.getElementById('ini-numeros-fijos').innerHTML = html;
+}
+
+function numOp(v) {
+  return parseFloat(String(v || '0').replace(',', '.')) || 0;
+}
+
+const ESTILO_EQUIPO_MINI = {
+  'ATLÉTICO': 'repeating-linear-gradient(90deg,#cb3524 0,#cb3524 18%,#fff 18%,#fff 36%)',
+  'ATLETICO': 'repeating-linear-gradient(90deg,#cb3524 0,#cb3524 18%,#fff 18%,#fff 36%)',
+  'BARCELONA': 'repeating-linear-gradient(90deg,#a50044 0,#a50044 18%,#004d98 18%,#004d98 36%)',
+  'MADRID': '#f4f4f4',
+  'LAS PALMAS': '#ffd500',
+};
+const COLORES_MINI = {
+  'Rojo teja':'#c0392b','Naranja':'#e67e22','Amarillo':'#f1c40f','Verde lima':'#8bc34a',
+  'Verde azulado':'#16a085','Azul':'#2980b9','Azul violeta':'#5b6ee1','Morado':'#8e44ad',
+  'Fucsia':'#d81b60','Rosa':'#ff6f91','Marrón':'#795548','Gris azulado':'#607d8b',
+  'Azul marino':'#34495e','Rojo coral':'#e74c3c','Turquesa':'#00bcd4','Dorado tierra':'#a67c52',
+};
+
+function haloMini(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
+  const borde = lum >= 0.55 ? '#000' : '#fff';
+  return `-1px -1px 0 ${borde}, 1px -1px 0 ${borde}, -1px 1px 0 ${borde}, 1px 1px 0 ${borde}`;
+}
+
+function mapaAvatarPorNombre(avatarColorRows) {
+  const mapa = {};
+  avatarColorRows.forEach(r => {
+    const nombre = normalizarNombre(r[0]);
+    if (nombre) mapa[nombre] = { equipo: r[1] || '', color: r[2] || '', emoji: r[3] || '' };
+  });
+  return mapa;
+}
+
+function mezclarPorEquipo(lista, avatarPorNombre) {
+  const porEquipo = {};
+  lista.forEach(nombre => {
+    const eq = ((avatarPorNombre[normalizarNombre(nombre)] || {}).equipo || 'otro').toUpperCase();
+    (porEquipo[eq] = porEquipo[eq] || []).push(nombre);
+  });
+  const grupos = Object.values(porEquipo);
+  const resultado = [];
+  let quedan = true;
+  while (quedan) {
+    quedan = false;
+    grupos.forEach(g => { if (g.length) { resultado.push(g.shift()); quedan = true; } });
+  }
+  return resultado;
+}
+
+function crearGloboPortada(nombre, tam, avatarPorNombre) {
+  const dato = avatarPorNombre[normalizarNombre(nombre)] || {};
+  const fondo = ESTILO_EQUIPO_MINI[String(dato.equipo || '').toUpperCase()] || '#cccccc';
+  const colorHex = COLORES_MINI[dato.color] || '#ffffff';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pt-globo-wrap';
+  const duracion = (3.2 + Math.random() * 2.2).toFixed(2);
+  const retraso = (Math.random() * -4).toFixed(2);
+  wrap.style.animationDuration = duracion + 's';
+  wrap.style.animationDelay = retraso + 's';
+
+  const globo = document.createElement('div');
+  globo.className = 'pt-globo';
+  globo.style.width = tam + 'px';
+  globo.style.height = (tam * 1.15) + 'px';
+
+  const cuerpo = document.createElement('div');
+  cuerpo.className = 'pt-globo-cuerpo';
+  cuerpo.style.background = fondo;
+  globo.appendChild(cuerpo);
+
+  const ojos = document.createElement('div');
+  ojos.className = 'pt-globo-ojos';
+  ojos.style.gap = (tam * 0.16) + 'px';
+  ojos.style.marginTop = -(tam * 0.12) + 'px';
+  for (let i = 0; i < 2; i++) {
+    const ojo = document.createElement('span');
+    ojo.style.width = ojo.style.height = (tam * 0.10) + 'px';
+    ojos.appendChild(ojo);
+  }
+
+  function crearBrazo(lado) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const anchoSvg = tam * 0.30, altoSvg = tam * 0.28;
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 30 28');
+    svg.setAttribute('class', 'pt-globo-extremidad');
+    svg.style.width = anchoSvg + 'px';
+    svg.style.height = altoSvg + 'px';
+    svg.style.top = (tam * 0.42) + 'px';
+    if (lado === 'izq') svg.style.left = -(anchoSvg * 0.42) + 'px';
+    else { svg.style.right = -(anchoSvg * 0.42) + 'px'; svg.style.transform = 'scaleX(-1)'; }
+    const brazo = document.createElementNS(ns, 'path');
+    brazo.setAttribute('d', 'M27 8 L20 12');
+    svg.appendChild(brazo);
+    [[20,12,14,6],[20,12,15,13],[20,12,15,19]].forEach(([x1,y1,x2,y2]) => {
+      const dedo = document.createElementNS(ns, 'path');
+      dedo.setAttribute('d', `M${x1} ${y1} L${x2} ${y2}`);
+      svg.appendChild(dedo);
+    });
+    return svg;
+  }
+  globo.appendChild(crearBrazo('izq'));
+  globo.appendChild(crearBrazo('der'));
+
+  function crearPata(lado) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const anchoSvg = tam * 0.24, altoSvg = tam * 0.22;
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 22');
+    svg.setAttribute('class', 'pt-globo-extremidad');
+    svg.style.width = anchoSvg + 'px';
+    svg.style.height = altoSvg + 'px';
+    svg.style.top = (tam * 1.02) + 'px';
+    if (lado === 'izq') svg.style.left = (tam * 0.20) + 'px';
+    else { svg.style.right = (tam * 0.20) + 'px'; svg.style.transform = 'scaleX(-1)'; }
+    const pierna = document.createElementNS(ns, 'path');
+    pierna.setAttribute('d', 'M12 0 L12 6');
+    svg.appendChild(pierna);
+    [[12,6,6,13],[12,6,12,16],[12,6,18,13]].forEach(([x1,y1,x2,y2]) => {
+      const dedo = document.createElementNS(ns, 'path');
+      dedo.setAttribute('d', `M${x1} ${y1} L${x2} ${y2}`);
+      svg.appendChild(dedo);
+    });
+    return svg;
+  }
+  globo.appendChild(crearPata('izq'));
+  globo.appendChild(crearPata('der'));
+
+  const nombreEl = document.createElement('div');
+  nombreEl.className = 'pt-globo-nombre';
+  nombreEl.style.fontSize = (tam * 0.20) + 'px';
+  nombreEl.style.marginTop = (tam * 0.10) + 'px';
+  nombreEl.style.color = colorHex;
+  nombreEl.style.textShadow = haloMini(colorHex);
+  nombreEl.textContent = nombre.substring(0, 7);
+
+  globo.appendChild(ojos);
+  globo.appendChild(nombreEl);
+  wrap.appendChild(globo);
+  return wrap;
+}
+
+function posicionesFormaPortada(w, h) {
+  const cx = w / 2, cy = h / 2;
+  const posiciones = [{ x: cx, y: cy }];
+  const radioIntermedio = Math.min(w, h) * 0.30;
+  for (let i = 0; i < 4; i++) {
+    const angulo = (Math.PI * 2 * i / 4) - Math.PI / 2;
+    posiciones.push({ x: cx + radioIntermedio * Math.cos(angulo), y: cy + radioIntermedio * Math.sin(angulo) * 0.85 });
+  }
+  const radioExterior = Math.min(w, h) * 0.46;
+  for (let i = 0; i < 9; i++) {
+    const angulo = (Math.PI * 2 * i / 9) - Math.PI / 2 + 0.3;
+    posiciones.push({ x: cx + radioExterior * Math.cos(angulo), y: cy + radioExterior * Math.sin(angulo) * 0.85 });
+  }
+  return posiciones;
+}
+
+function cargarPortada(clasif, campeonesRows, avatarPorNombre) {
+  const orla = document.getElementById('pt-orla');
+  const w = orla.clientWidth, h = orla.clientHeight;
+
+  const nombresOrdenados = clasif.map(r => String(r[1]).trim().toUpperCase());
+  const candidatos = calcularCandidatosGranFinal(clasif, campeonesRows);
+  const grupoDefinitivo = [...new Set(candidatos.filter(c => c.definitivo).flatMap(c => c.nombres))];
+  const grupoProvisional = [...new Set(candidatos.filter(c => !c.definitivo).flatMap(c => c.nombres))]
+    .filter(n => !grupoDefinitivo.includes(n));
+  const grupoResto = nombresOrdenados.filter(n => !grupoDefinitivo.includes(n) && !grupoProvisional.includes(n));
+  const ordenPorMerito = [...grupoDefinitivo, ...grupoProvisional, ...grupoResto];
+
+  const tamMax = w * 0.26, tamMin = w * 0.13;
+  const tamPorNombre = {};
+  ordenPorMerito.forEach((nombre, rank) => {
+    tamPorNombre[nombre] = tamMax - (rank / Math.max(1, ordenPorMerito.length - 1)) * (tamMax - tamMin);
+  });
+
+  const ordenMezclado = mezclarPorEquipo(ordenPorMerito, avatarPorNombre);
+  const posiciones = posicionesFormaPortada(w, h);
+
+  orla.innerHTML = '';
+  ordenMezclado.forEach((nombre, i) => {
+    const pos = posiciones[i] || posiciones[posiciones.length - 1];
+    const globo = crearGloboPortada(nombre, tamPorNombre[nombre], avatarPorNombre);
+    globo.style.left = pos.x + 'px';
+    globo.style.top = pos.y + 'px';
+    orla.appendChild(globo);
+  });
+}
+
+function toggleMusicaPortada() {
+  const audio = document.getElementById('pt-audio');
+  const btn = document.getElementById('ptBtnPlay');
+  if (audio.paused) {
+    audio.play().catch(() => {});
+    btn.textContent = '❚❚';
+  } else {
+    audio.pause();
+    btn.textContent = '▶';
+  }
+}
+
+function cerrarPortada() {
+  document.getElementById('portada-overlay').style.display = 'none';
+}
+function abrirPortadaDeNuevo() {
+  document.getElementById('portada-overlay').style.display = 'flex';
+}
+function normalizarNombre(s) {
+  return String(s || '').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+function renderAvatarMini(nombre, avatarPorNombre) {
+  const dato = avatarPorNombre[normalizarNombre(nombre)] || {};
+  const inicial = nombre.substring(0, 6);
+  if (dato.emoji) {
+    return `<span class="avatar-mini"><span class="avatar-mini-emoji">${dato.emoji}</span><span class="avatar-mini-pedestal">${inicial}</span></span>`;
+  }
+  const fondo = ESTILO_EQUIPO_MINI[String(dato.equipo || '').toUpperCase()] || '#cccccc';
+  const colorHex = COLORES_MINI[dato.color] || '#ffffff';
+  return `<span class="avatar-mini"><span class="avatar-mini-globo" style="background:${fondo}">
+      <span class="avatar-mini-ojos"><span></span><span></span></span>
+      <span class="avatar-mini-nombre" style="color:${colorHex}; text-shadow:${haloMini(colorHex)};">${inicial}</span>
+    </span></span>`;
+}
+  
+function calcularCandidatosGranFinal(clasif, campeonesRows) {
+  const camp1 = campeonesRows.find(r => String(r[1]) === '1');
+  const camp2 = campeonesRows.find(r => String(r[1]) === '2');
+  const hayVuelta2Definitiva = !!camp2;
+
+  function maxPorCriterio(filas, obtenerValor) {
+    if (filas.length === 0) return { nombres: [], valor: 0 };
+    const valorMax = Math.max(...filas.map(obtenerValor));
+    const nombres = filas.filter(r => obtenerValor(r) === valorMax).map(r => r[1] || '');
+    return { nombres, valor: valorMax };
+  }
+
+  const activos = clasif.filter(r => (r[5] || '').toLowerCase() !== 'eliminado');
+  const camp2Provisional = maxPorCriterio(activos, r => numOp(r[2]));
+  const mejorAciertos = maxPorCriterio(clasif, r => numOp(r[2]));
+  const mejorPremios = maxPorCriterio(clasif, r => numOp(r[4]));
+
+  return [
+    { categoria: 'CAMPEÓN VUELTA 1', nombres: camp1 ? [camp1[2] || ''] : ['—'], definitivo: !!camp1, dato: '' },
+    { categoria: 'CAMPEÓN VUELTA 2', nombres: hayVuelta2Definitiva ? [camp2[2] || ''] : camp2Provisional.nombres, definitivo: hayVuelta2Definitiva, dato: hayVuelta2Definitiva ? '' : camp2Provisional.valor + ' ac.' },
+    { categoria: 'MEJOR ACIERTOS', nombres: mejorAciertos.nombres, definitivo: hayVuelta2Definitiva, dato: mejorAciertos.valor + ' ac.' },
+    { categoria: 'MEJOR PREMIOS', nombres: mejorPremios.nombres, definitivo: hayVuelta2Definitiva, dato: mejorPremios.valor.toFixed(0) + '€' },
+  ];
+}
 // ============================================================
 // CARGAR INICIO (QUITAR ESTE COMENTARIO??)
 // ============================================================
-async function cargarInicio(config, clasif, jornadas, calendario, calendarioCierreRows, fechasCierreRows) {
+async function cargarInicio(config, clasif, jornadas, calendario, calendarioCierreRows, fechasCierreRows, campeonesRows, avatarPorNombre) {
   document.getElementById('temporada-badge').textContent = config['Temporada'] || '';
 
   const activas = calendarioActivo(calendario);
-  const jornadaActual = calcularJornadaMostrar(jornadas, calendarioCierreRows, fechasCierreRows);
+  const jornadaActual = calcularJornadaMostrar(jornadas, calendarioCierreRows, fechasCierreRows, calendario, config);
   const posActual = jornadaActual !== null ? activas.findIndex(a => a.jornada === jornadaActual) : -1;
   const jActualRel = posActual >= 0 ? posActual + 1 : null;
   const jugadas = posActual >= 0 ? posActual : 0;
@@ -1028,47 +1472,40 @@ async function cargarInicio(config, clasif, jornadas, calendario, calendarioCier
 
   const pct = jTotal ? Math.round((jugadas / jTotal) * 100) : 0;
   document.getElementById('ini-jornada').textContent = jornadaActual !== null ? jornadaActual : '-';
+  const filaActual = jornadaActual !== null ? calendario.find(r => parseInt(r[0]) === jornadaActual) : null;
+  const ligaActual = filaActual ? (filaActual[2] || '') : '';
+  document.getElementById('ini-jornada-liga').textContent = ligaActual ? `(Liga 1ª: ${ligaActual})` : '';
   document.getElementById('ini-jugadas').textContent = jugadas;
   document.getElementById('ini-total').textContent = jTotal || '-';
   document.getElementById('ini-barra').style.width = pct + '%';
 
-  const top5 = clasif.slice(0, 5);
-  let html = '<thead><tr><th>Pos</th><th>Jugador</th><th style="text-align:right">Ac</th><th style="text-align:right">P15</th><th style="text-align:right">€</th></tr></thead><tbody>';
-  top5.forEach((row, i) => {
-    const pos = i + 1;
-    const nombre = row[1] || '';
-    const estado = (row[5] || '').toLowerCase();
-    const eliminado = estado === 'eliminado';
-    const cls = eliminado ? 'eliminado' : 'nombre-jugador';
-    const posCls = pos <= 3 ? `pos-${pos}` : '';
-    html += `<tr>
-      <td class="pos-num ${posCls}">${pos}</td>
-      <td><span class="${cls}">${nombre}</span></td>
-      <td class="num-stat">${row[2] || 0}</td>
-      <td class="num-stat">${row[3] || 0}</td>
-      <td class="num-stat">${row[4] ? parseFloat(row[4]).toFixed(0)+'€' : '0€'}</td>
-    </tr>`;
+  const candidatos = calcularCandidatosGranFinal(clasif, campeonesRows);
+  let htmlCand = '';
+  candidatos.forEach(c => {
+    htmlCand += `<div class="candidato-fila">
+      <div class="candidato-categoria">${c.categoria}</div>
+      <div class="candidato-nombres">${c.nombres.map(n => renderAvatarMini(n, avatarPorNombre)).join('')}
+        <span class="candidato-badge ${c.definitivo ? 'definitivo' : 'provisional'}">${c.definitivo ? 'DEFINITIVO' : 'PROVISIONAL'}</span>
+        ${c.dato ? `<span class="candidato-dato">${c.dato}</span>` : ''}
+      </div>
+    </div>`;
   });
-  html += '</tbody>';
-  document.getElementById('ini-top5').innerHTML = html;
+  document.getElementById('ini-candidatos').innerHTML = htmlCand;
 
-  const filasJornada = proxima ? jornadas.filter(r => parseInt(r[0]) === proxima.jornada) : [];
-  if (filasJornada.length === 0) {
-    document.getElementById('ini-proxima').innerHTML = '<div class="loading">Sin datos de jornada</div>';
+  const elProxima = document.getElementById('ini-proxima-linea');
+  if (proxima) {
+    elProxima.textContent = 'Próxima: Jornada ' + proxima.jornada + ' (Quiniela)' +
+      (proxima.ligaPrimera ? ' · Liga 1ª: Jornada ' + proxima.ligaPrimera : '') +
+      (proxima.fecha ? ' · ' + proxima.fecha : '');
   } else {
-    const etiqueta = 'Jornada ' + proxima.jornada +
-      (proxima.ligaPrimera ? ' (Liga 1ª: Jornada ' + proxima.ligaPrimera + ')' : '');
-    let htmlProxima = `<div class="jornada-info"><span>${etiqueta}</span><span>${filasJornada.length} partidos</span></div>`;
-    filasJornada.forEach(row => {
-      htmlProxima += `<div class="partido-row"><span class="partido-equipos">${row[2] || ''} — ${row[3] || ''}</span></div>`;
-    });
-    document.getElementById('ini-proxima').innerHTML = htmlProxima;
+    elProxima.textContent = '';
   }
+  mostrarNumerosFijos(config);
 }
 // ============================================================
 // CARGAR CLASIFICACION
 // ============================================================
-function cargarClasificacion(clasif) {
+function cargarClasificacion(clasif, avatarPorNombre) {
   let html = '<thead><tr><th>Pos</th><th>Jugador</th><th style="text-align:right">Aciertos</th><th style="text-align:right">Pleno15</th><th style="text-align:right">Premios</th><th class="col-estado">Estado</th></tr></thead><tbody>';
   clasif.forEach((row, i) => {
     const pos = i + 1;
@@ -1082,24 +1519,53 @@ function cargarClasificacion(clasif) {
       : '<span class="estado-badge estado-activo">Activo</span>';
     html += `<tr>
       <td class="pos-num ${posCls}">${pos}</td>
-      <td><span class="${cls}">${nombre}</span></td>
+      <td>${renderAvatarMini(nombre, avatarPorNombre)}${eliminado ? ' <span class="eliminado" style="font-size:10px;">(eliminado)</span>' : ''}</td>
       <td class="num-stat">${row[2] || 0}</td>
       <td class="num-stat">${row[3] || 0}</td>
-      <td class="num-stat">${row[4] ? parseFloat(row[4]).toFixed(0)+'€' : '0€'}</td>
+      <td class="num-stat">${row[4] ? numOp(row[4]).toFixed(2)+'€' : '0€'}</td>
       <td class="col-estado">${estadoBadge}</td>
     </tr>`;
   });
   html += '</tbody>';
   document.getElementById('tabla-clasif-completa').innerHTML = html;
 }
+let calJugadores = [], calJugadorEliminado = [], calJornadas = [], calMarcadores = [],
+    calCalendarioCierre = [], calFechasCierre = [], calActivasTodas = [], calJornadaActualReal = null,
+    calEliminacionesLog = [], calJornadaAnteriorReal = null;
+
+function calcularEliminadoProvisional(jugadores, jugadorEliminado, aciertosJugador, clasif) {
+  const activos = [];
+  jugadores.forEach((nombre, ji) => {
+    if (!jugadorEliminado[ji]) activos.push({ nombre: nombre.toUpperCase(), aciertos: aciertosJugador[ji] });
+  });
+  if (activos.length === 0) return null;
+
+  function datoClasif(nombre) {
+    return clasif.find(r => String(r[1]).trim().toUpperCase() === nombre) || [];
+  }
+
+  const minAciertos = Math.min(...activos.map(a => a.aciertos));
+  let candidatos = activos.filter(a => a.aciertos === minAciertos);
+
+  if (candidatos.length > 1) {
+    const minPremios = Math.min(...candidatos.map(c => numOp(datoClasif(c.nombre)[4])));
+    candidatos = candidatos.filter(c => numOp(datoClasif(c.nombre)[4]) === minPremios);
+  }
+  if (candidatos.length > 1) {
+    const minP15 = Math.min(...candidatos.map(c => numOp(datoClasif(c.nombre)[3])));
+    candidatos = candidatos.filter(c => numOp(datoClasif(c.nombre)[3]) === minP15);
+  }
+  candidatos.sort((a, b) => a.nombre.localeCompare(b.nombre));
+  return candidatos[0].nombre;
+}
 
 // ============================================================
 // CARGAR JORNADA
 // ============================================================
 
-function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierreRows, fechasCierreRows, clasif) {
+function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierreRows, fechasCierreRows, clasif, eliminacionesLog) {
   const activas = calendarioActivo(calendario);
-  const jornadaActual = calcularJornadaMostrar(jornadas, calendarioCierreRows, fechasCierreRows);
+  const jornadaActual = calcularJornadaMostrar(jornadas, calendarioCierreRows, fechasCierreRows, calendario, config);
 
   if (jornadaActual === null) {
     document.getElementById('jor-badge').textContent = 'Jornada -';
@@ -1113,6 +1579,40 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
 
   const filas = jornadas.filter(r => parseInt(r[0]) === jornadaActual);
 
+  // Jugadores y eliminados: no dependen de si hay partidos descargados
+  const jugadores = config.jugadores || [];
+  const eliminadosSet = new Set(
+    clasif
+      .filter(r => (r[5] || '').toString().toLowerCase() === 'eliminado')
+      .map(r => (r[1] || '').toString().trim().toUpperCase())
+  );
+  const jugadorEliminado = jugadores.map(j => eliminadosSet.has(j.toString().trim().toUpperCase()));
+
+  // Guardamos los datos que necesitará el Calendario. SIEMPRE, incluso sin datos descargados.
+  calJugadores = jugadores;
+  calJugadorEliminado = jugadorEliminado;
+  calJornadas = jornadas;
+  calMarcadores = marcadores;
+  calCalendarioCierre = calendarioCierreRows;
+  calFechasCierre = fechasCierreRows;
+  calJornadaActualReal = jornadaActual;
+  calEliminacionesLog = eliminacionesLog;
+
+  const ligaIni = parseInt(config['Jornada Inicio']) || 1;
+  const ligaTotal = parseInt(config['Total jornadas']) || 999;
+  const ligaFin = ligaIni + ligaTotal - 1;
+  calActivasTodas = calendario
+    .filter(r => { const lp = parseInt(r[2]); return lp >= ligaIni && lp <= ligaFin; })
+    .map(r => ({ jornada: parseInt(r[0]), fecha: r[1] || '', ligaPrimera: r[2] || '' }))
+    .sort((a, b) => a.jornada - b.jornada);
+
+  // Resultado real de la jornada anterior: se calcula y se muestra AQUÍ, antes de
+  // cualquier "return" por falta de datos, para que nunca se quede sin mostrar.
+  const numsParaAnterior = calActivasTodas.map(a => a.jornada);
+  const posParaAnterior = numsParaAnterior.indexOf(jornadaActual);
+  const jornadaAnteriorNum = posParaAnterior > 0 ? numsParaAnterior[posParaAnterior - 1] : null;
+  calJornadaAnteriorReal = jornadaAnteriorNum;
+
   const dobles = posActual >= 0 ? activas[posActual].dobles : null;
   const textoDobles = dobles !== null ? (' · ' + dobles + (dobles === 1 ? ' doble' : ' dobles')) : '';
   document.getElementById('jor-badge').textContent = 'Jornada ' + jornadaActual +
@@ -1120,6 +1620,8 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
 
   if (filas.length === 0) {
     document.getElementById('jor-partidos').innerHTML = '<div class="loading">Sin datos de jornada</div>';
+    document.getElementById('jor-pronos').innerHTML = '';
+    document.getElementById('jor-eliminado-provisional').style.display = 'none';
     return;
   }
 
@@ -1149,16 +1651,7 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     </div>`;
   });
   document.getElementById('jor-partidos').innerHTML = htmlPartidos;
-  
-  // Jugadores y eliminados: se calcula siempre, lo necesitan tanto la jornada
-  // actual (si ya cerró) como la jornada anterior (más abajo)
-  const jugadores = config.jugadores || [];
-  const eliminadosSet = new Set(
-    clasif
-      .filter(r => (r[5] || '').toString().toLowerCase() === 'eliminado')
-      .map(r => (r[1] || '').toString().trim().toUpperCase())
-  );
-  const jugadorEliminado = jugadores.map(j => eliminadosSet.has(j.toString().trim().toUpperCase()));
+  document.getElementById('jor-eliminado-provisional').style.display = 'none';
 
   // Pronósticos de la jornada actual: ocultos para todos hasta que cierre el plazo de envío
   const cierre = calcularCierreJornada(jornadaActual, calendarioCierreRows, fechasCierreRows);
@@ -1194,6 +1687,19 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
       });
       htmlPronos += '</tr>';
     });
+
+    /* ELIMINADO PROVISIONAL — desactivado por decisión propia, código correcto y listo por si se quiere reactivar
+    const conResultadoAP = filas.filter(f => f[4]).length;
+    if (conResultadoAP >= 8 && conResultadoAP < 15) {
+      const nombreProv = calcularEliminadoProvisional(jugadores, jugadorEliminado, aciertosJugador, clasif);
+      if (nombreProv) {
+        const elEliminadoProv = document.getElementById('jor-eliminado-provisional');
+        elEliminadoProv.style.display = 'block';
+        elEliminadoProv.innerHTML = `<div class="aviso-provisional">⚠️ Si la jornada acabara ahora: <strong>ELIMINADO — ${nombreProv}</strong> <span style="opacity:0.8;">(puede cambiar con los resultados que faltan)</span></div>`;
+      }
+    }
+    */
+
     htmlPronos += '</tbody><tfoot><tr><td class="partido-col">Ac.</td>';
     jugadores.forEach((j, ji) => {
       if (jugadorEliminado[ji]) return;
@@ -1202,73 +1708,161 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     htmlPronos += '</tr></tfoot></table>';
     document.getElementById('jor-pronos').innerHTML = htmlPronos;
   }
+}
 
-  // Jornada anterior: siempre visible (ya cerrada por definición), para repasar aciertos recién resueltos
-  const numsDisponibles = [...new Set(jornadas.map(r => parseInt(r[0])).filter(n => !!n))].sort((a, b) => a - b);
-  const posMostrar = numsDisponibles.indexOf(jornadaActual);
-  const jornadaAnterior = posMostrar > 0 ? numsDisponibles[posMostrar - 1] : null;
 
-  const existenteAnterior = document.getElementById('jor-anterior-wrap');
-  if (existenteAnterior) existenteAnterior.remove();
+function abrirCalendario() {
+  document.getElementById('jornada-vista-actual').style.display = 'none';
+  document.getElementById('jornada-vista-calendario').style.display = 'block';
+  construirTablaCalendario();
+  const numInput = document.getElementById('calendario-num');
+  const ligasDisponibles = calActivasTodas.map(a => parseInt(a.ligaPrimera)).filter(n => !isNaN(n));
+  if (ligasDisponibles.length) {
+    numInput.min = Math.min(...ligasDisponibles);
+    numInput.max = Math.max(...ligasDisponibles);
+  }
+  const ligaDefecto = ligaDeQuiniela(calJornadaAnteriorReal) || ligaDeQuiniela(calJornadaActualReal) || 1;
+  numInput.value = ligaDefecto;
+  mostrarJornadaCalendario();
+}
 
-  if (jornadaAnterior) {
-    const filasAnterior = jornadas.filter(r => parseInt(r[0]) === jornadaAnterior);
+function cerrarCalendario() {
+  document.getElementById('jornada-vista-calendario').style.display = 'none';
+  document.getElementById('jornada-vista-actual').style.display = 'block';
+}
 
-    const marcadorPorPartidoAnterior = {};
-    marcadores.forEach(row => {
-      if (parseInt(row[0]) === jornadaAnterior) marcadorPorPartidoAnterior[row[1]] = row[2] || '';
+function toggleTablaCalendario() {
+  const wrap = document.getElementById('calendario-tabla-wrap');
+  const icono = document.getElementById('calendario-toggle-icono');
+  const abierto = wrap.style.display !== 'none';
+  wrap.style.display = abierto ? 'none' : 'block';
+  icono.textContent = abierto ? '▼' : '▲';
+}
+
+function construirTablaCalendario() {
+  let html = '<thead><tr><th class="partido-col">Quiniela</th><th>Liga 1ª</th><th>Fecha</th></tr></thead><tbody>';
+  calActivasTodas.forEach(a => {
+    const esActual = a.jornada === calJornadaActualReal;
+    html += `<tr${esActual ? ' style="font-weight:700; color:var(--verde);"' : ''}>
+      <td class="partido-col">${a.jornada}</td>
+      <td>${a.ligaPrimera || '-'}</td>
+      <td>${a.fecha || '-'}</td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('calendario-tabla').innerHTML = html;
+}
+function calcularNombreEliminado(resultado) {
+  const m = String(resultado || '').match(/^eliminado:\s*(.+)$/i);
+  return m ? m[1].trim().toUpperCase() : null;
+}
+function ligaDeQuiniela(numQuiniela) {
+  const entrada = calActivasTodas.find(a => a.jornada === numQuiniela);
+  return entrada ? parseInt(entrada.ligaPrimera) : null;
+}
+function jugadoresEliminadosAntesDe(jornada) {
+  const set = new Set();
+  calEliminacionesLog.forEach(r => {
+    const j = parseInt(r[0]);
+    if (j < jornada) {
+      const nombre = calcularNombreEliminado(r[1]);
+      if (nombre) set.add(nombre);
+    }
+  });
+  return set;
+}
+
+function mostrarJornadaCalendario() {
+  const numInput = document.getElementById('calendario-num');
+  let ligaElegida = parseInt(numInput.value) || 1;
+  numInput.value = ligaElegida;
+
+  const entradaCal = calActivasTodas.find(a => parseInt(a.ligaPrimera) === ligaElegida);
+
+  let html = `<div style="margin-bottom:10px; font-size:13px; color:var(--gris);">
+    Liga 1ª: Jornada ${ligaElegida}${entradaCal ? ' · Jornada ' + entradaCal.jornada + ' (Quiniela)' : ''}${entradaCal && entradaCal.fecha ? ' · ' + entradaCal.fecha : ''}
+  </div>`;
+
+  if (!entradaCal) {
+    html += '<div class="loading">No existe esa jornada de Liga 1ª en esta vuelta.</div>';
+    document.getElementById('calendario-resultado').innerHTML = html;
+    return;
+  }
+
+  const jornadaElegida = entradaCal.jornada;
+  const filas = calJornadas.filter(r => parseInt(r[0]) === jornadaElegida);
+
+  if (filas.length === 0) {
+    html += '<div class="loading">Aún no hay partidos descargados para esta jornada.</div>';
+    document.getElementById('calendario-resultado').innerHTML = html;
+    return;
+  }
+
+  const marcadorPorPartido = {};
+  calMarcadores.forEach(row => {
+    if (parseInt(row[0]) === jornadaElegida) marcadorPorPartido[row[1]] = row[2] || '';
+  });
+
+  filas.forEach((row, i) => {
+    const num = i + 1;
+    const marcador = marcadorPorPartido[num] || '';
+    html += `<div class="partido-row">
+      <span class="partido-num">${num}</span>
+      <span class="partido-equipos">${row[2] || ''} — ${row[3] || ''}</span>
+      ${num === 15 ? '<span class="partido-p15">P15</span>' : ''}
+      ${marcador ? `<span class="partido-marcador">${marcador}</span>` : ''}
+      <span class="partido-resultado">${row[4] || ''}</span>
+    </div>`;
+  });
+
+  const cierre = calcularCierreJornada(jornadaElegida, calCalendarioCierre, calFechasCierre);
+  const cerrado = cierre ? (new Date() >= cierre) : false;
+
+  if (!cerrado) {
+    html += `<div class="loading" style="margin-top:10px;">Los pronósticos de esta jornada aún no están visibles.</div>`;
+  } else {
+    const eliminadosAntes = jugadoresEliminadosAntesDe(jornadaElegida);
+
+    let htmlPronos = '<table class="tabla-pronos"><thead><tr><th class="partido-col">Nº</th>';
+    calJugadores.forEach((j, ji) => {
+      if (eliminadosAntes.has(j.toUpperCase())) return;
+      htmlPronos += `<th>${j.substring(0,4)}</th>`;
     });
+    htmlPronos += '</tr></thead><tbody>';
 
-    let htmlPartidosAnterior = '';
-    filasAnterior.forEach((row, i) => {
-      const num = i + 1;
-      const marcador = marcadorPorPartidoAnterior[num] || '';
-      htmlPartidosAnterior += `<div class="partido-row">
-        <span class="partido-num">${num}</span>
-        <span class="partido-equipos">${row[2] || ''} — ${row[3] || ''}</span>
-        ${num === 15 ? '<span class="partido-p15">P15</span>' : ''}
-        ${marcador ? `<span class="partido-marcador">${marcador}</span>` : ''}
-        <span class="partido-resultado">${row[4] || ''}</span>
-      </div>`;
-    });
+    const aciertosCal = calJugadores.map(() => 0);
 
-    let htmlPronosAnterior = '<table class="tabla-pronos"><thead><tr><th class="partido-col">Nº</th>';
-    jugadores.forEach((j, ji) => {
-      if (jugadorEliminado[ji]) return;
-      htmlPronosAnterior += `<th>${j.substring(0,4)}</th>`;
-    });
-    htmlPronosAnterior += '</tr></thead><tbody>';
-    filasAnterior.forEach((row, i) => {
+    filas.forEach((row, i) => {
       const resultado = row[4] || '';
-      htmlPronosAnterior += `<tr><td class="partido-col">${i + 1}</td>`;
-      jugadores.forEach((j, ji) => {
-        if (jugadorEliminado[ji]) return;
+      htmlPronos += `<tr><td class="partido-col">${i + 1}</td>`;
+      calJugadores.forEach((j, ji) => {
+        if (eliminadosAntes.has(j.toUpperCase())) return;
         const prono = row[5 + ji] || '';
         let cls = '';
         if (resultado && prono) {
           cls = (prono === resultado || resultado.includes(prono) || prono.includes(resultado)) ? 'acertado' : 'fallado';
+          if (cls === 'acertado') aciertosCal[ji]++;
         }
-        htmlPronosAnterior += `<td class="${cls}">${prono.replace(/\s/g, '')}</td>`;
+        htmlPronos += `<td class="${cls}">${prono.replace(/\s/g, '')}</td>`;
       });
-      htmlPronosAnterior += '</tr>';
+      htmlPronos += '</tr>';
     });
-    htmlPronosAnterior += '</tbody></table>';
+    htmlPronos += '</tbody><tfoot><tr><td class="partido-col">Ac.</td>';
+    calJugadores.forEach((j, ji) => {
+      if (eliminadosAntes.has(j.toUpperCase())) return;
+      htmlPronos += `<td>${aciertosCal[ji]}</td>`;
+    });
+    htmlPronos += '</tr></tfoot></table>';
+    html += `<div style="margin-top:12px; overflow-x:auto;">${htmlPronos}</div>`;
 
-    document.getElementById('sec-jornada').insertAdjacentHTML('beforeend', `
-      <div id="jor-anterior-wrap">
-        <div class="card">
-          <div class="card-header">Partidos <span class="badge">Jornada ${jornadaAnterior} (anterior)</span></div>
-          <div class="card-body">${htmlPartidosAnterior}</div>
-        </div>
-        <div class="card">
-          <div class="card-header">Pronósticos — Jornada ${jornadaAnterior}</div>
-          <div class="card-body pronos-scroll">${htmlPronosAnterior}</div>
-        </div>
-      </div>
-    `);
+    const filaLogEsta = calEliminacionesLog.find(r => parseInt(r[0]) === jornadaElegida);
+    if (filaLogEsta) {
+      html += `<div class="info-cierre" style="margin-top:12px;">${filaLogEsta[1]}</div>`;
+    }
   }
+
+  document.getElementById('calendario-resultado').innerHTML = html;
 }
-  
 // ============================================================
 // CARGAR ECONOMICO
 // ============================================================
@@ -1485,7 +2079,7 @@ function cargarEconomico(resumen, operaciones, paganinis, config) {
   operaciones.forEach(row => {
     const coste = numOp(row[3]);
     const premio = numOp(row[4]);
-    htmlDetalle += `<tr><td>${row[0] || ''}</td><td>${row[1] || ''}</td><td>${row[2] || ''}</td><td class="importe-negativo">${coste.toFixed(2)}€</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio.toFixed(2)}€</td></tr>`;
+    htmlDetalle += `<tr><td>${row[0] || ''}</td><td>${row[1] || ''}</td><td>${row[2] || ''}</td><td class="${coste > 0 ? 'importe-negativo' : ''}">${coste.toFixed(2)}€</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio.toFixed(2)}€</td></tr>`;
   });
   htmlDetalle += '</tbody>';
   document.getElementById('eco-detalle-semanal').innerHTML = htmlDetalle;
@@ -1495,7 +2089,7 @@ function cargarEconomico(resumen, operaciones, paganinis, config) {
 // ============================================================
 // CARGAR HISTORICO
 // ============================================================
-function cargarHistorico(historico) {
+function cargarHistorico(historico, avatarPorNombre) {
   // Ranking: cuántas veces ha sido campeón cada uno, contando todas las filas
   const conteo = {};
   historico.forEach(row => {
@@ -1506,19 +2100,21 @@ function cargarHistorico(historico) {
   });
   const ranking = Object.entries(conteo).sort((a, b) => b[1] - a[1]);
 
-  let html = '';
+  let htmlRanking = '';
   if (ranking.length) {
-    html += '<div class="historico-ranking">';
+    htmlRanking += '<div class="historico-ranking">';
     ranking.forEach(([nombre, titulos], i) => {
-      html += `<div class="ranking-item">
+      htmlRanking += `<div class="ranking-item">
         <span class="ranking-pos">${i + 1}</span>
-        <span class="ranking-nombre">${nombre}</span>
+        <span class="ranking-nombre">${renderAvatarMini(nombre.trim().toUpperCase(), avatarPorNombre)}</span>
         <span class="ranking-titulos">${titulos} ${titulos === 1 ? 'título' : 'títulos'}</span>
       </div>`;
     });
-    html += '</div>';
+    htmlRanking += '</div>';
   }
+  document.getElementById('historico-ranking-lista').innerHTML = htmlRanking || '<div class="loading">Sin datos</div>';
 
+  let htmlAnios = '';
   const filas = [...historico].reverse(); // más reciente primero
   filas.forEach(row => {
     if (!row[0] || row[0] === 'Año') return;
@@ -1526,19 +2122,21 @@ function cargarHistorico(historico) {
     const campeon = row[1] || '-';
     const v1 = row[2] || '';
     const v2 = row[3] || '';
-    const sub = [v1 ? '1ª: ' + v1 : '', v2 ? '2ª: ' + v2 : ''].filter(Boolean).join(' · ');
-    html += `<div class="historico-item">
+    const subHtml = [
+      v1 ? `<span style="font-size:9px;">1ª:</span> ${renderAvatarMini(v1.trim().toUpperCase(), avatarPorNombre)}` : '',
+      v2 ? `<span style="font-size:9px;">2ª:</span> ${renderAvatarMini(v2.trim().toUpperCase(), avatarPorNombre)}` : ''
+    ].filter(Boolean).join(' ');
+    htmlAnios += `<div class="historico-item">
       <div class="historico-year">${año}</div>
       <div class="historico-info">
-        <div class="historico-campeon">${campeon}</div>
-        ${sub ? `<div class="historico-sub">${sub}</div>` : ''}
+        <div class="historico-campeon">${campeon ? renderAvatarMini(campeon.trim().toUpperCase(), avatarPorNombre) : '-'}</div>
+        ${subHtml ? `<div class="historico-sub">${subHtml}</div>` : ''}
       </div>
       <div class="trofeo">🏆</div>
     </div>`;
   });
-  document.getElementById('historico-lista').innerHTML = html || '<div class="loading">Sin datos</div>';
+  document.getElementById('historico-anios-lista').innerHTML = htmlAnios || '<div class="loading">Sin datos</div>';
 }
-
 // ============================================================
 // CARGAR ESTATUTOS
 // ============================================================
@@ -1560,7 +2158,7 @@ function cargarEstatutos(estatutos) {
 // ============================================================
 // CARGAR ELIMINACION
 // ============================================================
-function cargarRankingFinal(rows) {
+function cargarRankingFinal(rows, avatarPorNombre) {
   if (!rows || rows.length === 0) {
     document.getElementById('card-ranking-final').style.display = 'none';
     return;
@@ -1577,7 +2175,7 @@ function cargarRankingFinal(rows) {
   let html = '<thead><tr><th>Puesto</th><th>Nombre</th><th style="text-align:right">Vuelta</th></tr></thead><tbody>';
   filas.forEach(f => {
     const esCampeon = f.puesto === 1;
-    html += `<tr class="${esCampeon ? 'fila-pena' : ''}"><td>${f.puesto}</td><td>${f.nombre}</td><td style="text-align:right">${f.vuelta}</td></tr>`;
+    html += `<tr class="${esCampeon ? 'fila-pena' : ''}"><td>${f.puesto}</td><td>${renderAvatarMini(f.nombre, avatarPorNombre)}</td><td style="text-align:right">${f.vuelta}</td></tr>`;
   });
   html += '</tbody>';
   document.getElementById('tabla-ranking-final').innerHTML = html;
@@ -1683,7 +2281,7 @@ function cerrarPodium() {
   
 async function init() {
   try {
-    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows, paganinisRows, podiumRows, campeonesCierreRows, frasesRows] = await Promise.all([
+    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows, paganinisRows, podiumRows, campeonesCierreRows, frasesRows, eliminacionesLogRows, avatarColorRows] = await Promise.all([
       leerHoja('Config'),
       leerHoja('Clasificacion'),
       leerHoja('Jornadas'),
@@ -1702,21 +2300,25 @@ async function init() {
       leerHoja('PodiumGranFinal'),
       leerHojaSerial('Campeones'),
       leerHoja('Frases'),
+      leerHoja('EliminacionesLog'),
+      leerHoja('AvatarColor'),
     ]);
     const config = parsearConfig(configRows);
     const clasif = clasificRows.slice(1).filter(r => r[1]);
     const calendario = calendarioRows.slice(1);
+    const avatarPorNombre = mapaAvatarPorNombre(avatarColorRows.slice(1));
     mostrarFraseDia(frasesRows.slice(1));
 
-    cargarInicio(config, clasif, jornadasRows.slice(1), calendario, calendarioCierreRows, fechasCierreRows);
+    cargarInicio(config, clasif, jornadasRows.slice(1), calendario, calendarioCierreRows, fechasCierreRows, campeonesRows, avatarPorNombre);
     cargarTrono(campeonesRows.slice(1), podiumRows.slice(1), campeonesCierreRows);
-    cargarClasificacion(clasif);
-    cargarRankingFinal(rankingRows.slice(1));
-    cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1), calendarioCierreRows, fechasCierreRows, clasif);
+    cargarClasificacion(clasif, avatarPorNombre);
+    cargarRankingFinal(rankingRows.slice(1), avatarPorNombre);
+    cargarJornada(jornadasRows.slice(1), calendario, config, marcadoresRows.slice(1), calendarioCierreRows, fechasCierreRows, clasif, eliminacionesLogRows.slice(1));
     cargarEconomico(resumenRows.slice(1), operacionesRows.slice(1), paganinisRows.slice(1), config);
-    cargarHistorico(historicoRows.slice(1));
+    cargarHistorico(historicoRows.slice(1), avatarPorNombre);
     cargarEstatutos(estatutosRows.slice(1));
-    cargarLoteria(loteriaRows.slice(1));
+    cargarLoteria(loteriaRows.slice(1), avatarPorNombre);
+    cargarPortada(clasif, campeonesRows.slice(1), avatarPorNombre);
 
   } catch(e) {
     console.error('Error general:', e);

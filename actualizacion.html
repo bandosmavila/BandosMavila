@@ -175,6 +175,7 @@
   }
   .tabla-clasif tr:last-child td { border-bottom: none; }
   .tabla-clasif tr:hover td { background: #fafaf7; }
+  .tabla-clasif td:nth-child(2) { width: 90px; }
   .pos-num {
     font-family: 'JetBrains Mono', monospace;
     font-weight: 600;
@@ -281,7 +282,7 @@
   .tabla-pronos tfoot td.partido-col { color: var(--tinta); background: #f0ede6; }
   .tabla-pronos td.acertado { background: var(--verde-claro); color: white; font-weight: 700; }
   .fallado { color: var(--gris); }
-
+#eco-detalle-semanal td:nth-child(2) { font-size: 11px; line-height: 1.3; }
   /* TABLAS ECONOMICO */
   .tabla-juegos {
     width: 100%;
@@ -324,6 +325,10 @@
     border-top: 2px solid var(--verde);
     background: #f7f5ef;
   }
+
+  #tabla-ranking-final td:nth-child(2) { text-align: center; }
+  #eco-detalle-semanal td:nth-child(2) { font-size: 11px; line-height: 1.3; }
+  
   .importe-positivo { color: var(--verde-claro); }
   .importe-negativo { color: var(--rojo); }
   .valor-positivo { color: var(--verde-claro); }
@@ -802,10 +807,9 @@
           <div class="loading"><div class="spinner"></div>Cargando...</div>
         </div>
       </div>
-      
-      <div id="jor-resultado-anterior" style="display:none;"></div>
+    
 
-      <button class="calendario-btn" onclick="abrirCalendario()">📅 CALENDARIO</button>
+      <button class="calendario-btn" onclick="abrirCalendario()">📅 Jornada Anterior / Calendario</button>
     </div>
 
     <div id="jornada-vista-calendario" style="display:none;">
@@ -824,10 +828,7 @@
         <div class="card-header">Consultar jornada</div>
         <div class="card-body">
           <div class="calendario-selector">
-            <label><input type="radio" name="calendario-modo" value="actual" checked onchange="mostrarJornadaCalendario()"> Actual</label>
-            <label><input type="radio" name="calendario-modo" value="numero" onchange="mostrarJornadaCalendario()"> Nº
-              <input type="number" id="calendario-num" style="width:56px;" onchange="document.querySelector('input[name=calendario-modo][value=numero]').checked=true; mostrarJornadaCalendario();">
-            </label>
+            <label>Jornada (Liga 1ª): <input type="number" id="calendario-num" style="width:56px;" onchange="mostrarJornadaCalendario();"></label>
           </div>
           <div id="calendario-resultado" style="margin-top:14px;"></div>
         </div>
@@ -941,8 +942,14 @@
   <!-- HISTORICO -->
   <div id="sec-historico" class="section">
     <div class="card">
-      <div class="card-header">Campeones históricos</div>
-      <div class="card-body" id="historico-lista">
+      <div class="card-header">Campeones históricos (ranking)</div>
+      <div class="card-body" id="historico-ranking-lista">
+        <div class="loading"><div class="spinner"></div>Cargando...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Campeones por año</div>
+      <div class="card-body" id="historico-anios-lista">
         <div class="loading"><div class="spinner"></div>Cargando...</div>
       </div>
     </div>
@@ -1010,7 +1017,9 @@ function cargarLoteria(rows, avatarPorNombre) {
     const premio = parseFloat(row[3]) || 0;
     total += premio;
     const esPena = nombre.toUpperCase() === 'PEÑA';
-    const celdaNombre = esPena ? nombre : renderAvatarMini(nombre.trim().toUpperCase(), avatarPorNombre);
+    const celdaNombre = esPena
+      ? '<span class="avatar-mini"><img src="icon-192.png" alt="Peña" style="width:40px; height:40px; border-radius:50%; object-fit:cover;"><span class="avatar-mini-pedestal">PEÑA</span></span>'
+      : renderAvatarMini(nombre.trim().toUpperCase(), avatarPorNombre);
     html += `<tr class="${esPena ? 'fila-pena' : ''}"><td>${celdaNombre}</td><td>${numero}</td><td style="text-align:center">${lugar}</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio > 0 ? premio.toFixed(2) + '€' : '-'}</td></tr>`;
   });
   html += `<tr class="fila-total"><td colspan="3">Total premios</td><td class="importe-positivo">${total.toFixed(2)}€</td></tr>`;
@@ -1172,7 +1181,7 @@ function calcularJornadaMostrar(jornadasRows, calendarioCierreRows, fechasCierre
     const filasJ = jornadasRows.filter(r => parseInt(r[0]) === j);
     const conResultado = filasJ.filter(r => r[4]).length;
     const totalResultados = filasJ.length;
-    const terminada = yaCerro && totalResultados > 0 && conResultado === totalResultados;
+    const terminada = yaCerro && (totalResultados === 0 || conResultado === totalResultados);
     if (!terminada) return j;
   }
   return nums[nums.length - 1];
@@ -1513,7 +1522,7 @@ function cargarClasificacion(clasif, avatarPorNombre) {
       <td>${renderAvatarMini(nombre, avatarPorNombre)}${eliminado ? ' <span class="eliminado" style="font-size:10px;">(eliminado)</span>' : ''}</td>
       <td class="num-stat">${row[2] || 0}</td>
       <td class="num-stat">${row[3] || 0}</td>
-      <td class="num-stat">${row[4] ? parseFloat(row[4]).toFixed(0)+'€' : '0€'}</td>
+      <td class="num-stat">${row[4] ? numOp(row[4]).toFixed(2)+'€' : '0€'}</td>
       <td class="col-estado">${estadoBadge}</td>
     </tr>`;
   });
@@ -1522,7 +1531,7 @@ function cargarClasificacion(clasif, avatarPorNombre) {
 }
 let calJugadores = [], calJugadorEliminado = [], calJornadas = [], calMarcadores = [],
     calCalendarioCierre = [], calFechasCierre = [], calActivasTodas = [], calJornadaActualReal = null,
-    calEliminacionesLog = [];
+    calEliminacionesLog = [], calJornadaAnteriorReal = null;
 
 function calcularEliminadoProvisional(jugadores, jugadorEliminado, aciertosJugador, clasif) {
   const activos = [];
@@ -1570,9 +1579,7 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
 
   const filas = jornadas.filter(r => parseInt(r[0]) === jornadaActual);
 
-  // Jugadores y eliminados: se calculan ya aquí, porque no dependen de si hay
-  // partidos descargados — el Calendario los necesita aunque la jornada actual
-  // todavía no tenga datos (por ejemplo, durante un parón de liga).
+  // Jugadores y eliminados: no dependen de si hay partidos descargados
   const jugadores = config.jugadores || [];
   const eliminadosSet = new Set(
     clasif
@@ -1581,8 +1588,7 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
   );
   const jugadorEliminado = jugadores.map(j => eliminadosSet.has(j.toString().trim().toUpperCase()));
 
-  // Guardamos los datos que necesitará el Calendario, para no tener que recalcularlos.
-  // SIEMPRE, incluso si esta jornada aún no tiene partidos descargados.
+  // Guardamos los datos que necesitará el Calendario. SIEMPRE, incluso sin datos descargados.
   calJugadores = jugadores;
   calJugadorEliminado = jugadorEliminado;
   calJornadas = jornadas;
@@ -1600,6 +1606,13 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     .map(r => ({ jornada: parseInt(r[0]), fecha: r[1] || '', ligaPrimera: r[2] || '' }))
     .sort((a, b) => a.jornada - b.jornada);
 
+  // Resultado real de la jornada anterior: se calcula y se muestra AQUÍ, antes de
+  // cualquier "return" por falta de datos, para que nunca se quede sin mostrar.
+  const numsParaAnterior = calActivasTodas.map(a => a.jornada);
+  const posParaAnterior = numsParaAnterior.indexOf(jornadaActual);
+  const jornadaAnteriorNum = posParaAnterior > 0 ? numsParaAnterior[posParaAnterior - 1] : null;
+  calJornadaAnteriorReal = jornadaAnteriorNum;
+
   const dobles = posActual >= 0 ? activas[posActual].dobles : null;
   const textoDobles = dobles !== null ? (' · ' + dobles + (dobles === 1 ? ' doble' : ' dobles')) : '';
   document.getElementById('jor-badge').textContent = 'Jornada ' + jornadaActual +
@@ -1608,7 +1621,6 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
   if (filas.length === 0) {
     document.getElementById('jor-partidos').innerHTML = '<div class="loading">Sin datos de jornada</div>';
     document.getElementById('jor-pronos').innerHTML = '';
-    document.getElementById('jor-resultado-anterior').style.display = 'none';
     document.getElementById('jor-eliminado-provisional').style.display = 'none';
     return;
   }
@@ -1639,19 +1651,6 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     </div>`;
   });
   document.getElementById('jor-partidos').innerHTML = htmlPartidos;
-
-  // Resultado real de la jornada anterior (ya cerrada), como recordatorio persistente
-  const numsParaAnterior = [...new Set(jornadas.map(r => parseInt(r[0])).filter(n => !!n))].sort((a, b) => a - b);
-  const posParaAnterior = numsParaAnterior.indexOf(jornadaActual);
-  const jornadaAnteriorNum = posParaAnterior > 0 ? numsParaAnterior[posParaAnterior - 1] : null;
-  const elResultadoAnterior = document.getElementById('jor-resultado-anterior');
-  const filaLog = jornadaAnteriorNum ? eliminacionesLog.find(r => parseInt(r[0]) === jornadaAnteriorNum) : null;
-  if (filaLog) {
-    elResultadoAnterior.style.display = 'block';
-    elResultadoAnterior.innerHTML = `<div class="info-cierre">Jornada ${jornadaAnteriorNum}: <strong>${filaLog[1]}</strong></div>`;
-  } else {
-    elResultadoAnterior.style.display = 'none';
-  }
   document.getElementById('jor-eliminado-provisional').style.display = 'none';
 
   // Pronósticos de la jornada actual: ocultos para todos hasta que cierre el plazo de envío
@@ -1711,17 +1710,19 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
   }
 }
 
+
 function abrirCalendario() {
   document.getElementById('jornada-vista-actual').style.display = 'none';
   document.getElementById('jornada-vista-calendario').style.display = 'block';
   construirTablaCalendario();
   const numInput = document.getElementById('calendario-num');
-  if (calActivasTodas.length) {
-    numInput.min = calActivasTodas[0].jornada;
-    numInput.max = calActivasTodas[calActivasTodas.length - 1].jornada;
+  const ligasDisponibles = calActivasTodas.map(a => parseInt(a.ligaPrimera)).filter(n => !isNaN(n));
+  if (ligasDisponibles.length) {
+    numInput.min = Math.min(...ligasDisponibles);
+    numInput.max = Math.max(...ligasDisponibles);
   }
-  numInput.value = calJornadaActualReal || 1;
-  document.querySelector('input[name="calendario-modo"][value="actual"]').checked = true;
+  const ligaDefecto = ligaDeQuiniela(calJornadaAnteriorReal) || ligaDeQuiniela(calJornadaActualReal) || 1;
+  numInput.value = ligaDefecto;
   mostrarJornadaCalendario();
 }
 
@@ -1755,7 +1756,10 @@ function calcularNombreEliminado(resultado) {
   const m = String(resultado || '').match(/^eliminado:\s*(.+)$/i);
   return m ? m[1].trim().toUpperCase() : null;
 }
-
+function ligaDeQuiniela(numQuiniela) {
+  const entrada = calActivasTodas.find(a => a.jornada === numQuiniela);
+  return entrada ? parseInt(entrada.ligaPrimera) : null;
+}
 function jugadoresEliminadosAntesDe(jornada) {
   const set = new Set();
   calEliminacionesLog.forEach(r => {
@@ -1769,17 +1773,24 @@ function jugadoresEliminadosAntesDe(jornada) {
 }
 
 function mostrarJornadaCalendario() {
-  const modo = document.querySelector('input[name="calendario-modo"]:checked').value;
   const numInput = document.getElementById('calendario-num');
-  let jornadaElegida = modo === 'actual' ? calJornadaActualReal : (parseInt(numInput.value) || calJornadaActualReal);
-  if (modo === 'numero') numInput.value = jornadaElegida;
+  let ligaElegida = parseInt(numInput.value) || 1;
+  numInput.value = ligaElegida;
 
-  const entradaCal = calActivasTodas.find(a => a.jornada === jornadaElegida);
-  const filas = calJornadas.filter(r => parseInt(r[0]) === jornadaElegida);
+  const entradaCal = calActivasTodas.find(a => parseInt(a.ligaPrimera) === ligaElegida);
 
   let html = `<div style="margin-bottom:10px; font-size:13px; color:var(--gris);">
-    Jornada ${jornadaElegida} (Quiniela)${entradaCal && entradaCal.ligaPrimera ? ' · Liga 1ª: Jornada ' + entradaCal.ligaPrimera : ''}${entradaCal && entradaCal.fecha ? ' · ' + entradaCal.fecha : ''}
+    Liga 1ª: Jornada ${ligaElegida}${entradaCal ? ' · Jornada ' + entradaCal.jornada + ' (Quiniela)' : ''}${entradaCal && entradaCal.fecha ? ' · ' + entradaCal.fecha : ''}
   </div>`;
+
+  if (!entradaCal) {
+    html += '<div class="loading">No existe esa jornada de Liga 1ª en esta vuelta.</div>';
+    document.getElementById('calendario-resultado').innerHTML = html;
+    return;
+  }
+
+  const jornadaElegida = entradaCal.jornada;
+  const filas = calJornadas.filter(r => parseInt(r[0]) === jornadaElegida);
 
   if (filas.length === 0) {
     html += '<div class="loading">Aún no hay partidos descargados para esta jornada.</div>';
@@ -2068,7 +2079,7 @@ function cargarEconomico(resumen, operaciones, paganinis, config) {
   operaciones.forEach(row => {
     const coste = numOp(row[3]);
     const premio = numOp(row[4]);
-    htmlDetalle += `<tr><td>${row[0] || ''}</td><td>${row[1] || ''}</td><td>${row[2] || ''}</td><td class="importe-negativo">${coste.toFixed(2)}€</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio.toFixed(2)}€</td></tr>`;
+    htmlDetalle += `<tr><td>${row[0] || ''}</td><td>${row[1] || ''}</td><td>${row[2] || ''}</td><td class="${coste > 0 ? 'importe-negativo' : ''}">${coste.toFixed(2)}€</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio.toFixed(2)}€</td></tr>`;
   });
   htmlDetalle += '</tbody>';
   document.getElementById('eco-detalle-semanal').innerHTML = htmlDetalle;
@@ -2089,19 +2100,21 @@ function cargarHistorico(historico, avatarPorNombre) {
   });
   const ranking = Object.entries(conteo).sort((a, b) => b[1] - a[1]);
 
-  let html = '';
+  let htmlRanking = '';
   if (ranking.length) {
-    html += '<div class="historico-ranking">';
+    htmlRanking += '<div class="historico-ranking">';
     ranking.forEach(([nombre, titulos], i) => {
-      html += `<div class="ranking-item">
+      htmlRanking += `<div class="ranking-item">
         <span class="ranking-pos">${i + 1}</span>
         <span class="ranking-nombre">${renderAvatarMini(nombre.trim().toUpperCase(), avatarPorNombre)}</span>
         <span class="ranking-titulos">${titulos} ${titulos === 1 ? 'título' : 'títulos'}</span>
       </div>`;
     });
-    html += '</div>';
+    htmlRanking += '</div>';
   }
+  document.getElementById('historico-ranking-lista').innerHTML = htmlRanking || '<div class="loading">Sin datos</div>';
 
+  let htmlAnios = '';
   const filas = [...historico].reverse(); // más reciente primero
   filas.forEach(row => {
     if (!row[0] || row[0] === 'Año') return;
@@ -2113,7 +2126,7 @@ function cargarHistorico(historico, avatarPorNombre) {
       v1 ? `<span style="font-size:9px;">1ª:</span> ${renderAvatarMini(v1.trim().toUpperCase(), avatarPorNombre)}` : '',
       v2 ? `<span style="font-size:9px;">2ª:</span> ${renderAvatarMini(v2.trim().toUpperCase(), avatarPorNombre)}` : ''
     ].filter(Boolean).join(' ');
-    html += `<div class="historico-item">
+    htmlAnios += `<div class="historico-item">
       <div class="historico-year">${año}</div>
       <div class="historico-info">
         <div class="historico-campeon">${campeon ? renderAvatarMini(campeon.trim().toUpperCase(), avatarPorNombre) : '-'}</div>
@@ -2122,9 +2135,8 @@ function cargarHistorico(historico, avatarPorNombre) {
       <div class="trofeo">🏆</div>
     </div>`;
   });
-  document.getElementById('historico-lista').innerHTML = html || '<div class="loading">Sin datos</div>';
+  document.getElementById('historico-anios-lista').innerHTML = htmlAnios || '<div class="loading">Sin datos</div>';
 }
-
 // ============================================================
 // CARGAR ESTATUTOS
 // ============================================================
