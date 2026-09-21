@@ -324,6 +324,9 @@
     border-top: 2px solid var(--verde);
     background: #f7f5ef;
   }
+
+  #tabla-ranking-final td:nth-child(2) { text-align: center; }
+  
   .importe-positivo { color: var(--verde-claro); }
   .importe-negativo { color: var(--rojo); }
   .valor-positivo { color: var(--verde-claro); }
@@ -937,8 +940,14 @@
   <!-- HISTORICO -->
   <div id="sec-historico" class="section">
     <div class="card">
-      <div class="card-header">Campeones históricos</div>
-      <div class="card-body" id="historico-lista">
+      <div class="card-header">Campeones históricos (ranking)</div>
+      <div class="card-body" id="historico-ranking-lista">
+        <div class="loading"><div class="spinner"></div>Cargando...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Campeones por año</div>
+      <div class="card-body" id="historico-anios-lista">
         <div class="loading"><div class="spinner"></div>Cargando...</div>
       </div>
     </div>
@@ -1509,7 +1518,7 @@ function cargarClasificacion(clasif, avatarPorNombre) {
       <td>${renderAvatarMini(nombre, avatarPorNombre)}${eliminado ? ' <span class="eliminado" style="font-size:10px;">(eliminado)</span>' : ''}</td>
       <td class="num-stat">${row[2] || 0}</td>
       <td class="num-stat">${row[3] || 0}</td>
-      <td class="num-stat">${row[4] ? parseFloat(row[4]).toFixed(0)+'€' : '0€'}</td>
+      <td class="num-stat">${row[4] ? numOp(row[4]).toFixed(2)+'€' : '0€'}</td>
       <td class="col-estado">${estadoBadge}</td>
     </tr>`;
   });
@@ -2066,7 +2075,7 @@ function cargarEconomico(resumen, operaciones, paganinis, config) {
   operaciones.forEach(row => {
     const coste = numOp(row[3]);
     const premio = numOp(row[4]);
-    htmlDetalle += `<tr><td>${row[0] || ''}</td><td>${row[1] || ''}</td><td>${row[2] || ''}</td><td class="importe-negativo">${coste.toFixed(2)}€</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio.toFixed(2)}€</td></tr>`;
+    htmlDetalle += `<tr><td>${row[0] || ''}</td><td>${row[1] || ''}</td><td>${row[2] || ''}</td><td class="${coste > 0 ? 'importe-negativo' : ''}">${coste.toFixed(2)}€</td><td class="${premio > 0 ? 'importe-positivo' : ''}">${premio.toFixed(2)}€</td></tr>`;
   });
   htmlDetalle += '</tbody>';
   document.getElementById('eco-detalle-semanal').innerHTML = htmlDetalle;
@@ -2087,19 +2096,21 @@ function cargarHistorico(historico, avatarPorNombre) {
   });
   const ranking = Object.entries(conteo).sort((a, b) => b[1] - a[1]);
 
-  let html = '';
+  let htmlRanking = '';
   if (ranking.length) {
-    html += '<div class="historico-ranking">';
+    htmlRanking += '<div class="historico-ranking">';
     ranking.forEach(([nombre, titulos], i) => {
-      html += `<div class="ranking-item">
+      htmlRanking += `<div class="ranking-item">
         <span class="ranking-pos">${i + 1}</span>
         <span class="ranking-nombre">${renderAvatarMini(nombre.trim().toUpperCase(), avatarPorNombre)}</span>
         <span class="ranking-titulos">${titulos} ${titulos === 1 ? 'título' : 'títulos'}</span>
       </div>`;
     });
-    html += '</div>';
+    htmlRanking += '</div>';
   }
+  document.getElementById('historico-ranking-lista').innerHTML = htmlRanking || '<div class="loading">Sin datos</div>';
 
+  let htmlAnios = '';
   const filas = [...historico].reverse(); // más reciente primero
   filas.forEach(row => {
     if (!row[0] || row[0] === 'Año') return;
@@ -2111,7 +2122,7 @@ function cargarHistorico(historico, avatarPorNombre) {
       v1 ? `<span style="font-size:9px;">1ª:</span> ${renderAvatarMini(v1.trim().toUpperCase(), avatarPorNombre)}` : '',
       v2 ? `<span style="font-size:9px;">2ª:</span> ${renderAvatarMini(v2.trim().toUpperCase(), avatarPorNombre)}` : ''
     ].filter(Boolean).join(' ');
-    html += `<div class="historico-item">
+    htmlAnios += `<div class="historico-item">
       <div class="historico-year">${año}</div>
       <div class="historico-info">
         <div class="historico-campeon">${campeon ? renderAvatarMini(campeon.trim().toUpperCase(), avatarPorNombre) : '-'}</div>
@@ -2120,9 +2131,8 @@ function cargarHistorico(historico, avatarPorNombre) {
       <div class="trofeo">🏆</div>
     </div>`;
   });
-  document.getElementById('historico-lista').innerHTML = html || '<div class="loading">Sin datos</div>';
+  document.getElementById('historico-anios-lista').innerHTML = htmlAnios || '<div class="loading">Sin datos</div>';
 }
-
 // ============================================================
 // CARGAR ESTATUTOS
 // ============================================================
