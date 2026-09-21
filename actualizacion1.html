@@ -802,8 +802,7 @@
           <div class="loading"><div class="spinner"></div>Cargando...</div>
         </div>
       </div>
-      
-      <div id="jor-resultado-anterior" style="display:none;"></div>
+    
 
       <button class="calendario-btn" onclick="abrirCalendario()">📅 Jornada Anterior / Calendario</button>
     </div>
@@ -1600,14 +1599,6 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
   const posParaAnterior = numsParaAnterior.indexOf(jornadaActual);
   const jornadaAnteriorNum = posParaAnterior > 0 ? numsParaAnterior[posParaAnterior - 1] : null;
   calJornadaAnteriorReal = jornadaAnteriorNum;
-  const elResultadoAnterior = document.getElementById('jor-resultado-anterior');
-  const filaLog = jornadaAnteriorNum ? eliminacionesLog.find(r => parseInt(r[0]) === jornadaAnteriorNum) : null;
-  if (filaLog) {
-    elResultadoAnterior.style.display = 'block';
-    elResultadoAnterior.innerHTML = `<div class="info-cierre">Jornada ${jornadaAnteriorNum}: <strong>${filaLog[1]}</strong></div>`;
-  } else {
-    elResultadoAnterior.style.display = 'none';
-  }
 
   const dobles = posActual >= 0 ? activas[posActual].dobles : null;
   const textoDobles = dobles !== null ? (' · ' + dobles + (dobles === 1 ? ' doble' : ' dobles')) : '';
