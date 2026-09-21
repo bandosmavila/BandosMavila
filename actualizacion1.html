@@ -824,7 +824,7 @@
         <div class="card-header">Consultar jornada</div>
         <div class="card-body">
           <div class="calendario-selector">
-            <label>Jornada: <input type="number" id="calendario-num" style="width:56px;" onchange="mostrarJornadaCalendario();"></label>
+            <label>Jornada (Liga 1ª): <input type="number" id="calendario-num" style="width:56px;" onchange="mostrarJornadaCalendario();"></label>
           </div>
           <div id="calendario-resultado" style="margin-top:14px;"></div>
         </div>
@@ -1638,7 +1638,7 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
   document.getElementById('jor-partidos').innerHTML = htmlPartidos;
 
   // Resultado real de la jornada anterior (ya cerrada), como recordatorio persistente
-  const numsParaAnterior = [...new Set(jornadas.map(r => parseInt(r[0])).filter(n => !!n))].sort((a, b) => a - b);
+  const numsParaAnterior = calActivasTodas.map(a => a.jornada);
   const posParaAnterior = numsParaAnterior.indexOf(jornadaActual);
   const jornadaAnteriorNum = posParaAnterior > 0 ? numsParaAnterior[posParaAnterior - 1] : null;
   calJornadaAnteriorReal = jornadaAnteriorNum;
@@ -1714,11 +1714,13 @@ function abrirCalendario() {
   document.getElementById('jornada-vista-calendario').style.display = 'block';
   construirTablaCalendario();
   const numInput = document.getElementById('calendario-num');
-  if (calActivasTodas.length) {
-    numInput.min = calActivasTodas[0].jornada;
-    numInput.max = calActivasTodas[calActivasTodas.length - 1].jornada;
+  const ligasDisponibles = calActivasTodas.map(a => parseInt(a.ligaPrimera)).filter(n => !isNaN(n));
+  if (ligasDisponibles.length) {
+    numInput.min = Math.min(...ligasDisponibles);
+    numInput.max = Math.max(...ligasDisponibles);
   }
-  numInput.value = calJornadaAnteriorReal || calJornadaActualReal || 1;
+  const ligaDefecto = ligaDeQuiniela(calJornadaAnteriorReal) || ligaDeQuiniela(calJornadaActualReal) || 1;
+  numInput.value = ligaDefecto;
   mostrarJornadaCalendario();
 }
 
@@ -1752,7 +1754,10 @@ function calcularNombreEliminado(resultado) {
   const m = String(resultado || '').match(/^eliminado:\s*(.+)$/i);
   return m ? m[1].trim().toUpperCase() : null;
 }
-
+function ligaDeQuiniela(numQuiniela) {
+  const entrada = calActivasTodas.find(a => a.jornada === numQuiniela);
+  return entrada ? parseInt(entrada.ligaPrimera) : null;
+}
 function jugadoresEliminadosAntesDe(jornada) {
   const set = new Set();
   calEliminacionesLog.forEach(r => {
@@ -1767,15 +1772,23 @@ function jugadoresEliminadosAntesDe(jornada) {
 
 function mostrarJornadaCalendario() {
   const numInput = document.getElementById('calendario-num');
-  let jornadaElegida = parseInt(numInput.value) || calJornadaAnteriorReal || calJornadaActualReal;
-  numInput.value = jornadaElegida;
+  let ligaElegida = parseInt(numInput.value) || 1;
+  numInput.value = ligaElegida;
 
-  const entradaCal = calActivasTodas.find(a => a.jornada === jornadaElegida);
-  const filas = calJornadas.filter(r => parseInt(r[0]) === jornadaElegida);
+  const entradaCal = calActivasTodas.find(a => parseInt(a.ligaPrimera) === ligaElegida);
 
   let html = `<div style="margin-bottom:10px; font-size:13px; color:var(--gris);">
-    Jornada ${jornadaElegida} (Quiniela)${entradaCal && entradaCal.ligaPrimera ? ' · Liga 1ª: Jornada ' + entradaCal.ligaPrimera : ''}${entradaCal && entradaCal.fecha ? ' · ' + entradaCal.fecha : ''}
+    Liga 1ª: Jornada ${ligaElegida}${entradaCal ? ' · Jornada ' + entradaCal.jornada + ' (Quiniela)' : ''}${entradaCal && entradaCal.fecha ? ' · ' + entradaCal.fecha : ''}
   </div>`;
+
+  if (!entradaCal) {
+    html += '<div class="loading">No existe esa jornada de Liga 1ª en esta vuelta.</div>';
+    document.getElementById('calendario-resultado').innerHTML = html;
+    return;
+  }
+
+  const jornadaElegida = entradaCal.jornada;
+  const filas = calJornadas.filter(r => parseInt(r[0]) === jornadaElegida);
 
   if (filas.length === 0) {
     html += '<div class="loading">Aún no hay partidos descargados para esta jornada.</div>';
