@@ -700,6 +700,32 @@
   .pt-firma { font-family: 'Dancing Script', cursive; font-size: 20px; opacity: 0.75; }
   .pt-rubrica { width: 70px; height: 14px; margin: 2px auto 0; opacity: 0.55; }
 
+  .pt-link-letra {
+    text-decoration: underline; cursor: pointer; opacity: 0.85; margin-left: 4px;
+  }
+  #pt-letra-overlay {
+    position: fixed; inset: 0; z-index: 10000; display: none;
+    background: rgba(10, 40, 25, 0.96);
+    color: white; align-items: center; justify-content: center; padding: 30px 16px;
+  }
+  .pt-letra-caja {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 14px; padding: 26px 22px; max-width: 620px; width: 100%;
+    max-height: 82vh; overflow-y: auto; position: relative;
+  }
+  .pt-letra-titulo {
+    font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1px;
+    text-align: center; margin-bottom: 4px;
+  }
+  .pt-letra-autor { text-align: center; font-size: 13px; opacity: 0.8; margin-bottom: 18px; }
+  .pt-letra-seccion { font-weight: 700; opacity: 0.75; margin: 16px 0 4px; font-size: 13px; letter-spacing: 0.5px; }
+  .pt-letra-verso { font-size: 14.5px; line-height: 1.55; }
+  .pt-letra-cerrar {
+    position: absolute; top: 10px; right: 14px; background: none; border: none;
+    color: white; font-size: 22px; cursor: pointer; opacity: 0.7;
+  }
+  .pt-letra-cerrar:active { opacity: 1; }
+
 </style>
 </head>
 <body>
@@ -709,6 +735,7 @@
   <div class="pt-musica-linea">
     <button class="pt-btn-play" id="ptBtnPlay" onclick="toggleMusicaPortada()">▶</button>
     <span>Música: <span id="pt-autor-musica">by Bozo</span></span>
+    <span class="pt-link-letra" onclick="abrirLetra()">Letra</span>
   </div>
 
   <div class="pt-orla" id="pt-orla"></div>
@@ -721,6 +748,38 @@
   <div class="pt-entrar" onclick="cerrarPortada()">Entrar <span>→</span></div>
 
 <audio id="pt-audio" src="PeñaBandosMavila.mp3" loop></audio>
+</div>
+
+<div id="pt-letra-overlay" onclick="if(event.target===this) cerrarLetra()">
+  <div class="pt-letra-caja">
+    <button class="pt-letra-cerrar" onclick="cerrarLetra()">×</button>
+    <div class="pt-letra-titulo">PEÑA BANDOSMÁVILA</div>
+    <div class="pt-letra-autor">Letra: Bozo</div>
+
+    <div class="pt-letra-verso">Desde Salamanca, con copa en la mano,<br>cincuenta años y seguimos hermanos.</div>
+
+    <div class="pt-letra-verso" style="margin-top:16px;">En Plaza de los Bandos empezó la canción,<br>con sueños pequeños y enorme ilusión.<br>La vida dio vueltas, cambió el calendario,<br>pero cada semana volvemos al barrio.<br><br>Fide lleva el timón, presidente ejemplar,<br>si hay duda en la mesa, la sabe zanjar.<br>Agus ya está jubilado, qué felicidad,<br>trabaja en disfrutar con profesionalidad.<br><br>Jose, catedrático, discurso brillante,<br>explica un fuera de juego como un conferenciante.<br>Chuchi y Lolo emprenden con arte y tesón,<br>si montan una empresa, nos cobran comisión.</div>
+
+    <div class="pt-letra-verso" style="margin-top:16px;">Y aunque cada uno tenga su camino,<br>la Quiniela nos junta domingo a domingo.<br>No es por la fortuna, ni por acertar,<br>es la excusa perfecta para llamar.</div>
+
+    <div class="pt-letra-verso" style="margin-top:16px;">Brindemos, amigos, que vuelva a sonar,<br>cincuenta años no se pueden borrar.<br>Por la Quiniela, por nuestra amistad,<br>por Salamanca y por la Navidad.</div>
+
+    <div class="pt-letra-verso" style="margin-top:16px;">Luisfer y Julio se asoman al cartel,<br>los favoritos de siempre, qué nivel.<br>Si el premio se escapa, no pasa nada,<br>la copa se llena y la risa no acaba.<br><br>Cacho es "el niño", aunque ya no lo es,<br>con esa sonrisa que engaña otra vez.<br>Fito llega viajando, con historias de más,<br>trae medio planeta dentro del maletín detrás.<br><br>Michel saca un plan de la servilleta,<br>una idea ingeniosa, otra vuelta de tuerca.<br>Javi, "el ausente", no pudo venir,<br>pero alguien lo imita y lo vemos reír.</div>
+
+    <div class="pt-letra-verso" style="margin-top:16px;">Brindemos, amigos, que vuelva a sonar,<br>cincuenta años no se pueden borrar.<br>Por la Quiniela, por nuestra amistad,<br>por Salamanca y por la Navidad.</div>
+
+    <div class="pt-letra-verso" style="margin-top:16px;">Manolo, argentino, con su opinión singular,<br>le pone otro acento a cualquier debate futbolar.<br>Néstor, charro de pura cepa y corazón,<br>lleva a Salamanca entera en cada conversación.<br><br>Bozo es el de los aviones, siempre listo para volar,<br>si pregunta por la ruta, tarda poco en despegar.<br>Y cuando llega diciembre, comienza la tradición:<br>comida, vino y bromas junto al campeón.</div>
+
+    <div class="pt-letra-verso" style="margin-top:16px;">Se repasan los pronósticos con solemne seriedad,<br>se discute cada fallo con total autoridad.<br>Luego Fide alza el trofeo, con orgullo y emoción:<br>"¡Aquí está el campeón del año, salud y celebración!"</div>
+
+    <div class="pt-letra-verso" style="margin-top:16px;">Brindemos, amigos, que vuelva a sonar,<br>cincuenta años no se pueden borrar.<br>Por la Quiniela, por nuestra amistad,<br>por Salamanca y por la Navidad.</div>
+
+    <div class="pt-letra-verso" style="margin-top:16px;">Y en la mesa hay dos sillas que no están vacías,<br>Janfry y Jorge nos acompañan todavía.<br>Maristas en la historia, hermanos de verdad,<br>sus nombres van con nosotros en cada Navidad.<br><br>Cuando chocan las copas y empieza el jaleo,<br>se escucha su risa mezclada en el deseo.<br>"Por ellos", decimos, y vuelve la canción:<br>siguen en la Quiniela, sentados en el corazón.</div>
+
+    <div class="pt-letra-verso" style="margin-top:16px;">Brindemos, amigos, que vuelva a sonar,<br>cincuenta años no se pueden borrar.<br>Por Janfry y Jorge, por nuestra amistad,<br>por Salamanca y por la Navidad.<br><br>Brindemos más alto, que se entere el salón,<br>por Fide y la banda, por cada campeón.<br>La vida nos cambia, pero queda lo esencial:<br>seguir juntos la Quiniela, cincuenta años más.</div>
+
+    <div class="pt-letra-verso" style="margin-top:16px;">¡Salud, amigos, que no pare el cantar!<br>La próxima Quiniela nos vuelve a juntar.</div>
+  </div>
 </div>
 
 <header>
@@ -1434,6 +1493,12 @@ function cerrarPortada() {
 }
 function abrirPortadaDeNuevo() {
   document.getElementById('portada-overlay').style.display = 'flex';
+}
+function abrirLetra() {
+  document.getElementById('pt-letra-overlay').style.display = 'flex';
+}
+function cerrarLetra() {
+  document.getElementById('pt-letra-overlay').style.display = 'none';
 }
 function normalizarNombre(s) {
   return String(s || '').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
