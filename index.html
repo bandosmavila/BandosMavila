@@ -1065,6 +1065,26 @@ async function leerHojaSerial(nombre) {
   }
 }
 
+async function leerHojasBatch(nombres, serial) {
+  const rangesParam = nombres.map(n => `ranges=${encodeURIComponent(n)}`).join('&');
+  const extra = serial ? '&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER' : '';
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchGet?${rangesParam}&key=${API_KEY}${extra}`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    const porNombre = {};
+    (data.valueRanges || []).forEach((vr, i) => {
+      porNombre[nombres[i]] = vr.values || [];
+    });
+    return porNombre;
+  } catch (e) {
+    console.error('Error leyendo hojas (batch):', e);
+    const vacio = {};
+    nombres.forEach(n => vacio[n] = []);
+    return vacio;
+  }
+}
+
 function serialToDate(serial) {
   // Número de serie de fecha de Google Sheets (días desde 1899-12-30) -> Date normal
   return new Date(Math.round((serial - 25569) * 86400 * 1000));
@@ -2278,27 +2298,7 @@ function cerrarPodium() {
   if (overlay) overlay.remove();
   if (podiumTimer) { clearTimeout(podiumTimer); podiumTimer = null; }
 }
-
-async function leerHojasBatch(nombres, serial) {
-  const rangesParam = nombres.map(n => `ranges=${encodeURIComponent(n)}`).join('&');
-  const extra = serial ? '&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER' : '';
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchGet?${rangesParam}&key=${API_KEY}${extra}`;
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-    const porNombre = {};
-    (data.valueRanges || []).forEach((vr, i) => {
-      porNombre[nombres[i]] = vr.values || [];
-    });
-    return porNombre;
-  } catch (e) {
-    console.error('Error leyendo hojas (batch):', e);
-    const vacio = {};
-    nombres.forEach(n => vacio[n] = []);
-    return vacio;
-  }
-}
-
+  
 async function init() {
   try {
     const nombresFormato = ['Config','Clasificacion','Jornadas','Resumen','Historico','Estatutos','CalendarioQuiniela','Operaciones','Campeones','MarcadoresPartidos','Loteria','RankingFinal','Paganinis','PodiumGranFinal','Frases','EliminacionesLog','AvatarColor'];
