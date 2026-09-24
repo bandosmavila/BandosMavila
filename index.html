@@ -2278,31 +2278,59 @@ function cerrarPodium() {
   if (overlay) overlay.remove();
   if (podiumTimer) { clearTimeout(podiumTimer); podiumTimer = null; }
 }
-  
+
+async function leerHojasBatch(nombres, serial) {
+  const rangesParam = nombres.map(n => `ranges=${encodeURIComponent(n)}`).join('&');
+  const extra = serial ? '&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER' : '';
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchGet?${rangesParam}&key=${API_KEY}${extra}`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    const porNombre = {};
+    (data.valueRanges || []).forEach((vr, i) => {
+      porNombre[nombres[i]] = vr.values || [];
+    });
+    return porNombre;
+  } catch (e) {
+    console.error('Error leyendo hojas (batch):', e);
+    const vacio = {};
+    nombres.forEach(n => vacio[n] = []);
+    return vacio;
+  }
+}
+
 async function init() {
   try {
-    const [configRows, clasificRows, jornadasRows, resumenRows, historicoRows, estatutosRows, calendarioRows, operacionesRows, campeonesRows, marcadoresRows, loteriaRows, rankingRows, calendarioCierreRows, fechasCierreRows, paganinisRows, podiumRows, campeonesCierreRows, frasesRows, eliminacionesLogRows, avatarColorRows] = await Promise.all([
-      leerHoja('Config'),
-      leerHoja('Clasificacion'),
-      leerHoja('Jornadas'),
-      leerHoja('Resumen'),
-      leerHoja('Historico'),
-      leerHoja('Estatutos'),
-      leerHoja('CalendarioQuiniela'),
-      leerHoja('Operaciones'),
-      leerHoja('Campeones'),
-      leerHoja('MarcadoresPartidos'),
-      leerHoja('Loteria'),
-      leerHoja('RankingFinal'),
-      leerHojaSerial('CalendarioQuiniela'),
-      leerHojaSerial('FechasPartidos'),
-      leerHoja('Paganinis'),
-      leerHoja('PodiumGranFinal'),
-      leerHojaSerial('Campeones'),
-      leerHoja('Frases'),
-      leerHoja('EliminacionesLog'),
-      leerHoja('AvatarColor'),
+    const nombresFormato = ['Config','Clasificacion','Jornadas','Resumen','Historico','Estatutos','CalendarioQuiniela','Operaciones','Campeones','MarcadoresPartidos','Loteria','RankingFinal','Paganinis','PodiumGranFinal','Frases','EliminacionesLog','AvatarColor'];
+    const nombresSerial = ['CalendarioQuiniela','FechasPartidos','Campeones'];
+
+    const [datosFormato, datosSerial] = await Promise.all([
+      leerHojasBatch(nombresFormato, false),
+      leerHojasBatch(nombresSerial, true),
     ]);
+
+    const configRows = datosFormato['Config'];
+    const clasificRows = datosFormato['Clasificacion'];
+    const jornadasRows = datosFormato['Jornadas'];
+    const resumenRows = datosFormato['Resumen'];
+    const historicoRows = datosFormato['Historico'];
+    const estatutosRows = datosFormato['Estatutos'];
+    const calendarioRows = datosFormato['CalendarioQuiniela'];
+    const operacionesRows = datosFormato['Operaciones'];
+    const campeonesRows = datosFormato['Campeones'];
+    const marcadoresRows = datosFormato['MarcadoresPartidos'];
+    const loteriaRows = datosFormato['Loteria'];
+    const rankingRows = datosFormato['RankingFinal'];
+    const paganinisRows = datosFormato['Paganinis'];
+    const podiumRows = datosFormato['PodiumGranFinal'];
+    const frasesRows = datosFormato['Frases'];
+    const eliminacionesLogRows = datosFormato['EliminacionesLog'];
+    const avatarColorRows = datosFormato['AvatarColor'];
+
+    const calendarioCierreRows = datosSerial['CalendarioQuiniela'];
+    const fechasCierreRows = datosSerial['FechasPartidos'];
+    const campeonesCierreRows = datosSerial['Campeones'];
+
     const config = parsearConfig(configRows);
     const clasif = clasificRows.slice(1).filter(r => r[1]);
     const calendario = calendarioRows.slice(1);
