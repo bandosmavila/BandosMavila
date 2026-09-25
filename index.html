@@ -813,7 +813,7 @@
     <button onclick="mostrarSeccion('historico')">Histórico</button>
     <button onclick="mostrarSeccion('loteria')">Lotería</button>
     <button onclick="mostrarSeccion('estatutos')">Estatutos</button>
-    <button onclick="mostrarSeccion('votaciones'); cargarVotaciones();">Votaciones</button>
+    <button id="nav-votaciones" onclick="mostrarSeccion('votaciones'); cargarVotaciones();" style="display:none;">Votaciones</button>
   </nav>
 </header>
 
@@ -2573,6 +2573,10 @@ async function init() {
     const campeonesCierreRows = datosSerial['Campeones'];
 
     const config = parsearConfig(configRows);
+    if (String(config['Votaciones Visible'] || '').toUpperCase() === 'SI') {
+      const navVotaciones = document.getElementById('nav-votaciones');
+      if (navVotaciones) navVotaciones.style.display = '';
+    }
     const clasif = clasificRows.slice(1).filter(r => r[1]);
     const calendario = calendarioRows.slice(1);
     const avatarPorNombre = mapaAvatarPorNombre(avatarColorRows.slice(1));
