@@ -33,6 +33,20 @@
     min-height: 100vh;
   }
 
+  .btn-actualizar-votacion {
+    background: var(--verde); color: white; border: none; border-radius: 20px;
+    padding: 8px 16px; font-size: 13px; cursor: pointer; font-weight: 600;
+  }
+  .btn-opcion-votacion {
+    display: block; width: 100%; background: white; border: 1.5px solid var(--verde);
+    color: var(--verde); border-radius: 10px; padding: 12px; font-size: 15px;
+    font-weight: 700; cursor: pointer; text-align: center;
+  }
+  .btn-opcion-votacion:active { background: var(--verde); color: white; }
+  .aviso {
+    text-align: center; padding: 16px; color: var(--rojo);
+  }
+
   /* HEADER */
   header {
     background: var(--verde);
@@ -799,6 +813,7 @@
     <button onclick="mostrarSeccion('historico')">Histórico</button>
     <button onclick="mostrarSeccion('loteria')">Lotería</button>
     <button onclick="mostrarSeccion('estatutos')">Estatutos</button>
+    <button onclick="mostrarSeccion('votaciones'); cargarVotaciones();">Votaciones</button>
   </nav>
 </header>
 
@@ -1052,6 +1067,19 @@
     </div>
   </div>
 
+  <!-- VOTACIONES -->
+  <div id="sec-votaciones" class="section">
+    <div class="card">
+      <div class="card-header">Votaciones</div>
+      <div class="card-body">
+        <button class="btn-actualizar-votacion" onclick="cargarVotaciones()">🔄 Actualizar</button>
+        <div id="votaciones-content" style="margin-top:14px;">
+          <div class="loading"><div class="spinner"></div>Cargando...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <footer>
@@ -1086,6 +1114,138 @@ function cargarLoteria(rows, avatarPorNombre) {
   document.getElementById('loteria-tabla').innerHTML = html;
 }
   
+// ============================================================
+// VOTACIONES
+// ============================================================
+const API_URL_VOTACION = 'https://script.google.com/macros/s/AKfycby1Kj3flwsFSYUe6-T6iYFh6fNANnFvUxFGzCfWk2RxzZ47-lOSGT-9xNNe-1vPfTKt/exec';
+const CLAVE_VOTACION = 'Ad0lf013';
+
+function nombreJugadorVotacion() {
+  return localStorage.getItem('bandosmavila_jugador') || '';
+}
+
+async function cargarVotaciones() {
+  const cont = document.getElementById('votaciones-content');
+  cont.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
+  try {
+    const resp = await fetch(`${API_URL_VOTACION}?clave=${CLAVE_VOTACION}&accion=votacionActiva`);
+    const data = await resp.json();
+    if (data.ok && data.activa) {
+      mostrarVotacionActiva(data);
+    } else {
+      cargarHistorialVotaciones();
+    }
+  } catch (e) {
+    cont.innerHTML = '<div class="aviso">Error de conexión.</div>';
+  }
+}
+
+function mostrarVotacionActiva(data) {
+  const cont = document.getElementById('votaciones-content');
+  const jugador = nombreJugadorVotacion();
+  const yaVotoLocal = localStorage.getItem('voto_' + data.id);
+
+  let html = `<div style="font-family:'Bebas Neue',sans-serif; font-size:20px; margin-bottom:12px;">${data.nombre}</div>`;
+
+  if (yaVotoLocal) {
+    html += `<div style="color:var(--gris);">Ya has votado: <strong>${yaVotoLocal}</strong>. En cuanto se cierre, verás el resultado aquí.</div>`;
+    cont.innerHTML = html;
+    return;
+  }
+
+  if (!jugador) {
+    html += '<div style="margin-bottom:10px;">Elige tu nombre para votar:</div><div id="votacion-selector-nombre"></div>';
+    cont.innerHTML = html;
+    cargarSelectorNombreVotacion();
+    return;
+  }
+
+  html += `<div style="margin-bottom:10px; font-size:13px; color:var(--gris);">Votando como <strong>${jugador}</strong> (<span style="text-decoration:underline; cursor:pointer;" onclick="cambiarJugadorVotacion()">no soy yo</span>)</div>`;
+  html += '<div style="display:flex; flex-direction:column; gap:8px;">';
+  data.opciones.forEach(op => {
+    html += `<button class="btn-opcion-votacion" onclick="enviarVoto('${data.id}', ${JSON.stringify(op)})">${op}</button>`;
+  });
+  html += '</div>';
+  cont.innerHTML = html;
+}
+
+async function cargarSelectorNombreVotacion() {
+  const cont = document.getElementById('votacion-selector-nombre');
+  try {
+    const resp = await fetch(`${API_URL_VOTACION}?clave=${CLAVE_VOTACION}&accion=jugadoresActivos`);
+    const res = await resp.json();
+    if (!res.ok) { cont.innerHTML = 'Error cargando la lista de jugadores.'; return; }
+    let html = '<div style="display:flex; flex-wrap:wrap; gap:6px;">';
+    res.jugadores.forEach(n => {
+      html += `<button class="btn-opcion-votacion" style="flex:1 1 45%;" onclick="elegirJugadorVotacion('${n}')">${n}</button>`;
+    });
+    html += '</div>';
+    cont.innerHTML = html;
+  } catch (e) {
+    cont.innerHTML = 'Error de conexión.';
+  }
+}
+
+function elegirJugadorVotacion(nombre) {
+  localStorage.setItem('bandosmavila_jugador', nombre);
+  cargarVotaciones();
+}
+
+function cambiarJugadorVotacion() {
+  localStorage.removeItem('bandosmavila_jugador');
+  cargarVotaciones();
+}
+
+async function enviarVoto(id, opcion) {
+  try {
+    const resp = await fetch(`${API_URL_VOTACION}?clave=${CLAVE_VOTACION}&accion=votar&jugador=${encodeURIComponent(nombreJugadorVotacion())}&opcion=${encodeURIComponent(opcion)}`);
+    const data = await resp.json();
+    if (data.ok) {
+      localStorage.setItem('voto_' + id, opcion);
+      cargarVotaciones();
+    } else {
+      alert(data.error || 'No se pudo registrar el voto.');
+      cargarVotaciones();
+    }
+  } catch (e) {
+    alert('Error de conexión al votar.');
+  }
+}
+
+async function cargarHistorialVotaciones() {
+  const cont = document.getElementById('votaciones-content');
+  try {
+    const resp = await fetch(`${API_URL_VOTACION}?clave=${CLAVE_VOTACION}&accion=historialVotaciones`);
+    const data = await resp.json();
+    if (!data.ok || !data.votaciones.length) {
+      cont.innerHTML = '<div style="color:var(--gris); text-align:center; padding:20px;">Todavía no hay ninguna votación registrada.</div>';
+      return;
+    }
+    cont.innerHTML = data.votaciones.map(renderResultadoVotacion).join('');
+  } catch (e) {
+    cont.innerHTML = '<div class="aviso">Error de conexión.</div>';
+  }
+}
+
+function renderResultadoVotacion(v) {
+  const fechaRef = v.fechaCierreReal || v.fechaCreacion;
+  const fecha = fechaRef ? new Date(fechaRef).toLocaleDateString('es-ES') : '';
+  let html = `<div style="border-bottom:1px solid var(--borde); padding:12px 0;">`;
+  html += `<div style="font-weight:700;">${v.nombre} <span style="color:var(--gris); font-size:12px; font-weight:400;">(${fecha})</span></div>`;
+  const opciones = Object.keys(v.resultado || {});
+  if (opciones.length === 0) {
+    html += `<div style="color:var(--gris); font-size:13px; margin-top:4px;">Sin votos registrados.</div>`;
+  } else {
+    opciones.sort((a, b) => v.resultado[b].count - v.resultado[a].count);
+    opciones.forEach(op => {
+      const r = v.resultado[op];
+      html += `<div style="font-size:14px; margin-top:4px;"><strong>${op}</strong> — ${r.count}${r.nombres && r.nombres.length ? ' (' + r.nombres.join(', ') + ')' : ''}</div>`;
+    });
+  }
+  html += '</div>';
+  return html;
+}
+
 // ============================================================
 // NAVEGACIÓN
 // ============================================================

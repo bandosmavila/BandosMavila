@@ -57,10 +57,13 @@
   <div class="loading">Comprobando acceso...</div>
 </div>
 
+<div id="votaciones-admin"></div>
+
 <script>
 const SHEET_ID = '1Gcbt0ND0K1fmBdqwf55DuoGKakrZR9s7eP2r0RIG9hY'; // el mismo que en index.html
 const API_KEY = 'AIzaSyA6zHLUiBURBem0lVORI8X1y-ovSGg2UXs'; // el mismo que en index.html
 const CLAVE_ADMIN = 'Ad0lf013'; // la misma CLAVE que en index.html/pronosticos.html
+const API_URL = 'https://script.google.com/macros/s/AKfycby1Kj3flwsFSYUe6-T6iYFh6fNANnFvUxFGzCfWk2RxzZ47-lOSGT-9xNNe-1vPfTKt/exec'; // el mismo que en pronosticos.html/avatar-color.html
 
 async function leerHoja(nombre) {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${nombre}?key=${API_KEY}`;
@@ -506,6 +509,105 @@ async function init() {
   }
 }
 
+// ============================================================
+// VOTACIONES
+// ============================================================
+async function cargarVotacionesAdmin() {
+  const cont = document.getElementById('votaciones-admin');
+  cont.innerHTML = '<div class="card"><div class="card-header">VOTACIONES</div><div class="card-body loading">Cargando...</div></div>';
+  try {
+    const [respActiva, respHist] = await Promise.all([
+      fetch(`${API_URL}?clave=${CLAVE_ADMIN}&accion=votacionActiva`),
+      fetch(`${API_URL}?clave=${CLAVE_ADMIN}&accion=historialVotaciones`)
+    ]);
+    const dataActiva = await respActiva.json();
+    const dataHist = await respHist.json();
+
+    let html = '<div class="card"><div class="card-header">VOTACIÓN EN CURSO</div><div class="card-body">';
+    html += (dataActiva.ok && dataActiva.activa) ? renderVotacionActivaAdmin(dataActiva) : renderFormularioNuevaVotacion();
+    html += '</div></div>';
+
+    html += '<div class="card"><div class="card-header">HISTÓRICO DE VOTACIONES</div><div class="card-body">';
+    html += (dataHist.ok && dataHist.votaciones.length)
+      ? dataHist.votaciones.map(renderResultadoVotacionAdmin).join('')
+      : '<div style="color:var(--gris);">Todavía no hay ninguna votación registrada.</div>';
+    html += '</div></div>';
+
+    cont.innerHTML = html;
+  } catch (e) {
+    cont.innerHTML = '<div class="card"><div class="card-header">VOTACIONES</div><div class="card-body aviso">Error de conexión.</div></div>';
+  }
+}
+
+function renderVotacionActivaAdmin(data) {
+  let html = `<div style="font-weight:700; margin-bottom:8px;">${data.nombre}</div>`;
+  html += `<div style="font-size:13px; color:var(--gris); margin-bottom:12px;">Opciones: ${data.opciones.join(', ')}</div>`;
+  html += `<button onclick="cerrarVotacionAdmin()" style="background:var(--rojo); color:white; border:none; border-radius:8px; padding:10px 16px; font-weight:700; cursor:pointer;">Cerrar votación ahora</button>`;
+  return html;
+}
+
+function renderFormularioNuevaVotacion() {
+  return `
+    <div style="margin-bottom:10px;">
+      <label style="font-size:13px; color:var(--gris);">Nombre de la votación</label>
+      <input type="text" id="nv-nombre" style="width:100%; padding:8px; border:1px solid var(--borde); border-radius:8px; margin-top:4px;">
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:13px; color:var(--gris);">Opciones (una por línea, al menos 2)</label>
+      <textarea id="nv-opciones" rows="4" style="width:100%; padding:8px; border:1px solid var(--borde); border-radius:8px; margin-top:4px;" placeholder="SI&#10;NO&#10;Abstención"></textarea>
+    </div>
+    <div style="display:flex; gap:16px; margin-bottom:12px; align-items:center; flex-wrap:wrap;">
+      <label style="font-size:13px;"><input type="checkbox" id="nv-secreta"> Secreta (nadie ve quién vota qué, ni yo)</label>
+      <label style="font-size:13px;">Duración (min): <input type="number" id="nv-duracion" value="10" min="1" style="width:60px; padding:4px;"></label>
+    </div>
+    <button onclick="crearVotacionAdmin()" style="background:var(--verde); color:white; border:none; border-radius:8px; padding:10px 16px; font-weight:700; cursor:pointer;">Activar votación</button>
+  `;
+}
+
+async function crearVotacionAdmin() {
+  const nombre = document.getElementById('nv-nombre').value.trim();
+  const opciones = document.getElementById('nv-opciones').value.split('\n').map(s => s.trim()).filter(Boolean);
+  const secreta = document.getElementById('nv-secreta').checked;
+  const duracion = parseInt(document.getElementById('nv-duracion').value) || 10;
+  if (!nombre || opciones.length < 2) {
+    alert('Escribe un nombre y al menos 2 opciones.');
+    return;
+  }
+  const url = `${API_URL}?clave=${CLAVE_ADMIN}&accion=crearVotacion&nombre=${encodeURIComponent(nombre)}&opciones=${encodeURIComponent(JSON.stringify(opciones))}&secreta=${secreta ? '1' : '0'}&duracion=${duracion}`;
+  const resp = await fetch(url);
+  const data = await resp.json();
+  if (!data.ok) { alert(data.error || 'Error al crear la votación.'); return; }
+  cargarVotacionesAdmin();
+}
+
+async function cerrarVotacionAdmin() {
+  if (!confirm('¿Cerrar la votación ahora?')) return;
+  const resp = await fetch(`${API_URL}?clave=${CLAVE_ADMIN}&accion=cerrarVotacionManual`);
+  const data = await resp.json();
+  if (!data.ok) { alert(data.error || 'Error al cerrar.'); return; }
+  cargarVotacionesAdmin();
+}
+
+function renderResultadoVotacionAdmin(v) {
+  const fechaRef = v.fechaCierreReal || v.fechaCreacion;
+  const fecha = fechaRef ? new Date(fechaRef).toLocaleDateString('es-ES') : '';
+  const estado = v.activa ? ' — <span style="color:var(--verde);">en curso</span>' : '';
+  let html = `<div style="border-bottom:1px solid #f0ede6; padding:10px 0;">`;
+  html += `<div style="font-weight:700;">${v.nombre}${estado} <span style="color:var(--gris); font-size:12px; font-weight:400;">(${fecha})</span></div>`;
+  const opciones = Object.keys(v.resultado || {});
+  if (opciones.length === 0) {
+    html += `<div style="color:var(--gris); font-size:13px; margin-top:4px;">Sin votos todavía.</div>`;
+  } else {
+    opciones.sort((a, b) => v.resultado[b].count - v.resultado[a].count);
+    opciones.forEach(op => {
+      const r = v.resultado[op];
+      html += `<div style="font-size:14px; margin-top:4px;"><strong>${op}</strong> — ${r.count}${r.nombres && r.nombres.length ? ' (' + r.nombres.join(', ') + ')' : ''}</div>`;
+    });
+  }
+  html += '</div>';
+  return html;
+}
+
 // Barrera ligera: pide la clave la primera vez, luego la recuerda en este navegador
 let claveGuardada = localStorage.getItem('admin_clave');
 if (claveGuardada !== CLAVE_ADMIN) {
@@ -516,6 +618,7 @@ if (claveGuardada !== CLAVE_ADMIN) {
 }
 if (claveGuardada === CLAVE_ADMIN) {
   init();
+  cargarVotacionesAdmin();
 } else {
   document.getElementById('subtitulo').textContent = 'Acceso denegado.';
   document.getElementById('contenido').innerHTML = '';
