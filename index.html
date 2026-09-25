@@ -1160,13 +1160,20 @@ function mostrarVotacionActiva(data) {
     return;
   }
 
-  html += `<div style="margin-bottom:10px; font-size:13px; color:var(--gris);">Votando como <strong>${jugador}</strong> (<span style="text-decoration:underline; cursor:pointer;" onclick="cambiarJugadorVotacion()">no soy yo</span>)</div>`;
-  html += '<div style="display:flex; flex-direction:column; gap:8px;">';
-  data.opciones.forEach(op => {
-    html += `<button class="btn-opcion-votacion" onclick="enviarVoto('${data.id}', ${JSON.stringify(op)})">${op}</button>`;
-  });
-  html += '</div>';
+  html += `<div style="margin-bottom:10px; font-size:13px; color:var(--gris);">Votando como <strong>${jugador}</strong> (<span style="text-decoration:underline; cursor:pointer;" id="votacion-cambiar-jugador">no soy yo</span>)</div>`;
+  html += '<div id="votacion-opciones" style="display:flex; flex-direction:column; gap:8px;"></div>';
   cont.innerHTML = html;
+
+  document.getElementById('votacion-cambiar-jugador').onclick = cambiarJugadorVotacion;
+
+  const contOpciones = document.getElementById('votacion-opciones');
+  data.opciones.forEach(op => {
+    const btn = document.createElement('button');
+    btn.className = 'btn-opcion-votacion';
+    btn.textContent = op;
+    btn.onclick = function () { enviarVoto(data.id, op); };
+    contOpciones.appendChild(btn);
+  });
 }
 
 async function cargarSelectorNombreVotacion() {
@@ -1175,12 +1182,16 @@ async function cargarSelectorNombreVotacion() {
     const resp = await fetch(`${API_URL_VOTACION}?clave=${CLAVE_VOTACION}&accion=jugadoresActivos`);
     const res = await resp.json();
     if (!res.ok) { cont.innerHTML = 'Error cargando la lista de jugadores.'; return; }
-    let html = '<div style="display:flex; flex-wrap:wrap; gap:6px;">';
+    cont.innerHTML = '<div style="display:flex; flex-wrap:wrap; gap:6px;"></div>';
+    const wrap = cont.firstElementChild;
     res.jugadores.forEach(n => {
-      html += `<button class="btn-opcion-votacion" style="flex:1 1 45%;" onclick="elegirJugadorVotacion('${n}')">${n}</button>`;
+      const btn = document.createElement('button');
+      btn.className = 'btn-opcion-votacion';
+      btn.style.flex = '1 1 45%';
+      btn.textContent = n;
+      btn.onclick = function () { elegirJugadorVotacion(n); };
+      wrap.appendChild(btn);
     });
-    html += '</div>';
-    cont.innerHTML = html;
   } catch (e) {
     cont.innerHTML = 'Error de conexión.';
   }
@@ -1197,6 +1208,11 @@ function cambiarJugadorVotacion() {
 }
 
 async function enviarVoto(id, opcion) {
+  const contOpciones = document.getElementById('votacion-opciones');
+  if (contOpciones) {
+    contOpciones.querySelectorAll('button').forEach(b => b.disabled = true);
+    contOpciones.insertAdjacentHTML('afterend', '<div id="votacion-enviando" style="margin-top:8px; color:var(--gris); font-size:13px;">Enviando voto...</div>');
+  }
   try {
     const resp = await fetch(`${API_URL_VOTACION}?clave=${CLAVE_VOTACION}&accion=votar&jugador=${encodeURIComponent(nombreJugadorVotacion())}&opcion=${encodeURIComponent(opcion)}`);
     const data = await resp.json();
