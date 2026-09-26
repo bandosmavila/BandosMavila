@@ -516,14 +516,22 @@ async function cargarVotacionesAdmin() {
   const cont = document.getElementById('votaciones-admin');
   cont.innerHTML = '<div class="card"><div class="card-header">VOTACIONES</div><div class="card-body loading">Cargando...</div></div>';
   try {
-    const [respActiva, respHist] = await Promise.all([
+    const [respActiva, respHist, respVisible] = await Promise.all([
       fetch(`${API_URL}?clave=${CLAVE_ADMIN}&accion=votacionActiva`),
-      fetch(`${API_URL}?clave=${CLAVE_ADMIN}&accion=historialVotaciones`)
+      fetch(`${API_URL}?clave=${CLAVE_ADMIN}&accion=historialVotaciones`),
+      fetch(`${API_URL}?clave=${CLAVE_ADMIN}&accion=getVotacionesVisible`)
     ]);
     const dataActiva = await respActiva.json();
     const dataHist = await respHist.json();
+    const dataVisible = await respVisible.json();
+    const visible = dataVisible.ok && dataVisible.visible;
 
-    let html = '<div class="card"><div class="card-header">VOTACIÓN EN CURSO</div><div class="card-body">';
+    let html = '<div class="card"><div class="card-header">VOTACIONES — VISIBILIDAD</div><div class="card-body">';
+    html += `<div style="margin-bottom:10px; font-size:14px;">La pestaña "Votaciones" está actualmente <strong style="color:${visible ? 'var(--verde)' : 'var(--rojo)'};">${visible ? 'VISIBLE' : 'OCULTA'}</strong> para el grupo.</div>`;
+    html += `<button onclick="toggleVotacionesVisible(${visible ? 'false' : 'true'})" style="background:${visible ? 'var(--rojo)' : 'var(--verde)'}; color:white; border:none; border-radius:8px; padding:10px 16px; font-weight:700; cursor:pointer;">${visible ? 'Ocultar pestaña al grupo' : 'Mostrar pestaña al grupo'}</button>`;
+    html += '</div></div>';
+
+    html += '<div class="card"><div class="card-header">VOTACIÓN EN CURSO</div><div class="card-body">';
     html += (dataActiva.ok && dataActiva.activa) ? renderVotacionActivaAdmin(dataActiva) : renderFormularioNuevaVotacion();
     html += '</div></div>';
 
@@ -577,6 +585,13 @@ async function crearVotacionAdmin() {
   const resp = await fetch(url);
   const data = await resp.json();
   if (!data.ok) { alert(data.error || 'Error al crear la votación.'); return; }
+  cargarVotacionesAdmin();
+}
+
+async function toggleVotacionesVisible(nuevoValor) {
+  const resp = await fetch(`${API_URL}?clave=${CLAVE_ADMIN}&accion=setVotacionesVisible&visible=${nuevoValor ? '1' : '0'}`);
+  const data = await resp.json();
+  if (!data.ok) { alert(data.error || 'Error al cambiar la visibilidad.'); return; }
   cargarVotacionesAdmin();
 }
 
