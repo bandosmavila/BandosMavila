@@ -705,6 +705,10 @@
   .pt-globo-nombre {
     position: relative; z-index: 2; font-weight: 700; text-align: center; line-height: 1;
   }
+  .pt-globo-corona {
+    position: absolute; left: 50%; transform: translateX(-50%); z-index: 4;
+    pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.45));
+  }
   .pt-entrar {
     position: absolute; bottom: 14px; right: 18px; display: flex; align-items: center; gap: 6px;
     background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.5);
@@ -1511,7 +1515,56 @@ function mezclarPorEquipo(lista, avatarPorNombre) {
   return resultado;
 }
 
-function crearGloboPortada(nombre, tam, avatarPorNombre) {
+function crearCoronaLaurel(tam, protagonista) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const ancho = tam * (protagonista ? 1.05 : 0.80);
+  const alto = ancho * 0.42;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pt-globo-corona';
+  wrap.style.width = ancho + 'px';
+  wrap.style.height = alto + 'px';
+  wrap.style.top = -(alto * 0.55) + 'px';
+
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 100 42');
+  svg.style.width = '100%';
+  svg.style.height = '100%';
+
+  const colorHoja = protagonista ? '#f0d878' : '#c9a227';
+  const colorTallo = protagonista ? '#c9a227' : '#8a6d1f';
+
+  function rama(signo) {
+    const g = document.createElementNS(ns, 'g');
+    const tallo = document.createElementNS(ns, 'path');
+    tallo.setAttribute('d', signo > 0 ? 'M50 40 C 66 38, 82 28, 88 10' : 'M50 40 C 34 38, 18 28, 12 10');
+    tallo.setAttribute('fill', 'none');
+    tallo.setAttribute('stroke', colorTallo);
+    tallo.setAttribute('stroke-width', '2.5');
+    tallo.setAttribute('stroke-linecap', 'round');
+    g.appendChild(tallo);
+    const puntos = signo > 0
+      ? [[58,39],[66,35],[73,29],[79,21],[84,13]]
+      : [[42,39],[34,35],[27,29],[21,21],[16,13]];
+    puntos.forEach(([x, y], i) => {
+      const hoja = document.createElementNS(ns, 'ellipse');
+      hoja.setAttribute('cx', x);
+      hoja.setAttribute('cy', y);
+      hoja.setAttribute('rx', (6 - i * 0.4).toFixed(1));
+      hoja.setAttribute('ry', (3.2 - i * 0.2).toFixed(1));
+      hoja.setAttribute('fill', colorHoja);
+      hoja.setAttribute('transform', `rotate(${signo * (35 + i * 8)} ${x} ${y})`);
+      g.appendChild(hoja);
+    });
+    return g;
+  }
+  svg.appendChild(rama(1));
+  svg.appendChild(rama(-1));
+  wrap.appendChild(svg);
+  return wrap;
+}
+
+function crearGloboPortada(nombre, tam, avatarPorNombre, corona) {
   const dato = avatarPorNombre[normalizarNombre(nombre)] || {};
   const fondo = ESTILO_EQUIPO_MINI[String(dato.equipo || '').toUpperCase()] || '#cccccc';
   const colorHex = COLORES_MINI[dato.color] || '#ffffff';
@@ -1601,24 +1654,61 @@ function crearGloboPortada(nombre, tam, avatarPorNombre) {
 
   globo.appendChild(ojos);
   globo.appendChild(nombreEl);
+  if (corona && (corona.esCampeon || corona.categorias > 0)) {
+    globo.appendChild(crearCoronaLaurel(tam, corona.categorias >= 2));
+  }
   wrap.appendChild(globo);
   return wrap;
 }
 
-function posicionesFormaPortada(w, h) {
+const FORMAS_PORTADA = ['circulo', 'trianguloArriba', 'circulo', 'trianguloAbajo'];
+
+function posicionesCirculoPortada(n, w, h) {
   const cx = w / 2, cy = h / 2;
   const posiciones = [{ x: cx, y: cy }];
+  const anillo1 = Math.min(4, n - 1);
   const radioIntermedio = Math.min(w, h) * 0.30;
-  for (let i = 0; i < 4; i++) {
-    const angulo = (Math.PI * 2 * i / 4) - Math.PI / 2;
+  for (let i = 0; i < anillo1; i++) {
+    const angulo = (Math.PI * 2 * i / anillo1) - Math.PI / 2;
     posiciones.push({ x: cx + radioIntermedio * Math.cos(angulo), y: cy + radioIntermedio * Math.sin(angulo) * 0.85 });
   }
+  const resto = n - 1 - anillo1;
   const radioExterior = Math.min(w, h) * 0.46;
-  for (let i = 0; i < 9; i++) {
-    const angulo = (Math.PI * 2 * i / 9) - Math.PI / 2 + 0.3;
+  for (let i = 0; i < resto; i++) {
+    const angulo = (Math.PI * 2 * i / resto) - Math.PI / 2 + 0.3;
     posiciones.push({ x: cx + radioExterior * Math.cos(angulo), y: cy + radioExterior * Math.sin(angulo) * 0.85 });
   }
   return posiciones;
+}
+
+function posicionesTrianguloPortada(n, w, h, invertido) {
+  const cx = w / 2;
+  const vertice = h * 0.14, base = h * 0.88;
+  const filas = [];
+  let restante = n, fila = 1;
+  while (restante > 0) {
+    const enFila = Math.min(fila, restante);
+    filas.push(enFila);
+    restante -= enFila;
+    fila++;
+  }
+  const posiciones = [];
+  filas.forEach((count, fi) => {
+    const t = filas.length === 1 ? 0 : fi / (filas.length - 1);
+    const y = invertido ? (base - (base - vertice) * t) : (vertice + (base - vertice) * t);
+    const anchoFila = (w * 0.8) * t;
+    for (let i = 0; i < count; i++) {
+      const x = count === 1 ? cx : cx - anchoFila / 2 + (anchoFila * i / (count - 1));
+      posiciones.push({ x, y });
+    }
+  });
+  return posiciones;
+}
+
+function posicionesPortada(forma, n, w, h) {
+  if (forma === 'trianguloArriba') return posicionesTrianguloPortada(n, w, h, false);
+  if (forma === 'trianguloAbajo') return posicionesTrianguloPortada(n, w, h, true);
+  return posicionesCirculoPortada(n, w, h);
 }
 
 function cargarPortada(clasif, campeonesRows, avatarPorNombre) {
@@ -1633,19 +1723,35 @@ function cargarPortada(clasif, campeonesRows, avatarPorNombre) {
   const grupoResto = nombresOrdenados.filter(n => !grupoDefinitivo.includes(n) && !grupoProvisional.includes(n));
   const ordenPorMerito = [...grupoDefinitivo, ...grupoProvisional, ...grupoResto];
 
-  const tamMax = w * 0.26, tamMin = w * 0.13;
-  const tamPorNombre = {};
-  ordenPorMerito.forEach((nombre, rank) => {
-    tamPorNombre[nombre] = tamMax - (rank / Math.max(1, ordenPorMerito.length - 1)) * (tamMax - tamMin);
-  });
+  const datosCorona = calcularCoronaYPuntos(clasif, campeonesRows);
+  const tamMax = w * 0.26, tamBase = w * 0.13;
+  function tamanoPorNombre(nombre) {
+    if (datosCorona.semanaFinalistas && datosCorona.protagonista === nombre) return tamMax;
+    const pts = datosCorona.puntosPorNombre[nombre] || 0;
+    return tamBase + ((tamMax - tamBase) / 4) * Math.min(pts, 4);
+  }
 
-  const ordenMezclado = mezclarPorEquipo(ordenPorMerito, avatarPorNombre);
-  const posiciones = posicionesFormaPortada(w, h);
+  let ordenMezclado = mezclarPorEquipo(ordenPorMerito, avatarPorNombre);
+  const destacado = (datosCorona.semanaFinalistas && datosCorona.protagonista && ordenMezclado.includes(datosCorona.protagonista))
+    ? datosCorona.protagonista
+    : (nombresOrdenados[0] || null);
+  if (destacado && ordenMezclado.includes(destacado)) {
+    ordenMezclado = [destacado, ...ordenMezclado.filter(n => n !== destacado)];
+  }
+
+  const totalFormas = FORMAS_PORTADA.length;
+  const jornadaLiga = jornadaLigaActualGlobal || 1;
+  const forma = FORMAS_PORTADA[((jornadaLiga - 1) % totalFormas + totalFormas) % totalFormas];
+  const posiciones = posicionesPortada(forma, ordenMezclado.length, w, h);
 
   orla.innerHTML = '';
   ordenMezclado.forEach((nombre, i) => {
     const pos = posiciones[i] || posiciones[posiciones.length - 1];
-    const globo = crearGloboPortada(nombre, tamPorNombre[nombre], avatarPorNombre);
+    const corona = {
+      esCampeon: datosCorona.campeonV1 === nombre,
+      categorias: datosCorona.semanaFinalistas ? (datosCorona.categoriasPorNombre[nombre] || 0) : 0,
+    };
+    const globo = crearGloboPortada(nombre, tamanoPorNombre(nombre), avatarPorNombre, corona);
     globo.style.left = pos.x + 'px';
     globo.style.top = pos.y + 'px';
     orla.appendChild(globo);
@@ -1717,6 +1823,60 @@ function calcularCandidatosGranFinal(clasif, campeonesRows) {
     { categoria: 'MEJOR PREMIOS', nombres: mejorPremios.nombres, definitivo: hayVuelta2Definitiva, dato: mejorPremios.valor.toFixed(0) + '€' },
   ];
 }
+
+// ============================================================
+// PORTADA: puntos de tamaño y corona de laurel
+// ============================================================
+function calcularCoronaYPuntos(clasif, campeonesRows) {
+  const anioActual = new Date().getFullYear();
+  const deEsteAnio = campeonesRows.filter(r => String(r[0]) === String(anioActual));
+  const camp1Row = [...deEsteAnio].reverse().find(r => String(r[1]) === '1');
+  const camp2Row = [...deEsteAnio].reverse().find(r => String(r[1]) === '2');
+  const granFinalRow = [...deEsteAnio].reverse().find(r => r[1] === 'GranFinal');
+
+  const campeonV1 = camp1Row ? String(camp1Row[2]).trim().toUpperCase() : null;
+  const semanaFinalistas = !!camp2Row && !granFinalRow;
+
+  const categoriasPorNombre = {};
+  if (semanaFinalistas) {
+    calcularCandidatosGranFinal(clasif, campeonesRows).forEach(c => {
+      c.nombres.forEach(n => {
+        const key = String(n).trim().toUpperCase();
+        if (!key || key === '—') return;
+        categoriasPorNombre[key] = (categoriasPorNombre[key] || 0) + 1;
+      });
+    });
+  }
+
+  let protagonista = null;
+  if (semanaFinalistas) {
+    const valores = Object.values(categoriasPorNombre);
+    const maxCat = valores.length ? Math.max(...valores) : 0;
+    if (maxCat >= 2) {
+      const conMax = Object.keys(categoriasPorNombre).filter(n => categoriasPorNombre[n] === maxCat);
+      if (conMax.length === 1) protagonista = conMax[0];
+    }
+  }
+
+  const puntosPorNombre = {};
+  clasif.forEach((row, i) => {
+    let pts = 0;
+    if (i === 0) pts = 3; else if (i === 1) pts = 2; else if (i === 2) pts = 1;
+    puntosPorNombre[String(row[1]).trim().toUpperCase()] = pts;
+  });
+  const importesPremios = clasif.map(r => numOp(r[4]));
+  const maxPremios = importesPremios.length ? Math.max(...importesPremios) : 0;
+  if (maxPremios > 0) {
+    const lideresPremios = clasif.filter(r => numOp(r[4]) === maxPremios);
+    if (lideresPremios.length === 1) {
+      const key = String(lideresPremios[0][1]).trim().toUpperCase();
+      puntosPorNombre[key] = (puntosPorNombre[key] || 0) + 1;
+    }
+  }
+
+  return { campeonV1, semanaFinalistas, categoriasPorNombre, protagonista, puntosPorNombre };
+}
+
 // ============================================================
 // CARGAR INICIO (QUITAR ESTE COMENTARIO??)
 // ============================================================
@@ -1736,6 +1896,7 @@ async function cargarInicio(config, clasif, jornadas, calendario, calendarioCier
   const filaActual = jornadaActual !== null ? calendario.find(r => parseInt(r[0]) === jornadaActual) : null;
   const ligaActual = filaActual ? (filaActual[2] || '') : '';
   document.getElementById('ini-jornada-liga').textContent = ligaActual ? `(Liga 1ª: ${ligaActual})` : '';
+  jornadaLigaActualGlobal = ligaActual ? parseInt(ligaActual) : null;
   document.getElementById('ini-jugadas').textContent = jugadas;
   document.getElementById('ini-total').textContent = jTotal || '-';
   document.getElementById('ini-barra').style.width = pct + '%';
@@ -2444,6 +2605,7 @@ function cargarRankingFinal(rows, avatarPorNombre) {
 // ============================================================
 // MAIN — cargar todo
 // ============================================================
+let jornadaLigaActualGlobal = null; // Jornada de Liga 1a actual, para el ciclo de formas de la Portada
 let podiumData = null; // guardado para poder reabrir sin recalcular
 let podiumTimer = null;
 
