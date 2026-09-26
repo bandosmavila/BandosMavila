@@ -1516,50 +1516,77 @@ function mezclarPorEquipo(lista, avatarPorNombre) {
 }
 
 function crearCoronaLaurel(tam, protagonista) {
+  // Corona "cenida": sin tallos que se levantan como cuernos. Un tallo real
+  // (arco continuo) sigue la propia curva de la cabeza, de sien a sien pasando
+  // por arriba, y las hojas nacen engarzadas en el, alternando un poco por
+  // fuera y un poco por dentro, como una rama de verdad.
   const ns = 'http://www.w3.org/2000/svg';
-  const ancho = tam * (protagonista ? 1.05 : 0.80);
-  const alto = ancho * 0.42;
 
   const wrap = document.createElement('div');
   wrap.className = 'pt-globo-corona';
-  wrap.style.width = ancho + 'px';
-  wrap.style.height = alto + 'px';
-  wrap.style.top = -(alto * 0.55) + 'px';
+  wrap.style.width = tam + 'px';
+  wrap.style.height = tam + 'px';
+  wrap.style.top = '0px';
+  wrap.style.left = '50%';
+  wrap.style.transform = 'translateX(-50%)';
 
   const svg = document.createElementNS(ns, 'svg');
-  svg.setAttribute('viewBox', '0 0 100 42');
+  svg.setAttribute('viewBox', '0 0 100 100');
   svg.style.width = '100%';
   svg.style.height = '100%';
 
   const colorHoja = protagonista ? '#f0d878' : '#c9a227';
   const colorTallo = protagonista ? '#c9a227' : '#8a6d1f';
 
-  function rama(signo) {
+  const cx = 50, cy = 50;
+  const anguloIni = 200, anguloFin = 340; // sien izquierda -> arriba (270) -> sien derecha
+
+  function puntoEnArco(radio, angGrados) {
+    const rad = angGrados * Math.PI / 180;
+    return { x: cx + radio * Math.cos(rad), y: cy + radio * Math.sin(rad) };
+  }
+
+  function hojaAlmendra(x, y, angDeg, largo, ancho) {
     const g = document.createElementNS(ns, 'g');
-    const tallo = document.createElementNS(ns, 'path');
-    tallo.setAttribute('d', signo > 0 ? 'M50 40 C 66 38, 82 28, 88 10' : 'M50 40 C 34 38, 18 28, 12 10');
-    tallo.setAttribute('fill', 'none');
-    tallo.setAttribute('stroke', colorTallo);
-    tallo.setAttribute('stroke-width', '2.5');
-    tallo.setAttribute('stroke-linecap', 'round');
-    g.appendChild(tallo);
-    const puntos = signo > 0
-      ? [[58,39],[66,35],[73,29],[79,21],[84,13]]
-      : [[42,39],[34,35],[27,29],[21,21],[16,13]];
-    puntos.forEach(([x, y], i) => {
-      const hoja = document.createElementNS(ns, 'ellipse');
-      hoja.setAttribute('cx', x);
-      hoja.setAttribute('cy', y);
-      hoja.setAttribute('rx', (6 - i * 0.4).toFixed(1));
-      hoja.setAttribute('ry', (3.2 - i * 0.2).toFixed(1));
-      hoja.setAttribute('fill', colorHoja);
-      hoja.setAttribute('transform', `rotate(${signo * (35 + i * 8)} ${x} ${y})`);
-      g.appendChild(hoja);
-    });
+    g.setAttribute('transform', `translate(${x} ${y}) rotate(${angDeg})`);
+    const h = largo, w = ancho;
+    const d = `M0 ${-h / 2} C ${w / 2} ${-h / 6}, ${w / 2} ${h / 6}, 0 ${h / 2} C ${-w / 2} ${h / 6}, ${-w / 2} ${-h / 6}, 0 ${-h / 2} Z`;
+    const hoja = document.createElementNS(ns, 'path');
+    hoja.setAttribute('d', d);
+    hoja.setAttribute('fill', colorHoja);
+    g.appendChild(hoja);
+    const nervio = document.createElementNS(ns, 'line');
+    nervio.setAttribute('x1', 0); nervio.setAttribute('y1', -h * 0.42);
+    nervio.setAttribute('x2', 0); nervio.setAttribute('y2', h * 0.42);
+    nervio.setAttribute('stroke', 'rgba(0,0,0,0.18)');
+    nervio.setAttribute('stroke-width', 0.8);
+    g.appendChild(nervio);
     return g;
   }
-  svg.appendChild(rama(1));
-  svg.appendChild(rama(-1));
+
+  const radioTallo = protagonista ? 42.5 : 41.5;
+
+  const inicio = puntoEnArco(radioTallo, anguloIni);
+  const fin = puntoEnArco(radioTallo, anguloFin);
+  const tallo = document.createElementNS(ns, 'path');
+  tallo.setAttribute('d', `M ${inicio.x.toFixed(2)} ${inicio.y.toFixed(2)} A ${radioTallo} ${radioTallo} 0 0 1 ${fin.x.toFixed(2)} ${fin.y.toFixed(2)}`);
+  tallo.setAttribute('fill', 'none');
+  tallo.setAttribute('stroke', colorTallo);
+  tallo.setAttribute('stroke-width', protagonista ? 2.6 : 2);
+  tallo.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(tallo);
+
+  const n = protagonista ? 10 : 9;
+  for (let i = 0; i < n; i++) {
+    const t = n === 1 ? 0 : i / (n - 1);
+    const angGrados = anguloIni + (anguloFin - anguloIni) * t;
+    const rotacion = angGrados + 90; // tangente al tallo: la hoja se tumba sobre el
+    const radioHoja = radioTallo + (i % 2 === 0 ? 4 : -4);
+    const p = puntoEnArco(radioHoja, angGrados);
+    const largo = (protagonista ? 22 : 20) - Math.abs(t - 0.5) * 6; // un pelin mas grandes hacia el centro
+    svg.appendChild(hojaAlmendra(p.x, p.y, rotacion, largo, largo * 0.46));
+  }
+
   wrap.appendChild(svg);
   return wrap;
 }
