@@ -1,0 +1,1955 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dominó</title>
+<style>:root {
+  --fondo: #0e3d24;
+  --panel: #ffffff;
+  --texto: #1a1a1a;
+  --acento: #d4af37;
+  --ficha: #fffdf6;
+  --equipo0: #d4af37;
+  --equipo1: #5aa9e6;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--fondo);
+  color: var(--texto);
+}
+
+#cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: #0a2e1a;
+  color: white;
+}
+#cabecera h1 { margin: 0; font-size: 1.3rem; }
+#info-partida { color: var(--acento); font-size: 0.95rem; }
+.botones-cabecera { display: flex; gap: 10px; align-items: center; }
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 0.95rem;
+  background: var(--acento);
+  color: #1a1a1a;
+}
+button.secundario { background: #ddd; }
+button.principal { background: #2f6d33; color: white; font-weight: bold; }
+
+#juego {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 16px;
+  padding: 16px;
+}
+
+#tapete {
+  background: #12532f;
+  border-radius: 12px;
+  padding: 16px;
+  color: white;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* --- Mesa circular: los jugadores alrededor, como en una mesa real; la
+   cadena de fichas jugadas crece en el centro. --- */
+#mesa-circular {
+  position: relative;
+  width: min(860px, 97vw);
+  height: min(860px, 97vw);
+  margin: 6px auto;
+  flex-shrink: 0;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.22) 70%, rgba(0, 0, 0, 0.3) 100%);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+}
+/* La cadena se lee de izquierda a derecha, en tramos rectos de pocas
+   fichas: las normales se tocan por su lado CORTO, no por el largo, igual
+   que en una partida real (si se tocaran por el lado largo no se
+   distinguiría dónde empieza una y termina la siguiente). Cuando un tramo
+   ya no cabe, la cadena GIRA de verdad — la siguiente ficha se coloca en
+   vertical, de esquina, y el tramo siguiente sigue justo debajo, en el
+   sentido contrario — nunca "salta" a una fila nueva sin esa ficha que una
+   físicamente ambos tramos. El tamaño lo calcula JS según el camino real
+   que forman las fichas (`calcularLayoutCadena`), y cada ficha se coloca
+   con `left`/`top` propios dentro de este contenedor. */
+#cadena-fichas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 160px;
+}
+#cadena-fichas .vacia-circulo {
+  text-align: center;
+  color: #cde;
+  font-style: italic;
+  font-size: 0.85rem;
+  margin: 0;
+  width: 100%;
+}
+.puesto-jugador {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  min-width: 116px;
+  z-index: 2;
+}
+.puesto-jugador.turno { background: rgba(255, 255, 255, 0.22); box-shadow: 0 0 0 3px var(--acento); }
+.puesto-jugador.equipo-0 { border-bottom: 3px solid var(--equipo0); }
+.puesto-jugador.equipo-1 { border-bottom: 3px solid var(--equipo1); }
+.puesto-jugador.puesto-humano { background: rgba(0, 0, 0, 0.42); }
+.puesto-jugador .badge-mano {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.6rem;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+.puesto-jugador .nombre { font-size: 1rem; font-weight: bold; text-align: center; }
+.puesto-jugador .pila { display: flex; min-height: 68px; align-items: center; }
+.puesto-jugador .marcador-mini {
+  font-size: 0.8rem;
+  background: var(--acento);
+  color: #1a1a1a;
+  border-radius: 10px;
+  padding: 2px 9px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+/* Lo último que ha jugado (o si ha pasado) cada jugador, visible en su
+   propio puesto — para poder seguir la partida sin mirar el registro. */
+.etiqueta-accion {
+  font-size: 0.78rem;
+  font-weight: bold;
+  padding: 2px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+.etiqueta-accion.tipo-ficha { background: #2f6d33; color: white; }
+.etiqueta-accion.tipo-paso { background: #7a2f2f; color: white; font-style: italic; }
+
+/* Aviso de fin de mano, bien visible sobre la propia mesa (no solo en el
+   registro lateral), mientras dura la pausa antes de repartir la siguiente. */
+/* El banner crece hacia ARRIBA desde el centro de la mesa (su borde
+   inferior queda fijo, un poco por encima del centro) y el botón
+   "Continuar" crece hacia ABAJO desde ese mismo centro (su borde superior
+   queda fijo, un poco por debajo) — así los dos quedan apilados, uno
+   encima del otro sin solaparse nunca, sea cual sea el largo del texto. */
+.banner-mano {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, calc(-100% - 8px));
+  background: rgba(10, 30, 20, 0.92);
+  color: white;
+  padding: 18px 26px;
+  border-radius: 14px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+  max-width: 80%;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  border: 2px solid var(--acento);
+  z-index: 6;
+}
+
+/* --- Componente de ficha de dominó --- */
+.ficha {
+  position: relative;
+  background: var(--ficha);
+  border-radius: 8px;
+  border: 1px solid #bdb39c;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  user-select: none;
+  flex: none;
+}
+.ficha-grande { width: 64px; height: 128px; flex-direction: column; }
+.ficha-mesa { width: 40px; height: 80px; flex-direction: column; border-radius: 6px; }
+.ficha.doble { outline: 2px solid var(--acento); outline-offset: -2px; }
+
+/* Fichas de la cadena central: en horizontal, apoyadas por su lado corto
+   (igual que en una mesa real) en vez de por el largo — así se distingue
+   dónde acaba una ficha y empieza la siguiente. Se giran en vertical
+   (perpendiculares) tanto los dobles, como en el dominó de verdad, como
+   cualquier ficha que haga de esquina al cambiar de tramo (clase
+   `.girada`, calculada en JS según la disposición real de la cadena — no
+   depende de si es un doble). */
+.ficha-cadena { width: 64px; height: 32px; flex-direction: row; border-radius: 6px; }
+.ficha-cadena.girada { width: 32px; height: 64px; flex-direction: column; }
+/* Tamaño compacto para volcar, al acabar una mano, las fichas reales de un
+   asiento entero (hasta 7) junto a su puesto en la mesa circular, sin que
+   ocupen tanto como las de la propia mano. */
+.ficha-mini { width: 22px; height: 44px; flex-direction: column; border-radius: 4px; }
+
+.ficha .mitad {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 2px;
+  padding: 6px;
+}
+.ficha-mesa .mitad, .ficha-cadena .mitad { padding: 3px; gap: 1px; }
+.ficha-mini .mitad { padding: 2px; gap: 1px; }
+.ficha .separador { height: 1px; background: #bdb39c; margin: 0 4px; }
+.ficha-cadena .separador { width: 1px; height: auto; align-self: stretch; margin: 4px 0; }
+.ficha-cadena.girada .separador { width: auto; height: 1px; align-self: auto; margin: 0 4px; }
+.ficha .punto { border-radius: 50%; background: transparent; align-self: center; justify-self: center; width: 8px; height: 8px; }
+.ficha-mesa .punto { width: 5px; height: 5px; }
+.ficha-mini .punto { width: 3px; height: 3px; }
+.ficha .punto.activo { background: #2c2c2c; }
+
+.ficha.reverso { background: repeating-linear-gradient(45deg, #2456a6 0 5px, #3a6fc4 5px 10px); border: 3px solid #fff; }
+
+.ficha.jugable { cursor: pointer; transform: translateY(0); transition: transform 0.1s; position: relative; }
+.ficha.jugable:hover { transform: translateY(-8px); box-shadow: 0 6px 10px rgba(0, 0, 0, 0.45); z-index: 5; }
+.ficha.no-jugable { opacity: 0.35; }
+
+/* Fichas reales de un asiento, volcadas boca arriba al acabar la mano. */
+.mano-final { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; margin-top: 4px; max-width: 120px; }
+
+/* Botón "Continuar" tras ver el resultado de la mano: grande y centrado,
+   encima de la propia mesa, para que no haya duda de qué hacer ni prisa
+   por verlo — se mantiene en pantalla hasta que la persona lo pulsa. */
+#btn-continuar-mano {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 8px);
+  z-index: 7;
+  padding: 14px 28px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-radius: 10px;
+  border: 2px solid var(--acento);
+  background: var(--acento);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+}
+#btn-continuar-mano:hover { filter: brightness(1.08); }
+
+/* --- Arrastrar fichas: reordenar la mano y jugar sobre la mesa ----------- */
+/* Ficha de la mano que se está arrastrando ahora mismo. */
+.ficha.arrastrando { opacity: 0.35; }
+/* Hueco donde caería la ficha si se suelta aquí, al reordenar la mano
+   (borde en el lado por el que entra el ratón/dedo, antes o después de
+   esta ficha). */
+.ficha.soltar-antes { box-shadow: -3px 0 0 var(--acento); }
+.ficha.soltar-despues { box-shadow: 3px 0 0 var(--acento); }
+/* Extremo de la cadena (o la mesa vacía, en la primera jugada de toda la
+   mano) sobre el que SÍ se puede soltar la ficha que se está arrastrando
+   ahora mismo, porque encaja por ese lado. */
+.zona-soltar-activa { box-shadow: 0 0 0 3px var(--acento), 0 0 16px 4px rgba(212, 175, 55, 0.7); }
+#cadena-fichas.zona-soltar-activa { border-radius: 50%; }
+/* Se enciende en cuanto empiezas a arrastrar una ficha (no solo al pasar
+   justo por encima): marca de un vistazo los extremos REALES donde esa
+   ficha puede caer, aunque la cadena haya girado y no sean los que parecen
+   más a la derecha/izquierda en pantalla. */
+.zona-soltar-posible {
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.55), 0 0 10px 2px rgba(212, 175, 55, 0.4);
+  animation: pulso-zona-posible 1.1s infinite;
+}
+.vacia-circulo.zona-soltar-posible { border-radius: 50%; }
+@keyframes pulso-zona-posible {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+#zona-mano {
+  margin: -6px auto 0;
+  max-width: min(780px, 96vw);
+  width: 100%;
+  border-radius: 0 0 12px 12px;
+  padding: 10px 12px 8px;
+  background: rgba(0, 0, 0, 0.22);
+  border-top: 3px solid var(--acento);
+  transition: box-shadow 0.15s;
+  position: relative;
+  z-index: 3;
+}
+#zona-mano.mi-turno { box-shadow: 0 0 0 3px #e63946, 0 0 14px rgba(230, 57, 70, 0.6); background: rgba(230, 57, 70, 0.12); }
+.cabecera-mano { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+#titulo-mano { font-weight: bold; }
+#mano { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; justify-content: center; }
+
+/* --- Diálogo de decisión (elegir lado al jugar una ficha ambigua) --------- */
+#dlg-decision { text-align: center; min-width: 260px; max-width: 360px; }
+#dlg-decision .decision-titulo { font-weight: bold; margin: 0 0 12px; font-size: 1.05rem; }
+#dlg-decision .decision-opciones { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+#lateral {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+#lateral h2 { font-size: 1rem; margin: 0 0 8px; }
+.fila-marcador { padding: 4px 0; border-bottom: 1px solid #eee; }
+#registro { padding-left: 18px; font-size: 0.85rem; }
+#registro li { margin-bottom: 4px; }
+
+dialog {
+  border: none;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 560px;
+}
+dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
+.fila-config { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+.fila-config label { display: flex; flex-direction: column; font-size: 0.85rem; gap: 4px; }
+#cfg-nombres input { margin-top: 4px; }
+
+#dlg-online .codigo-mesa { font-size: 1.8rem; font-weight: bold; letter-spacing: 0.2rem; color: #2f6d33; text-align: center; margin: 10px 0; }
+#dlg-online ul { padding-left: 18px; margin: 6px 0; }
+#dlg-online .error-online { color: #b00020; font-weight: bold; }
+
+/* --- Controles de la mesa: Asumir el reparto / Salir / Terminar partida --- */
+#mesa-controles { margin: 14px 0; padding-top: 10px; border-top: 1px solid #eee; display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* --- Chat de la mesa (solo en partidas online) --- */
+#chat-caja { margin: 14px 0; padding-top: 10px; border-top: 1px solid #eee; }
+.chat-mensajes {
+  max-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  background: #f6f6f6;
+  border-radius: 8px;
+}
+.chat-linea { word-break: break-word; }
+.chat-linea strong { color: #2f6d33; }
+.chat-entrada { display: flex; gap: 6px; }
+.chat-entrada input { flex: 1; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; }
+.chat-entrada button { padding: 6px 12px; font-size: 0.85rem; }
+
+/* --- Botón de "sustituir por bot" sobre el puesto de otro jugador --- */
+.puesto-jugador .btn-bot-asiento {
+  font-size: 0.68rem;
+  padding: 2px 7px;
+  margin-top: 2px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+.puesto-jugador .etiqueta-bot {
+  font-size: 0.68rem;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  padding: 2px 7px;
+  margin-top: 2px;
+}
+</style>
+</head>
+<body>
+<header id="cabecera">
+  <h1>Dominó</h1>
+  <div id="info-partida"></div>
+  <div class="botones-cabecera">
+    <label>Velocidad bots
+      <select id="velocidad">
+        <option value="1200">Lenta</option>
+        <option value="600" selected>Normal</option>
+        <option value="150">Rápida</option>
+      </select>
+    </label>
+    <button id="btn-nueva">Nueva partida</button>
+    <button id="btn-online" class="secundario">Jugar online</button>
+  </div>
+</header>
+
+<main id="juego" hidden>
+  <section id="tapete">
+    <div id="mesa-circular">
+      <div id="cadena-fichas"></div>
+      <div id="banner-mano" class="banner-mano" hidden></div>
+    </div>
+    <div id="zona-mano">
+      <div class="cabecera-mano">
+        <div id="titulo-mano"></div>
+      </div>
+      <div id="mano"></div>
+    </div>
+  </section>
+  <aside id="lateral">
+    <h2>Marcador</h2>
+    <div id="marcador"></div>
+    <div id="mesa-controles" hidden>
+      <button id="btn-asumir-reparto" class="secundario" hidden>Asumir el reparto</button>
+      <button id="btn-salir-asiento" class="secundario" hidden>Salir (sustituir mi asiento por un bot)</button>
+      <button id="btn-terminar-partida" class="secundario" hidden>Terminar partida</button>
+    </div>
+    <div id="chat-caja" hidden>
+      <h2>Chat</h2>
+      <div id="chat-mensajes" class="chat-mensajes"></div>
+      <div class="chat-entrada">
+        <input id="chat-input" placeholder="Escribe un mensaje..." maxlength="300">
+        <button id="chat-enviar">Enviar</button>
+      </div>
+    </div>
+    <h2>Lo que va pasando</h2>
+    <ol id="registro"></ol>
+  </aside>
+</main>
+
+<dialog id="dlg-decision"></dialog>
+<dialog id="dlg-modo"></dialog>
+<dialog id="dlg-config"></dialog>
+<dialog id="dlg-online"></dialog>
+<dialog id="dlg-fin"></dialog>
+
+<script>(() => {
+  // src/fichas.js
+  function crearFichas() {
+    const fichas = [];
+    for (let a = 0; a <= 6; a++) {
+      for (let b = a; b <= 6; b++) {
+        fichas.push({ a, b });
+      }
+    }
+    return fichas;
+  }
+  function idFicha(f) {
+    const [lo, hi] = f.a <= f.b ? [f.a, f.b] : [f.b, f.a];
+    return `${lo}-${hi}`;
+  }
+  function esDoble(f) {
+    return f.a === f.b;
+  }
+  function puntosFicha(f) {
+    return f.a + f.b;
+  }
+  function puntosMano(fichas) {
+    return fichas.reduce((s, f) => s + puntosFicha(f), 0);
+  }
+  function barajar(fichas, azar = Math.random) {
+    const copia = fichas.slice();
+    for (let i = copia.length - 1; i > 0; i--) {
+      const j = Math.floor(azar() * (i + 1));
+      [copia[i], copia[j]] = [copia[j], copia[i]];
+    }
+    return copia;
+  }
+  function encaja(f, v) {
+    return f.a === v || f.b === v;
+  }
+
+  // src/mano.js
+  function equipoDe(parejas, indiceJugador) {
+    return parejas.findIndex((pareja) => pareja.includes(indiceJugador));
+  }
+  function repartir(azar = Math.random) {
+    const fichas = barajar(crearFichas(), azar);
+    const manos = [[], [], [], []];
+    for (let i = 0; i < fichas.length; i++) manos[i % 4].push(fichas[i]);
+    return manos;
+  }
+  function fichasJugables(mano, extremos) {
+    if (extremos[0] == null) {
+      return mano.map((ficha) => ({ ficha, extremos: ["izquierda"] }));
+    }
+    return mano.map((ficha) => {
+      const lados = [];
+      if (encaja(ficha, extremos[0])) lados.push("izquierda");
+      if (encaja(ficha, extremos[1])) lados.push("derecha");
+      return { ficha, extremos: lados };
+    }).filter((j) => j.extremos.length > 0);
+  }
+  function colocar(ficha, extremo, extremos) {
+    if (extremos[0] == null) return [ficha.a, ficha.b];
+    if (extremo === "izquierda") {
+      const nuevo2 = ficha.a === extremos[0] ? ficha.b : ficha.a;
+      return [nuevo2, extremos[1]];
+    }
+    const nuevo = ficha.a === extremos[1] ? ficha.b : ficha.a;
+    return [extremos[0], nuevo];
+  }
+  async function jugarMano({
+    jugadores,
+    parejas,
+    primeraMano,
+    indiceSalida,
+    drivers,
+    azar,
+    onEvento: onEvento2 = () => {
+    },
+    reparto = null,
+    validar = () => true
+  }) {
+    const nJugadores = jugadores.length;
+    let manos;
+    let salidorReparto = null;
+    if (reparto) {
+      manos = reparto.manos;
+      salidorReparto = reparto.salidorPrimeraMano != null ? reparto.salidorPrimeraMano : null;
+    } else {
+      manos = repartir(azar);
+    }
+    onEvento2({ tipo: "reparto", manos });
+    let salidor = indiceSalida;
+    if (primeraMano) {
+      salidor = salidorReparto != null ? salidorReparto : manos.findIndex((mano) => mano.some((f) => esDoble(f) && f.a === 6));
+    }
+    onEvento2({ tipo: "salida", jugador: salidor, primeraMano });
+    const cadena = [];
+    let extremos = [null, null];
+    let turno = salidor;
+    let pasesSeguidos = 0;
+    let ganadorDomino = null;
+    let capicua = false;
+    while (ganadorDomino === null && pasesSeguidos < nJugadores) {
+      let jugablesReales = null;
+      if (validar(turno)) {
+        const jugables = fichasJugables(manos[turno], extremos);
+        jugablesReales = primeraMano && cadena.length === 0 ? jugables.filter((j) => esDoble(j.ficha) && j.ficha.a === 6) : jugables;
+      }
+      const eleccion = await drivers[turno].decidirFicha({
+        jugador: jugadores[turno],
+        indiceJugador: turno,
+        manoPropia: manos[turno],
+        jugables: jugablesReales,
+        extremos: extremos.slice()
+      });
+      if (eleccion == null) {
+        if (validar(turno) && jugablesReales.length !== 0) {
+          throw new Error(`El jugador ${turno} ha pasado teniendo jugada`);
+        }
+        pasesSeguidos++;
+        await onEvento2({ tipo: "paso", jugador: turno });
+        if (ganadorDomino === null) turno = (turno + 1) % nJugadores;
+        continue;
+      }
+      let opcionFicha;
+      let extremoElegido;
+      if (validar(turno)) {
+        const opcion = jugablesReales.find(
+          (j) => idFicha(j.ficha) === idFicha(eleccion.ficha) && j.extremos.includes(eleccion.extremo || j.extremos[0])
+        );
+        if (!opcion) throw new Error(`Jugada no válida del jugador ${turno}: ${JSON.stringify(eleccion)}`);
+        opcionFicha = opcion.ficha;
+        extremoElegido = eleccion.extremo && opcion.extremos.includes(eleccion.extremo) ? eleccion.extremo : opcion.extremos[0];
+      } else {
+        opcionFicha = eleccion.ficha;
+        extremoElegido = eleccion.extremo;
+      }
+      const extremosAntes = extremos.slice();
+      extremos = colocar(opcionFicha, extremoElegido, extremos);
+      manos[turno] = validar(turno) ? manos[turno].filter((f) => idFicha(f) !== idFicha(opcionFicha)) : manos[turno].slice(1);
+      cadena.push({ jugador: turno, ficha: opcionFicha, extremo: extremoElegido });
+      pasesSeguidos = 0;
+      await onEvento2({ tipo: "ficha", jugador: turno, ficha: opcionFicha, extremo: extremoElegido, extremos: extremos.slice() });
+      if (manos[turno].length === 0) {
+        ganadorDomino = turno;
+        capicua = extremosAntes[0] != null && extremosAntes[0] === extremosAntes[1];
+      }
+      if (ganadorDomino === null) turno = (turno + 1) % nJugadores;
+    }
+    const bloqueo = ganadorDomino === null;
+    const manosFinal = await Promise.all(
+      manos.map((m, j) => drivers[j].manoFinal ? drivers[j].manoFinal(m) : m)
+    );
+    const puntosPorJugador = manosFinal.map((m) => puntosMano(m));
+    let equipoGanador;
+    let puntos;
+    const siguienteSalida = (salidor + 1) % nJugadores;
+    if (!bloqueo) {
+      equipoGanador = equipoDe(parejas, ganadorDomino);
+      const totalPuntos = puntosPorJugador.reduce((s, p) => s + p, 0);
+      puntos = totalPuntos;
+    } else {
+      const puntosEquipo0 = parejas[0].reduce((s, j) => s + puntosPorJugador[j], 0);
+      const puntosEquipo1 = parejas[1].reduce((s, j) => s + puntosPorJugador[j], 0);
+      if (puntosEquipo0 === puntosEquipo1) {
+        equipoGanador = null;
+        puntos = 0;
+      } else {
+        equipoGanador = puntosEquipo0 < puntosEquipo1 ? 0 : 1;
+        puntos = puntosEquipo0 + puntosEquipo1;
+      }
+    }
+    onEvento2({
+      tipo: "finMano",
+      bloqueo,
+      ganadorDomino,
+      capicua,
+      equipoGanador,
+      puntos,
+      puntosPorJugador,
+      manosFinal,
+      siguienteSalida
+    });
+    return { bloqueo, ganadorDomino, capicua, equipoGanador, puntos, puntosPorJugador, manosFinal, cadena, siguienteSalida };
+  }
+
+  // src/partida.js
+  async function jugarPartida({
+    jugadores,
+    parejas,
+    objetivo = 150,
+    drivers,
+    azar,
+    onEvento: onEvento2,
+    onMano,
+    siguienteReparto,
+    validar
+  }) {
+    const puntuacion = [0, 0];
+    let indiceSalida = null;
+    let primeraMano = true;
+    const historial = [];
+    let numeroMano = 0;
+    while (puntuacion[0] < objetivo && puntuacion[1] < objetivo) {
+      numeroMano += 1;
+      const reparto = siguienteReparto ? await siguienteReparto({ numeroMano, primeraMano }) : null;
+      const resultado = await jugarMano({
+        jugadores,
+        parejas,
+        primeraMano,
+        indiceSalida,
+        drivers,
+        azar,
+        onEvento: onEvento2,
+        reparto,
+        validar
+      });
+      if (resultado.equipoGanador != null) puntuacion[resultado.equipoGanador] += resultado.puntos;
+      historial.push({ ...resultado, puntuacionTrasMano: puntuacion.slice() });
+      if (onMano) await onMano({ ...resultado, puntuacion: puntuacion.slice() });
+      indiceSalida = resultado.siguienteSalida;
+      primeraMano = false;
+    }
+    const equipoGanador = puntuacion[0] >= objetivo ? 0 : 1;
+    return { puntuacion, equipoGanador, historial };
+  }
+
+  // src/bots/basico.js
+  function crearBotBasico() {
+    return {
+      async decidirFicha({ jugables }) {
+        if (!jugables || jugables.length === 0) return null;
+        const dobles = jugables.filter((j) => esDoble(j.ficha));
+        const candidatos = dobles.length > 0 ? dobles : jugables;
+        let mejor = candidatos[0];
+        for (const j of candidatos.slice(1)) {
+          if (puntosFicha(j.ficha) > puntosFicha(mejor.ficha)) mejor = j;
+        }
+        return { ficha: mejor.ficha, extremo: mejor.extremos[0] };
+      }
+    };
+  }
+
+  // src/driverRed.js
+  function crearDriverAsientoOnline(asiento, { miAsiento, driverHumano, bot, publicar, esperarEvento, obtenerJugadoresMesa }) {
+    function decidirFicha(ctx) {
+      if (asiento === miAsiento) {
+        const jugadoresMesa = obtenerJugadoresMesa();
+        const infoAsiento = jugadoresMesa.find((j) => j.asiento === asiento);
+        const sustituido = !!(infoAsiento && infoAsiento.sustituidoPorBot);
+        const driver = sustituido ? bot : driverHumano;
+        return Promise.resolve(driver.decidirFicha(ctx)).then((valor) => Promise.resolve(publicar({ tipo: "jugada", jugador: asiento, valor: valor || null })).then(() => valor));
+      }
+      return esperarEvento("jugada", asiento);
+    }
+    function manoFinal(manoLocalReal) {
+      if (asiento === miAsiento) {
+        return Promise.resolve(publicar({ tipo: "manoFinal", jugador: asiento, valor: manoLocalReal })).then(() => manoLocalReal);
+      }
+      return esperarEvento("manoFinal", asiento);
+    }
+    return { decidirFicha, manoFinal };
+  }
+  function construirManosCliente(miAsiento, miManoReal, nJugadores = 4, nFichas = 7) {
+    return Array.from({ length: nJugadores }, (_, j) => j === miAsiento ? miManoReal : Array.from({ length: nFichas }, () => ({ placeholder: true })));
+  }
+  function validarSoloMiAsiento(miAsiento) {
+    return (j) => j === miAsiento;
+  }
+
+  // ui/fichas-vista.js
+  var PATRONES = {
+    0: [],
+    1: [4],
+    2: [0, 8],
+    3: [0, 4, 8],
+    4: [0, 2, 6, 8],
+    5: [0, 2, 4, 6, 8],
+    6: [0, 1, 2, 6, 7, 8]
+  };
+  function elMitad(valor) {
+    const mitad = document.createElement("div");
+    mitad.className = "mitad";
+    const activos = new Set(PATRONES[valor] || []);
+    for (let i = 0; i < 9; i++) {
+      const punto = document.createElement("span");
+      punto.className = `punto${activos.has(i) ? " activo" : ""}`;
+      mitad.appendChild(punto);
+    }
+    return mitad;
+  }
+  function elFicha(ficha, { tam = "grande", jugable = null, girada = false } = {}) {
+    const el = document.createElement("div");
+    el.className = `ficha ficha-${tam}${ficha.a === ficha.b ? " doble" : ""}${girada ? " girada" : ""}`;
+    if (jugable === true) el.classList.add("jugable");
+    if (jugable === false) el.classList.add("no-jugable");
+    el.appendChild(elMitad(ficha.a));
+    const sep = document.createElement("div");
+    sep.className = "separador";
+    el.appendChild(sep);
+    el.appendChild(elMitad(ficha.b));
+    return el;
+  }
+  function elReverso(tam = "grande") {
+    const el = document.createElement("div");
+    el.className = `ficha ficha-${tam} reverso`;
+    return el;
+  }
+
+  // ui/firebaseCliente.js
+  var SDK_VERSION = "10.14.1";
+  var CDN = `https://www.gstatic.com/firebasejs/${SDK_VERSION}`;
+  var firebaseConfig = {
+    apiKey: "AIzaSyAwu5UyDbWmdfLxoz_XhY5zRl1CPvRBVwQ",
+    authDomain: "la-partida-f2f08.firebaseapp.com",
+    projectId: "la-partida-f2f08",
+    storageBucket: "la-partida-f2f08.firebasestorage.app",
+    messagingSenderId: "616729933935",
+    appId: "1:616729933935:web:2c39aa819668c8863ef59a"
+  };
+  var COLECCION = "mesasDomino";
+  var _db = null;
+  var _uid = null;
+  var _fs = null;
+  async function cargarSDK() {
+    const [{ initializeApp }, fs, authMod] = await Promise.all([
+      import(
+        /* @vite-ignore */
+        `${CDN}/firebase-app.js`
+      ),
+      import(
+        /* @vite-ignore */
+        `${CDN}/firebase-firestore.js`
+      ),
+      import(
+        /* @vite-ignore */
+        `${CDN}/firebase-auth.js`
+      )
+    ]);
+    return { initializeApp, fs, authMod };
+  }
+  async function conectar() {
+    if (_uid) return _uid;
+    const { initializeApp, fs, authMod } = await cargarSDK();
+    const app = initializeApp(firebaseConfig);
+    _db = fs.getFirestore(app);
+    _fs = fs;
+    const auth = authMod.getAuth(app);
+    const cred = await authMod.signInAnonymously(auth);
+    _uid = cred.user.uid;
+    return _uid;
+  }
+  var ALFABETO_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  function codigoAleatorio(longitud = 4) {
+    let s = "";
+    for (let i = 0; i < longitud; i++) s += ALFABETO_CODIGO[Math.floor(Math.random() * ALFABETO_CODIGO.length)];
+    return s;
+  }
+  async function crearMesa({ nombre, objetivo, asiento = 0 }) {
+    const uid = await conectar();
+    const { doc, collection, setDoc, serverTimestamp } = _fs;
+    const codigo = codigoAleatorio();
+    const ref = doc(collection(_db, COLECCION));
+    await setDoc(ref, {
+      codigo,
+      creadorUid: uid,
+      creadoEn: serverTimestamp(),
+      estado: "espera",
+      jugadores: [{ uid, nombre, asiento, sustituidoPorBot: false }],
+      configuracion: { objetivo }
+    });
+    return { mesaId: ref.id, codigo, miAsiento: asiento, uid };
+  }
+  async function mirarMesaPorCodigo(codigo) {
+    const uid = await conectar();
+    const { collection, query, where, getDocs } = _fs;
+    const q = query(collection(_db, COLECCION), where("codigo", "==", codigo.toUpperCase()), where("estado", "==", "espera"));
+    const resultados = await getDocs(q);
+    if (resultados.empty) throw new Error(`No hay ninguna mesa esperando con el código "${codigo}"`);
+    const mesaSnap = resultados.docs[0];
+    return { mesaId: mesaSnap.id, uid, datos: mesaSnap.data() };
+  }
+  async function sentarseEnAsiento({ mesaId, nombre, asiento }) {
+    const uid = await conectar();
+    const { doc, getDoc, updateDoc, arrayUnion } = _fs;
+    const ref = doc(_db, COLECCION, mesaId);
+    const snap = await getDoc(ref);
+    const datos = snap.data();
+    const yaSentado = datos.jugadores.find((j) => j.uid === uid);
+    if (yaSentado) return { mesaId, codigo: datos.codigo, miAsiento: yaSentado.asiento, uid };
+    if (datos.jugadores.some((j) => j.asiento === asiento)) throw new Error("Ese asiento ya está ocupado — elige otro.");
+    if (datos.jugadores.length >= 4) throw new Error("Esa mesa ya está completa");
+    await updateDoc(ref, {
+      jugadores: arrayUnion({ uid, nombre, asiento, sustituidoPorBot: false })
+    });
+    return { mesaId, codigo: datos.codigo, miAsiento: asiento, uid };
+  }
+  function escucharMesa(mesaId, alCambiar) {
+    const { doc, onSnapshot } = _fs;
+    return onSnapshot(doc(_db, COLECCION, mesaId), (snap) => alCambiar(snap.data()));
+  }
+  async function marcarMesaJugando(mesaId) {
+    const { doc, updateDoc } = _fs;
+    await updateDoc(doc(_db, COLECCION, mesaId), { estado: "jugando" });
+  }
+  async function asumirReparto(mesaId, uid) {
+    const { doc, updateDoc } = _fs;
+    await updateDoc(doc(_db, COLECCION, mesaId), { creadorUid: uid });
+  }
+  async function terminarMesa(mesaId) {
+    const { doc, updateDoc } = _fs;
+    await updateDoc(doc(_db, COLECCION, mesaId), { estado: "terminada" });
+  }
+  async function marcarAsientoBot(mesaId, jugadoresActuales, asiento, sustituidoPorBot) {
+    const { doc, updateDoc } = _fs;
+    const nuevos = jugadoresActuales.map((j) => j.asiento === asiento ? { ...j, sustituidoPorBot } : j);
+    await updateDoc(doc(_db, COLECCION, mesaId), { jugadores: nuevos });
+  }
+  async function enviarMensajeChat(mesaId, { nombre, texto }) {
+    const { doc, collection, setDoc, serverTimestamp } = _fs;
+    const ref = doc(collection(_db, COLECCION, mesaId, "chat"));
+    await setDoc(ref, { autorUid: _uid, nombre, texto, ts: serverTimestamp() });
+  }
+  function escucharChat(mesaId, alCambiar) {
+    const { collection, query, orderBy, onSnapshot } = _fs;
+    return onSnapshot(
+      query(collection(_db, COLECCION, mesaId, "chat"), orderBy("ts")),
+      (snap) => alCambiar(snap.docs.map((d) => d.data()))
+    );
+  }
+  function crearBusEventosMesa(mesaId) {
+    const { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } = _fs;
+    const registro = {};
+    const esperas = {};
+    const clave = (tipo, jugador) => `${tipo}:${jugador}`;
+    function anotar(tipo, jugador, valor) {
+      const k = clave(tipo, jugador);
+      (registro[k] ??= []).push(valor);
+      const pendientes = esperas[k] || [];
+      esperas[k] = [];
+      for (const resolve of pendientes) resolve(valor);
+    }
+    const dejarDeEscuchar = onSnapshot(
+      query(collection(_db, COLECCION, mesaId, "eventos"), orderBy("ts")),
+      (snap) => {
+        for (const cambio of snap.docChanges()) {
+          if (cambio.type !== "added") continue;
+          const ev = cambio.doc.data();
+          anotar(ev.tipo, ev.jugador, ev.valor);
+        }
+      }
+    );
+    async function publicar({ tipo, jugador, valor }) {
+      await addDoc(collection(_db, COLECCION, mesaId, "eventos"), {
+        autorUid: _uid,
+        tipo,
+        jugador,
+        valor: valor === void 0 ? null : valor,
+        ts: serverTimestamp()
+      });
+    }
+    function crearLector() {
+      const cursores = {};
+      return function esperarEvento(tipo, jugador) {
+        const k = clave(tipo, jugador);
+        const i = cursores[k] || 0;
+        cursores[k] = i + 1;
+        if (registro[k] && registro[k].length > i) return Promise.resolve(registro[k][i]);
+        return new Promise((resolve) => {
+          (esperas[k] ??= []).push(resolve);
+        });
+      };
+    }
+    return { publicar, crearLector, dejarDeEscuchar };
+  }
+  async function enviarManoPrivada(mesaId, uid, numeroMano, mano) {
+    const { doc, setDoc, serverTimestamp } = _fs;
+    await setDoc(doc(_db, COLECCION, mesaId, "manos", uid, "rondas", String(numeroMano)), {
+      fichas: mano,
+      repartidoEn: serverTimestamp()
+    });
+  }
+  function escucharManoPrivada(mesaId, uid, numeroMano, alLlegar) {
+    const { doc, onSnapshot } = _fs;
+    return onSnapshot(doc(_db, COLECCION, mesaId, "manos", uid, "rondas", String(numeroMano)), (snap) => {
+      if (snap.exists()) alLlegar(snap.data().fichas);
+    });
+  }
+  function esperarManoPrivada(mesaId, uid, numeroMano) {
+    return new Promise((resolve) => {
+      const dejarDeEscuchar = escucharManoPrivada(mesaId, uid, numeroMano, (fichas) => {
+        dejarDeEscuchar();
+        resolve(fichas);
+      });
+    });
+  }
+
+  // ui/app.js
+  function tituloFicha(f) {
+    return `${f.a}-${f.b}`;
+  }
+  function esperar(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+  function escaparHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  }
+  var E = {
+    jugadores: [],
+    // [{nombre, esHumano}], índice 0 = humano, sentados en cruz: 0&2 pareja, 1&3 pareja
+    parejas: [[0, 2], [1, 3]],
+    puntuacion: [0, 0],
+    // por equipo (parejas[0] / parejas[1])
+    registro: [],
+    actual: null,
+    // { manos, extremos, cadena, salidor, turno, ultimaAccion }
+    pendiente: null,
+    // { tipo:'ficha', indiceJugador, contexto, resolve }
+    objetivo: 150,
+    arrastre: null,
+    // id de la ficha de la MANO que se está arrastrando ahora mismo (o null)
+    // { mesaId, miAsiento, uid, creadorUid, jugadoresMesa,
+    //   dejarDeEscucharMesa, dejarDeEscucharChat } cuando se está jugando
+    // online; null en local. `creadorUid` es quién tiene AHORA el papel de
+    // creador (puede cambiar en mitad de la partida con "Asumir el
+    // reparto") — nunca se guarda un "esCreador" fijo de cuando se entró.
+    red: null,
+    chatMensajes: [],
+    // Se pone a true cuando la mesa pasa a "terminada" (alguien ha pulsado
+    // "Terminar partida"), para no procesar ese cambio dos veces.
+    terminandoForzado: false,
+    // `resolve` de la promesa de "Continuar" al acabar una mano, mientras
+    // está pendiente (ver `esperarContinuar`); null si no se está esperando
+    // ningún clic.
+    continuarPendiente: null
+  };
+  function limpiarConexionRed() {
+    if (E.red) {
+      E.red.dejarDeEscucharMesa?.();
+      E.red.dejarDeEscucharChat?.();
+    }
+    E.red = null;
+    E.chatMensajes = [];
+    E.terminandoForzado = false;
+    E.continuarPendiente = null;
+  }
+  function haySupervisionHumana() {
+    if (E.red) {
+      const miInfo = (E.red.jugadoresMesa || []).find((jm) => jm.asiento === E.red.miAsiento);
+      return !(miInfo && miInfo.sustituidoPorBot);
+    }
+    return E.jugadores.some((j) => j.esHumano);
+  }
+  function esperarContinuar() {
+    return new Promise((resolve) => {
+      E.continuarPendiente = resolve;
+      render();
+    });
+  }
+  async function alTerminarMano(r) {
+    E.puntuacion = r.puntuacion;
+    render();
+    if (haySupervisionHumana()) {
+      await esperarContinuar();
+    } else {
+      await esperar(Math.max(velocidadBots(), 900));
+    }
+  }
+  function pausaTrasJugada() {
+    return esperar(Math.max(400, velocidadBots() / 2));
+  }
+  function velocidadBots() {
+    return Number(document.getElementById("velocidad").value);
+  }
+  function log(texto) {
+    E.registro.unshift(texto);
+    if (E.registro.length > 200) E.registro.length = 200;
+    renderRegistro();
+  }
+  function nombreJ(i) {
+    return E.jugadores[i].nombre;
+  }
+  function equipoDe2(i) {
+    return E.parejas.findIndex((p) => p.includes(i));
+  }
+  function esMiEquipo(i) {
+    return equipoDe2(i) === equipoDe2(0);
+  }
+  function crearDriverHumano(indice) {
+    return {
+      decidirFicha(ctx) {
+        if (!ctx.jugables || ctx.jugables.length === 0) return Promise.resolve(null);
+        return new Promise((resolve) => {
+          E.pendiente = { tipo: "ficha", indiceJugador: indice, contexto: ctx, resolve };
+          render();
+        });
+      }
+    };
+  }
+  function crearDriverBotConRitmo() {
+    const bot = crearBotBasico();
+    return {
+      async decidirFicha(ctx) {
+        const r = await bot.decidirFicha(ctx);
+        await esperar(velocidadBots());
+        return r;
+      }
+    };
+  }
+  async function onEvento(ev) {
+    if (ev.tipo === "reparto") {
+      E.actual = {
+        manos: ev.manos,
+        extremos: [null, null],
+        cadena: [],
+        salidor: null,
+        turno: null,
+        ultimaAccion: {}
+      };
+      ocultarBannerMano();
+      render();
+      return;
+    }
+    if (!E.actual) return;
+    if (ev.tipo === "salida") {
+      E.actual.salidor = ev.jugador;
+      E.actual.turno = ev.jugador;
+      log(ev.primeraMano ? `Sale ${nombreJ(ev.jugador)} (tiene el doble-6)` : `Sale ${nombreJ(ev.jugador)}`);
+    } else if (ev.tipo === "ficha") {
+      E.actual.cadena.push({ jugador: ev.jugador, ficha: ev.ficha, extremo: ev.extremo });
+      E.actual.extremos = ev.extremos;
+      E.actual.manos[ev.jugador] = E.actual.manos[ev.jugador].filter((f) => idFicha(f) !== idFicha(ev.ficha));
+      E.actual.ultimaAccion[ev.jugador] = { tipo: "ficha", texto: `Juega ${tituloFicha(ev.ficha)}` };
+      E.actual.turno = (ev.jugador + 1) % E.jugadores.length;
+      log(`${nombreJ(ev.jugador)} juega ${tituloFicha(ev.ficha)}`);
+      render();
+      await pausaTrasJugada();
+      return;
+    } else if (ev.tipo === "paso") {
+      E.actual.ultimaAccion[ev.jugador] = { tipo: "paso", texto: "Pasa" };
+      E.actual.turno = (ev.jugador + 1) % E.jugadores.length;
+      log(`${nombreJ(ev.jugador)} pasa`);
+      render();
+      await pausaTrasJugada();
+      return;
+    } else if (ev.tipo === "finMano") {
+      const texto = ev.bloqueo ? ev.equipoGanador == null ? "Se bloquea el juego: empate, nadie anota" : `Se bloquea el juego: gana ${equipoTexto(ev.equipoGanador)} (+${ev.puntos})` : `¡Dominó de ${nombreJ(ev.ganadorDomino)}! Gana ${equipoTexto(ev.equipoGanador)} (+${ev.puntos})`;
+      log(texto);
+      mostrarBannerMano(texto);
+      E.actual.manosFinal = ev.manosFinal;
+      E.actual.mostrandoFinal = true;
+    }
+    render();
+  }
+  function equipoTexto(equipo) {
+    return equipo === equipoDe2(0) ? "tu pareja" : "la pareja rival";
+  }
+  function mostrarBannerMano(texto) {
+    const banner = document.getElementById("banner-mano");
+    if (!banner) return;
+    banner.textContent = texto;
+    banner.hidden = false;
+  }
+  function ocultarBannerMano() {
+    const banner = document.getElementById("banner-mano");
+    if (banner) banner.hidden = true;
+  }
+  async function iniciarPartida() {
+    limpiarConexionRed();
+    E.puntuacion = [0, 0];
+    E.registro = [];
+    document.getElementById("juego").hidden = false;
+    document.getElementById("dlg-config").close();
+    const drivers = E.jugadores.map((j, i) => j.esHumano ? crearDriverHumano(i) : crearDriverBotConRitmo());
+    const resultado = await jugarPartida({
+      jugadores: E.jugadores.map((j) => j.nombre),
+      parejas: E.parejas,
+      objetivo: E.objetivo,
+      drivers,
+      onEvento,
+      onMano: alTerminarMano
+    });
+    E.actual = null;
+    render();
+    mostrarFin(resultado);
+  }
+  async function iniciarPartidaOnline(mesaInfo, datosMesa) {
+    limpiarConexionRed();
+    const dlg = document.getElementById("dlg-online");
+    if (dlg.open) dlg.close();
+    dlg.innerHTML = "";
+    const { mesaId, miAsiento, uid } = mesaInfo;
+    const jugadoresMesa = datosMesa.jugadores.slice().sort((a, b) => a.asiento - b.asiento);
+    const nJugadores = 4;
+    E.red = { mesaId, miAsiento, uid, creadorUid: datosMesa.creadorUid, jugadoresMesa };
+    E.jugadores = jugadoresMesa.map((j, i) => ({ nombre: j.nombre, esHumano: i === miAsiento }));
+    E.objetivo = datosMesa.configuracion.objetivo || 150;
+    E.puntuacion = [0, 0];
+    E.registro = [];
+    document.getElementById("juego").hidden = false;
+    E.red.dejarDeEscucharMesa = escucharMesa(mesaId, (datos) => {
+      if (!E.red) return;
+      E.red.jugadoresMesa = datos.jugadores.slice().sort((a, b) => a.asiento - b.asiento);
+      E.red.creadorUid = datos.creadorUid;
+      if (datos.estado === "terminada" && !E.terminandoForzado) {
+        finalizarPartidaForzada();
+        return;
+      }
+      render();
+    });
+    E.red.dejarDeEscucharChat = escucharChat(mesaId, (mensajes) => {
+      E.chatMensajes = mensajes;
+      renderChat();
+    });
+    const bus = crearBusEventosMesa(mesaId);
+    const esperarEvento = bus.crearLector();
+    const driverPropio = crearDriverHumano(miAsiento);
+    const botParaMiAsiento = crearBotBasico();
+    const drivers = Array.from({ length: nJugadores }, (_, i) => crearDriverAsientoOnline(i, {
+      miAsiento,
+      driverHumano: driverPropio,
+      bot: botParaMiAsiento,
+      publicar: bus.publicar,
+      esperarEvento,
+      obtenerJugadoresMesa: () => E.red.jugadoresMesa
+    }));
+    async function siguienteReparto({ numeroMano, primeraMano }) {
+      if (E.red.uid === E.red.creadorUid) {
+        const manosReales = repartir(Math.random);
+        let salidorPrimeraMano2 = null;
+        if (primeraMano) salidorPrimeraMano2 = manosReales.findIndex((m) => m.some((f) => f.a === f.b && f.a === 6));
+        await Promise.all(jugadoresMesa.map((j, i) => i === miAsiento ? null : enviarManoPrivada(mesaId, j.uid, numeroMano, manosReales[i])));
+        await bus.publicar({ tipo: "repartoPublico", jugador: -1, valor: { salidorPrimeraMano: salidorPrimeraMano2 } });
+        return { manos: construirManosCliente(miAsiento, manosReales[miAsiento], nJugadores), salidorPrimeraMano: salidorPrimeraMano2 };
+      }
+      const miManoReal = await esperarManoPrivada(mesaId, uid, numeroMano);
+      const { salidorPrimeraMano } = await esperarEvento("repartoPublico", -1);
+      return { manos: construirManosCliente(miAsiento, miManoReal, nJugadores), salidorPrimeraMano };
+    }
+    const resultado = await jugarPartida({
+      jugadores: E.jugadores.map((j) => j.nombre),
+      parejas: E.parejas,
+      objetivo: E.objetivo,
+      drivers,
+      siguienteReparto,
+      validar: validarSoloMiAsiento(miAsiento),
+      onEvento,
+      onMano: alTerminarMano
+    });
+    E.actual = null;
+    render();
+    mostrarFin(resultado);
+  }
+  function finalizarPartidaForzada() {
+    if (E.terminandoForzado) return;
+    const puntuacionActual = E.puntuacion.slice();
+    document.getElementById("juego").hidden = true;
+    limpiarConexionRed();
+    E.terminandoForzado = true;
+    mostrarFin({ puntuacion: puntuacionActual, equipoGanador: null }, { forzada: true });
+  }
+  function render() {
+    renderCabecera();
+    renderMarcador();
+    renderMesaCircular();
+    renderManoHumana();
+    renderRegistro();
+    renderChat();
+    renderControlesMesa();
+  }
+  function renderChat() {
+    const caja = document.getElementById("chat-caja");
+    if (!caja) return;
+    caja.hidden = !E.red;
+    if (!E.red) return;
+    const cont = document.getElementById("chat-mensajes");
+    cont.innerHTML = E.chatMensajes.map((m) => `<div class="chat-linea"><strong>${escaparHtml(m.nombre)}:</strong> ${escaparHtml(m.texto)}</div>`).join("");
+    cont.scrollTop = cont.scrollHeight;
+  }
+  function enviarChatDesdeFormulario() {
+    if (!E.red) return;
+    const input = document.getElementById("chat-input");
+    const texto = input.value.trim();
+    if (!texto) return;
+    input.value = "";
+    const miNombre = E.jugadores[E.red.miAsiento]?.nombre || "Jugador";
+    enviarMensajeChat(E.red.mesaId, { nombre: miNombre, texto });
+  }
+  function renderControlesMesa() {
+    const caja = document.getElementById("mesa-controles");
+    if (!caja) return;
+    caja.hidden = !E.red;
+    if (!E.red) return;
+    const soyCreador = E.red.uid === E.red.creadorUid;
+    const btnAsumir = document.getElementById("btn-asumir-reparto");
+    const btnTerminar = document.getElementById("btn-terminar-partida");
+    const btnSalir = document.getElementById("btn-salir-asiento");
+    btnAsumir.hidden = soyCreador;
+    btnTerminar.hidden = !soyCreador;
+    btnSalir.hidden = !soyCreador;
+    if (soyCreador) {
+      const miInfo = (E.red.jugadoresMesa || []).find((jm) => jm.asiento === E.red.miAsiento);
+      const yaSoyBot = !!(miInfo && miInfo.sustituidoPorBot);
+      btnSalir.textContent = yaSoyBot ? "Volver a mi asiento" : "Salir (sustituir mi asiento por un bot)";
+    }
+  }
+  function renderCabecera() {
+    const info = document.getElementById("info-partida");
+    if (!E.actual) {
+      info.textContent = "";
+      return;
+    }
+    const restantes = E.actual.manos ? E.actual.manos.reduce((s, m) => s + m.length, 0) : 0;
+    const extremosTxt = E.actual.extremos[0] == null ? "sin abrir" : `${E.actual.extremos[0]} · ${E.actual.extremos[1]}`;
+    info.textContent = `Objetivo: ${E.objetivo} pts · extremos: ${extremosTxt} · fichas en juego: ${restantes}`;
+  }
+  function renderMarcador() {
+    const cont = document.getElementById("marcador");
+    cont.innerHTML = "";
+    const filas = [
+      { nombre: `Tu pareja (${E.parejas[equipoDe2(0)].map((i) => nombreJ(i)).join(" y ")})`, puntos: E.puntuacion[equipoDe2(0)] },
+      { nombre: `Rivales (${E.parejas[equipoDe2(0) === 0 ? 1 : 0].map((i) => nombreJ(i)).join(" y ")})`, puntos: E.puntuacion[equipoDe2(0) === 0 ? 1 : 0] }
+    ];
+    for (const f of filas) {
+      const div = document.createElement("div");
+      div.className = "fila-marcador";
+      div.textContent = `${f.nombre}: ${f.puntos} / ${E.objetivo}`;
+      cont.appendChild(div);
+    }
+  }
+  function anguloJugador(i) {
+    const n = E.jugadores.length;
+    const humano = E.jugadores.findIndex((j) => j.esHumano);
+    const base = humano >= 0 ? humano : 0;
+    const paso = 360 / n;
+    return ((180 - (i - base) * paso) % 360 + 360) % 360;
+  }
+  function colocarEnCirculo(el, i, radioPorc) {
+    const angulo = anguloJugador(i) * Math.PI / 180;
+    const x = 50 + radioPorc * Math.sin(angulo);
+    const y = 50 - radioPorc * Math.cos(angulo);
+    el.style.left = `${x}%`;
+    el.style.top = `${y}%`;
+  }
+  function calcularSecuenciaCadena(cadena) {
+    const orden = [];
+    let extremos = [null, null];
+    let posIzq = 0;
+    let posDer = 0;
+    for (const { ficha, extremo } of cadena) {
+      let entrada;
+      let salida;
+      let posicion;
+      if (extremos[0] == null) {
+        entrada = ficha.a;
+        salida = ficha.b;
+        extremos = [ficha.a, ficha.b];
+        posicion = 0;
+        orden.push({ ficha, entrada, salida, posicion });
+      } else if (extremo === "izquierda") {
+        const conecta = extremos[0];
+        const nuevo = ficha.a === conecta ? ficha.b : ficha.a;
+        entrada = nuevo;
+        salida = conecta;
+        extremos = [nuevo, extremos[1]];
+        posIzq -= 1;
+        posicion = posIzq;
+        orden.unshift({ ficha, entrada, salida, posicion });
+      } else {
+        const conecta = extremos[1];
+        const nuevo = ficha.a === conecta ? ficha.b : ficha.a;
+        entrada = conecta;
+        salida = nuevo;
+        extremos = [extremos[0], nuevo];
+        posDer += 1;
+        posicion = posDer;
+        orden.push({ ficha, entrada, salida, posicion });
+      }
+    }
+    return orden;
+  }
+  var TILE_LARGO = 64;
+  var TILE_CORTO = 32;
+  var LIMITE_TRAMO_PX = 190;
+  var SECUENCIA_DIRECCIONES_DERECHA = [0, 1, 2, 1];
+  var SECUENCIA_DIRECCIONES_IZQUIERDA = [2, 3, 0, 3];
+  function transicionTramo(dirSiguiente, left, top, w, h) {
+    if (dirSiguiente === 1 || dirSiguiente === 3) {
+      return { centro: left + w / 2, cursor: dirSiguiente === 1 ? top + h : top };
+    }
+    return { centro: top + h / 2, cursor: dirSiguiente === 0 ? left + w : left };
+  }
+  function colocarBrazo(items, secuenciaDirecciones, cursorInicial, centroInicial, entradaEsCercana, colocadas, registrar) {
+    let legIdx = 0;
+    let dirIdx = secuenciaDirecciones[0];
+    let cursor = cursorInicial;
+    let centro = centroInicial;
+    let avanceH = 0;
+    let profundidadV = 0;
+    let verticalAgotado = false;
+    let ultimaFueDoble = false;
+    let geomUltima = null;
+    for (const item of items) {
+      const esDoble2 = item.ficha.a === item.ficha.b;
+      const avanceFicha = esDoble2 ? TILE_CORTO : TILE_LARGO;
+      const horizontalAntes = dirIdx === 0 || dirIdx === 2;
+      let cabeRecta;
+      if (esDoble2) {
+        cabeRecta = true;
+      } else if (horizontalAntes) {
+        cabeRecta = verticalAgotado || avanceH === 0 || avanceH + avanceFicha <= LIMITE_TRAMO_PX;
+      } else {
+        cabeRecta = profundidadV === 0 || profundidadV + avanceFicha <= LIMITE_TRAMO_PX;
+      }
+      if (!cabeRecta && ultimaFueDoble) {
+        legIdx++;
+        dirIdx = secuenciaDirecciones[legIdx % secuenciaDirecciones.length];
+        const t = transicionTramo(dirIdx, geomUltima.left, geomUltima.top, geomUltima.w, geomUltima.h);
+        centro = t.centro;
+        cursor = t.cursor;
+        avanceH = 0;
+        cabeRecta = true;
+      }
+      if (!cabeRecta && !horizontalAntes) {
+        verticalAgotado = true;
+      }
+      const horizontal = dirIdx === 0 || dirIdx === 2;
+      const esEsquina = !cabeRecta;
+      const girada = esEsquina ? horizontal ? !esDoble2 : esDoble2 : horizontal ? esDoble2 : !esDoble2;
+      const w = girada ? TILE_CORTO : TILE_LARGO;
+      const h = girada ? TILE_LARGO : TILE_CORTO;
+      const dirParaCerca = esEsquina ? secuenciaDirecciones[(legIdx + 1) % secuenciaDirecciones.length] : dirIdx;
+      const cercaEsA = dirParaCerca === 0 || dirParaCerca === 1;
+      let left;
+      let top;
+      if (horizontal) {
+        if (esEsquina) {
+          top = cercaEsA ? centro - TILE_CORTO / 2 : centro - h + TILE_CORTO / 2;
+        } else {
+          top = centro - h / 2;
+        }
+        left = dirIdx === 0 ? cursor : cursor - w;
+      } else {
+        if (esEsquina) {
+          left = cercaEsA ? centro - TILE_CORTO / 2 : centro - w + TILE_CORTO / 2;
+        } else {
+          left = centro - w / 2;
+        }
+        top = dirIdx === 1 ? cursor : cursor - h;
+      }
+      const cerca = entradaEsCercana ? item.entrada : item.salida;
+      const lejos = entradaEsCercana ? item.salida : item.entrada;
+      const a = cercaEsA ? cerca : lejos;
+      const b = cercaEsA ? lejos : cerca;
+      colocadas.push({ ficha: { a, b }, girada, x: left, y: top, w, h });
+      registrar(left, top, w, h);
+      cursor = horizontal ? dirIdx === 0 ? cursor + w : cursor - w : dirIdx === 1 ? cursor + h : cursor - h;
+      if (esEsquina) {
+        legIdx++;
+        dirIdx = secuenciaDirecciones[legIdx % secuenciaDirecciones.length];
+        const t = transicionTramo(dirIdx, left, top, w, h);
+        centro = t.centro;
+        cursor = t.cursor;
+        avanceH = 0;
+        ultimaFueDoble = false;
+        geomUltima = null;
+      } else if (horizontal) {
+        avanceH += avanceFicha;
+        ultimaFueDoble = esDoble2;
+        geomUltima = { left, top, w, h };
+      } else {
+        profundidadV += avanceFicha;
+        ultimaFueDoble = esDoble2;
+        geomUltima = { left, top, w, h };
+      }
+    }
+  }
+  function calcularLayoutCadena(secuencia) {
+    const colocadas = [];
+    let minX = 0;
+    let minY = 0;
+    let maxX = 0;
+    let maxY = 0;
+    const registrar = (left, top, w, h) => {
+      minX = Math.min(minX, left);
+      minY = Math.min(minY, top);
+      maxX = Math.max(maxX, left + w);
+      maxY = Math.max(maxY, top + h);
+    };
+    const ancla = secuencia.find((it) => it.posicion === 0);
+    const brazoDerecho = secuencia.filter((it) => it.posicion > 0).sort((a, b) => a.posicion - b.posicion);
+    const brazoIzquierdo = secuencia.filter((it) => it.posicion < 0).sort((a, b) => b.posicion - a.posicion);
+    if (ancla) {
+      const w = TILE_LARGO;
+      const h = TILE_CORTO;
+      const left = -w / 2;
+      const top = -h / 2;
+      colocadas.push({ ficha: { a: ancla.entrada, b: ancla.salida }, girada: false, x: left, y: top, w, h });
+      registrar(left, top, w, h);
+    }
+    colocarBrazo(brazoDerecho, SECUENCIA_DIRECCIONES_DERECHA, TILE_LARGO / 2, 0, true, colocadas, registrar);
+    colocarBrazo(brazoIzquierdo, SECUENCIA_DIRECCIONES_IZQUIERDA, -TILE_LARGO / 2, 0, false, colocadas, registrar);
+    const finDerechoIdx = brazoDerecho.length > 0 ? brazoDerecho.length : 0;
+    const finIzquierdoIdx = brazoIzquierdo.length > 0 ? colocadas.length - 1 : 0;
+    return { colocadas, minX, minY, maxX, maxY, finDerechoIdx, finIzquierdoIdx };
+  }
+  function renderMesaCircular() {
+    const cont = document.getElementById("mesa-circular");
+    const cadenaDiv = document.getElementById("cadena-fichas");
+    Array.from(cont.querySelectorAll(".puesto-jugador")).forEach((n) => n.remove());
+    const botonViejo = document.getElementById("btn-continuar-mano");
+    if (botonViejo) botonViejo.remove();
+    if (!E.actual) {
+      cadenaDiv.innerHTML = "";
+      return;
+    }
+    const humano = E.jugadores.findIndex((j) => j.esHumano);
+    E.jugadores.forEach((j, i) => {
+      const puesto = document.createElement("div");
+      const esHumano = i === humano;
+      puesto.className = `puesto-jugador equipo-${equipoDe2(i)}${i === E.actual.turno ? " turno" : ""}${esHumano ? " puesto-humano" : ""}`;
+      colocarEnCirculo(puesto, i, esHumano ? 48 : 43);
+      if (i === E.actual.salidor) {
+        const badge = document.createElement("div");
+        badge.className = "badge-mano";
+        badge.textContent = "🁢";
+        badge.title = "Sale con esta mano";
+        puesto.appendChild(badge);
+      }
+      const nombre = document.createElement("div");
+      nombre.className = "nombre";
+      nombre.textContent = j.nombre;
+      puesto.appendChild(nombre);
+      if (E.actual.mostrandoFinal && E.actual.manosFinal && E.actual.manosFinal[i]) {
+        const revelada = document.createElement("div");
+        revelada.className = "mano-final";
+        for (const ficha of E.actual.manosFinal[i]) {
+          revelada.appendChild(elFicha(ficha, { tam: "mini" }));
+        }
+        puesto.appendChild(revelada);
+      } else if (!esHumano) {
+        const nFichas = E.actual.manos && E.actual.manos[i] ? E.actual.manos[i].length : 0;
+        const pila = document.createElement("div");
+        pila.className = "pila";
+        if (nFichas > 0) {
+          pila.appendChild(elReverso("mesa"));
+          const cuenta = document.createElement("span");
+          cuenta.className = "marcador-mini";
+          cuenta.textContent = `×${nFichas}`;
+          pila.appendChild(cuenta);
+        }
+        puesto.appendChild(pila);
+      }
+      const equipoTxt = document.createElement("div");
+      equipoTxt.className = "marcador-mini";
+      equipoTxt.textContent = esMiEquipo(i) ? "Tu pareja" : "Rival";
+      puesto.appendChild(equipoTxt);
+      const infoAsiento = (E.red?.jugadoresMesa || []).find((jm) => jm.asiento === i);
+      const esBot = !!(infoAsiento && infoAsiento.sustituidoPorBot);
+      if (esBot) {
+        const etiqueta = document.createElement("div");
+        etiqueta.className = "etiqueta-bot";
+        etiqueta.textContent = "🤖 sustituido por un bot";
+        puesto.appendChild(etiqueta);
+      }
+      if (E.red && E.red.uid === E.red.creadorUid && !esHumano) {
+        const btnBot = document.createElement("button");
+        btnBot.className = "secundario btn-bot-asiento";
+        btnBot.textContent = esBot ? "Devolver asiento" : "Sustituir por bot";
+        btnBot.addEventListener("click", () => {
+          marcarAsientoBot(E.red.mesaId, E.red.jugadoresMesa, i, !esBot);
+        });
+        puesto.appendChild(btnBot);
+      }
+      const accion = E.actual.ultimaAccion && E.actual.ultimaAccion[i];
+      if (accion) {
+        const etiqueta = document.createElement("div");
+        etiqueta.className = `etiqueta-accion tipo-${accion.tipo}`;
+        etiqueta.textContent = accion.texto;
+        puesto.appendChild(etiqueta);
+      }
+      cont.appendChild(puesto);
+    });
+    if (E.continuarPendiente) {
+      const boton = document.createElement("button");
+      boton.id = "btn-continuar-mano";
+      boton.textContent = "Continuar";
+      boton.addEventListener("click", () => {
+        const resolve = E.continuarPendiente;
+        E.continuarPendiente = null;
+        resolve();
+      });
+      cont.appendChild(boton);
+    }
+    cadenaDiv.innerHTML = "";
+    if (E.actual.cadena.length === 0) {
+      cadenaDiv.style.width = "";
+      cadenaDiv.style.height = "";
+      cadenaDiv.style.transform = "";
+      const vacia = document.createElement("p");
+      vacia.className = "vacia-circulo";
+      vacia.textContent = "Todavía no se ha abierto la cadena.";
+      cadenaDiv.appendChild(vacia);
+      vacia.dataset.ladosExtremo = "izquierda,derecha";
+      marcarZonaSoltar(cadenaDiv, () => {
+        const opcion = jugablesArrastre()[0];
+        return opcion ? { ficha: opcion.ficha, extremo: opcion.extremos[0] } : null;
+      });
+    } else {
+      const ORIGEN = 340;
+      const CONTENEDOR = 680;
+      const layout = calcularLayoutCadena(calcularSecuenciaCadena(E.actual.cadena));
+      cadenaDiv.style.width = `${CONTENEDOR}px`;
+      cadenaDiv.style.height = `${CONTENEDOR}px`;
+      cadenaDiv.style.transform = "translate(-50%, -50%)";
+      layout.colocadas.forEach((colocada, i) => {
+        const el = elFicha(colocada.ficha, { tam: "cadena", girada: colocada.girada });
+        el.style.position = "absolute";
+        el.style.left = `${colocada.x + ORIGEN}px`;
+        el.style.top = `${colocada.y + ORIGEN}px`;
+        cadenaDiv.appendChild(el);
+        const esDerecho = i === layout.finDerechoIdx;
+        const esIzquierdo = i === layout.finIzquierdoIdx;
+        const paraLado = (lado) => {
+          const opcion = jugablesArrastre().find((j) => j.extremos.includes(lado));
+          return opcion ? { ficha: opcion.ficha, extremo: lado } : null;
+        };
+        if (esDerecho && esIzquierdo) {
+          el.dataset.ladosExtremo = "izquierda,derecha";
+          marcarZonaSoltar(el, (ev) => {
+            const r = el.getBoundingClientRect();
+            const lado = ev.clientX >= r.left + r.width / 2 ? "derecha" : "izquierda";
+            return paraLado(lado);
+          });
+        } else if (esDerecho) {
+          el.dataset.ladosExtremo = "derecha";
+          marcarZonaSoltar(el, () => paraLado("derecha"));
+        } else if (esIzquierdo) {
+          el.dataset.ladosExtremo = "izquierda";
+          marcarZonaSoltar(el, () => paraLado("izquierda"));
+        }
+      });
+    }
+  }
+  function actualizarResaltadoPosible() {
+    document.querySelectorAll("#cadena-fichas [data-lados-extremo]").forEach((el) => {
+      const lados = el.dataset.ladosExtremo.split(",");
+      const posible = E.arrastre != null && jugablesArrastre().some((j) => lados.some((l) => j.extremos.includes(l)));
+      el.classList.toggle("zona-soltar-posible", posible);
+    });
+  }
+  function jugablesArrastre() {
+    if (E.arrastre == null || !E.pendiente || E.pendiente.tipo !== "ficha") return [];
+    return E.pendiente.contexto.jugables.filter((j) => idFicha(j.ficha) === E.arrastre);
+  }
+  function marcarZonaSoltar(el, resolverJugada) {
+    el.addEventListener("dragover", (ev) => {
+      if (!resolverJugada(ev)) return;
+      ev.preventDefault();
+      el.classList.add("zona-soltar-activa");
+    });
+    el.addEventListener("dragleave", () => el.classList.remove("zona-soltar-activa"));
+    el.addEventListener("drop", (ev) => {
+      ev.preventDefault();
+      el.classList.remove("zona-soltar-activa");
+      const jugada = resolverJugada(ev);
+      if (!jugada || !E.pendiente || E.pendiente.tipo !== "ficha") return;
+      const { resolve } = E.pendiente;
+      E.pendiente = null;
+      E.arrastre = null;
+      resolve(jugada);
+    });
+  }
+  function renderManoHumana() {
+    const cont = document.getElementById("mano");
+    const titulo = document.getElementById("titulo-mano");
+    const zona = document.getElementById("zona-mano");
+    cont.innerHTML = "";
+    const esMiTurnoDeFicha = !!(E.pendiente && E.pendiente.tipo === "ficha");
+    zona.classList.toggle("mi-turno", esMiTurnoDeFicha);
+    const humano = E.jugadores.findIndex((j) => j.esHumano);
+    let manoBase = null;
+    let jugables = null;
+    let extremosActuales = null;
+    if (esMiTurnoDeFicha) {
+      manoBase = E.pendiente.contexto.manoPropia;
+      jugables = E.pendiente.contexto.jugables;
+      extremosActuales = E.pendiente.contexto.extremos;
+      titulo.textContent = `Elige una ficha, ${nombreJ(E.pendiente.indiceJugador)}`;
+    } else if (E.actual && humano >= 0 && E.actual.manos && E.actual.manos[humano]) {
+      manoBase = E.actual.manos[humano];
+      titulo.textContent = `Tu mano (${E.jugadores[humano].nombre})`;
+    } else {
+      titulo.textContent = "";
+    }
+    if (!manoBase) return;
+    for (const ficha of manoBase) {
+      const id = idFicha(ficha);
+      const opcion = jugables ? jugables.find((j) => idFicha(j.ficha) === id) : null;
+      const esJugable = jugables ? !!opcion : null;
+      const el = elFicha(ficha, { tam: "grande", jugable: esJugable });
+      if (opcion) {
+        el.addEventListener("click", async () => {
+          const { resolve } = E.pendiente;
+          let extremo = opcion.extremos[0];
+          if (opcion.extremos.length === 2 && extremosActuales[0] !== extremosActuales[1]) {
+            extremo = await elegirLado(ficha, opcion.extremos, extremosActuales);
+          }
+          E.pendiente = null;
+          E.arrastre = null;
+          resolve({ ficha, extremo });
+        });
+      }
+      el.draggable = true;
+      el.addEventListener("dragstart", (ev) => {
+        E.arrastre = id;
+        ev.dataTransfer.effectAllowed = "move";
+        ev.dataTransfer.setData("text/plain", String(id));
+        el.classList.add("arrastrando");
+        actualizarResaltadoPosible();
+      });
+      el.addEventListener("dragend", () => {
+        E.arrastre = null;
+        document.querySelectorAll("#cadena-fichas .zona-soltar-posible").forEach((n) => n.classList.remove("zona-soltar-posible"));
+        render();
+      });
+      el.addEventListener("dragover", (ev) => {
+        if (E.arrastre == null || E.arrastre === id) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        cont.querySelectorAll(".soltar-antes,.soltar-despues").forEach((n) => n.classList.remove("soltar-antes", "soltar-despues"));
+        const r = el.getBoundingClientRect();
+        el.classList.add(ev.clientX < r.left + r.width / 2 ? "soltar-antes" : "soltar-despues");
+      });
+      el.addEventListener("drop", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        el.classList.remove("soltar-antes", "soltar-despues");
+        if (E.arrastre == null || E.arrastre === id) return;
+        const origen = manoBase.findIndex((f) => idFicha(f) === E.arrastre);
+        if (origen < 0) return;
+        const [movida] = manoBase.splice(origen, 1);
+        const r = el.getBoundingClientRect();
+        let destino = manoBase.findIndex((f) => idFicha(f) === id);
+        if (ev.clientX >= r.left + r.width / 2) destino += 1;
+        manoBase.splice(destino, 0, movida);
+        E.arrastre = null;
+        render();
+      });
+      cont.appendChild(el);
+    }
+  }
+  function valorTrasJugar(ficha, extremo, extremos) {
+    if (extremos[0] == null) return extremo === "izquierda" ? ficha.b : ficha.a;
+    if (extremo === "izquierda") return ficha.a === extremos[0] ? ficha.b : ficha.a;
+    return ficha.a === extremos[1] ? ficha.b : ficha.a;
+  }
+  function centrarDialogoSobreMesa(dlg) {
+    const tapete = document.getElementById("tapete");
+    if (!tapete) return;
+    const r = tapete.getBoundingClientRect();
+    dlg.style.position = "fixed";
+    dlg.style.margin = "0";
+    dlg.style.left = `${r.left + r.width / 2}px`;
+    dlg.style.top = `${r.top + r.height / 2}px`;
+    dlg.style.transform = "translate(-50%, -50%)";
+  }
+  function elegirLado(ficha, extremosPosibles, extremosActuales) {
+    return new Promise((resolve) => {
+      const dlg = document.getElementById("dlg-decision");
+      dlg.innerHTML = `
+      <p class="decision-titulo">¿Por qué lado juegas la ${tituloFicha(ficha)}?</p>
+      <div class="decision-opciones">
+        ${extremosPosibles.map((lado) => `<button data-lado="${lado}">${lado === "izquierda" ? "Izquierda" : "Derecha"} (queda ${valorTrasJugar(ficha, lado, extremosActuales)})</button>`).join("")}
+      </div>
+    `;
+      dlg.querySelectorAll("button[data-lado]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          dlg.close();
+          resolve(btn.dataset.lado);
+        });
+      });
+      centrarDialogoSobreMesa(dlg);
+      if (!dlg.open) dlg.showModal();
+    });
+  }
+  function renderRegistro() {
+    const ol = document.getElementById("registro");
+    ol.innerHTML = "";
+    for (const linea of E.registro) {
+      const li = document.createElement("li");
+      li.textContent = linea;
+      ol.appendChild(li);
+    }
+  }
+  function mostrarFin(resultado, { forzada = false } = {}) {
+    const dlg = document.getElementById("dlg-fin");
+    const puntuacion = resultado.puntuacion || E.puntuacion;
+    const cuerpo = forzada ? "<p>Alguien ha terminado la partida. Se queda con el marcador que había en este momento.</p>" : `<p><strong>${resultado.equipoGanador === equipoDe2(0) ? "Habéis ganado tu pareja y tú" : "Ha ganado la pareja rival"}</strong></p>`;
+    dlg.innerHTML = `
+    <h2>${forzada ? "Partida terminada" : "Fin de la partida"}</h2>
+    ${cuerpo}
+    <p>${puntuacion[0]} - ${puntuacion[1]}</p>
+    <button id="btn-cerrar-fin">Cerrar</button>
+  `;
+    dlg.showModal();
+    dlg.querySelector("#btn-cerrar-fin").addEventListener("click", () => dlg.close());
+  }
+  function abrirConfig() {
+    const dlg = document.getElementById("dlg-config");
+    dlg.innerHTML = `
+    <h2>Nueva partida de Dominó</h2>
+    <p>Juegas en pareja con un bot, contra otros dos bots (parejas fijas, sentados en cruz).</p>
+    <div id="cfg-nombres" class="fila-config"></div>
+    <div class="fila-config">
+      <label>Jugar a
+        <select id="cfg-objetivo">
+          <option value="100">100 puntos</option>
+          <option value="150" selected>150 puntos</option>
+          <option value="200">200 puntos</option>
+          <option value="250">250 puntos</option>
+        </select>
+      </label>
+    </div>
+    <button id="btn-empezar" class="principal">Empezar partida</button>
+  `;
+    const contNombres = dlg.querySelector("#cfg-nombres");
+    const etiquetas = ["Tú", "Bot 1 (rival)", "Bot 2 (tu pareja)", "Bot 3 (rival)"];
+    const porDefecto = ["Tú", "Bot 1", "Bot 2", "Bot 3"];
+    for (let i = 0; i < 4; i++) {
+      const label = document.createElement("label");
+      label.textContent = etiquetas[i];
+      const input = document.createElement("input");
+      input.id = `cfg-nombre-${i}`;
+      input.value = porDefecto[i];
+      label.appendChild(document.createElement("br"));
+      label.appendChild(input);
+      contNombres.appendChild(label);
+    }
+    dlg.querySelector("#btn-empezar").addEventListener("click", () => {
+      E.jugadores = [0, 1, 2, 3].map((i) => ({
+        nombre: dlg.querySelector(`#cfg-nombre-${i}`).value || porDefecto[i],
+        esHumano: i === 0
+      }));
+      E.objetivo = Number(dlg.querySelector("#cfg-objetivo").value);
+      iniciarPartida();
+    });
+    dlg.showModal();
+  }
+  function abrirModo() {
+    const dlg = document.getElementById("dlg-modo");
+    dlg.innerHTML = `
+    <h2>Dominó</h2>
+    <p>¿Cómo quieres jugar esta partida?</p>
+    <div class="fila-config">
+      <button id="btn-modo-local" class="principal">Partida local (con bots)</button>
+      <button id="btn-modo-online" class="secundario">Jugar online</button>
+    </div>
+  `;
+    dlg.querySelector("#btn-modo-local").addEventListener("click", () => {
+      dlg.close();
+      abrirConfig();
+    });
+    dlg.querySelector("#btn-modo-online").addEventListener("click", () => {
+      dlg.close();
+      abrirOnline();
+    });
+    dlg.showModal();
+  }
+  function abrirOnline() {
+    const dlg = document.getElementById("dlg-online");
+    dlg.innerHTML = `
+    <h2>Jugar online</h2>
+    <p>Dominó siempre es a 4, en dos parejas fijas por asiento: 0 y 2 contra 1 y 3. Eliges tu asiento al entrar, así que elegís la pareja vosotros, no el orden de llegada.</p>
+    <div class="fila-config">
+      <label>Tu nombre <input id="online-nombre" value="Tú"></label>
+    </div>
+    <div class="fila-config">
+      <label>Jugar a
+        <select id="online-objetivo">
+          <option value="100">100 puntos</option>
+          <option value="150" selected>150 puntos</option>
+          <option value="200">200 puntos</option>
+          <option value="250">250 puntos</option>
+        </select>
+      </label>
+      <button id="btn-crear-mesa">Crear mesa nueva</button>
+    </div>
+    <div class="fila-config">
+      <label>Código de una mesa <input id="online-codigo" maxlength="4" style="text-transform:uppercase"></label>
+      <button id="btn-buscar-mesa">Buscar</button>
+    </div>
+    <div id="online-estado"></div>
+  `;
+    const estadoDiv = dlg.querySelector("#online-estado");
+    const PAREJA_DE = { 0: 2, 2: 0, 1: 3, 3: 1 };
+    function pintarLobby(mesaInfo, datosMesa) {
+      const jugadores = (datosMesa.jugadores || []).slice().sort((a, b) => a.asiento - b.asiento);
+      const esCreador = mesaInfo.uid === datosMesa.creadorUid;
+      const filas = jugadores.map((j) => `<li>Asiento ${j.asiento}: ${escaparHtml(j.nombre)}${j.uid === mesaInfo.uid ? " (tú)" : ""}</li>`).join("");
+      const completa = jugadores.length >= 4;
+      estadoDiv.innerHTML = `
+      <p class="codigo-mesa">${mesaInfo.codigo}</p>
+      <p>Sentados (${jugadores.length}/4):</p>
+      <ul>${filas}</ul>
+      ${esCreador ? `<button id="btn-empezar-online" class="principal" ${completa ? "" : "disabled"}>Empezar partida</button>` : "<p><em>Esperando a que el creador empiece la partida...</em></p>"}
+    `;
+      if (esCreador) {
+        estadoDiv.querySelector("#btn-empezar-online")?.addEventListener("click", () => marcarMesaJugando(mesaInfo.mesaId));
+      }
+    }
+    let empezada = false;
+    let dejarDeEscucharLobby = null;
+    function escucharLobby(mesaInfo) {
+      dejarDeEscucharLobby = escucharMesa(mesaInfo.mesaId, (datosMesa) => {
+        if (datosMesa.estado === "jugando" && !empezada) {
+          empezada = true;
+          dejarDeEscucharLobby?.();
+          iniciarPartidaOnline(mesaInfo, datosMesa);
+          return;
+        }
+        pintarLobby(mesaInfo, datosMesa);
+      });
+    }
+    function mostrarSelectorAsiento(ocupados, alElegir) {
+      const porAsiento = {};
+      for (const j of ocupados) porAsiento[j.asiento] = j.nombre;
+      estadoDiv.innerHTML = `
+      <p>Elige tu asiento:</p>
+      <div class="fila-config" id="selector-asiento"></div>
+      <p id="error-asiento" class="error-online"></p>
+    `;
+      const cont = estadoDiv.querySelector("#selector-asiento");
+      for (let a = 0; a < 4; a++) {
+        const ocupante = porAsiento[a];
+        const btn = document.createElement("button");
+        btn.className = ocupante ? "secundario" : "principal";
+        btn.textContent = ocupante ? `Asiento ${a} — ${ocupante}` : `Asiento ${a} (pareja del ${PAREJA_DE[a]})`;
+        btn.disabled = !!ocupante;
+        btn.addEventListener("click", () => alElegir(a));
+        cont.appendChild(btn);
+      }
+    }
+    dlg.querySelector("#btn-crear-mesa").addEventListener("click", () => {
+      const nombre = dlg.querySelector("#online-nombre").value.trim() || "Jugador";
+      const objetivo = Number(dlg.querySelector("#online-objetivo").value);
+      dlg.querySelectorAll("button").forEach((b) => {
+        b.disabled = true;
+      });
+      mostrarSelectorAsiento([], (asiento) => {
+        estadoDiv.textContent = "Creando mesa...";
+        crearMesa({ nombre, objetivo, asiento }).then((mesaInfo) => {
+          escucharLobby(mesaInfo);
+        }).catch((e) => {
+          console.error(e);
+          estadoDiv.innerHTML = `<p class="error-online">${escaparHtml(e.message)}</p>`;
+        });
+      });
+    });
+    dlg.querySelector("#btn-buscar-mesa").addEventListener("click", () => {
+      const codigo = dlg.querySelector("#online-codigo").value.trim();
+      if (!codigo) {
+        estadoDiv.innerHTML = '<p class="error-online">Pon el código de la mesa.</p>';
+        return;
+      }
+      const nombre = dlg.querySelector("#online-nombre").value.trim() || "Jugador";
+      dlg.querySelectorAll("button").forEach((b) => {
+        b.disabled = true;
+      });
+      estadoDiv.textContent = "Buscando mesa...";
+      mirarMesaPorCodigo(codigo).then(({ mesaId, uid, datos }) => {
+        const yaSentado = datos.jugadores.find((j) => j.uid === uid);
+        if (yaSentado) {
+          escucharLobby({ mesaId, codigo: datos.codigo, miAsiento: yaSentado.asiento, uid });
+          return;
+        }
+        function intentarSentarse(asiento) {
+          estadoDiv.textContent = "Sentándote...";
+          sentarseEnAsiento({ mesaId, nombre, asiento }).then((mesaInfo) => {
+            escucharLobby(mesaInfo);
+          }).catch((e) => {
+            console.error(e);
+            mostrarSelectorAsiento(datos.jugadores, intentarSentarse);
+            estadoDiv.querySelector("#error-asiento").textContent = e.message;
+          });
+        }
+        mostrarSelectorAsiento(datos.jugadores, intentarSentarse);
+      }).catch((e) => {
+        console.error(e);
+        dlg.querySelectorAll("button").forEach((b) => {
+          b.disabled = false;
+        });
+        estadoDiv.innerHTML = `<p class="error-online">${escaparHtml(e.message)}</p>`;
+      });
+    });
+    dlg.showModal();
+  }
+  document.getElementById("btn-nueva").addEventListener("click", abrirConfig);
+  document.getElementById("btn-online").addEventListener("click", abrirOnline);
+  document.getElementById("chat-enviar").addEventListener("click", enviarChatDesdeFormulario);
+  document.getElementById("chat-input").addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") enviarChatDesdeFormulario();
+  });
+  document.getElementById("btn-asumir-reparto").addEventListener("click", () => {
+    if (!E.red) return;
+    asumirReparto(E.red.mesaId, E.red.uid);
+  });
+  document.getElementById("btn-terminar-partida").addEventListener("click", () => {
+    if (!E.red) return;
+    if (!confirm("¿Seguro que quieres terminar la partida ya, con el marcador actual?")) return;
+    terminarMesa(E.red.mesaId);
+  });
+  document.getElementById("btn-salir-asiento").addEventListener("click", () => {
+    if (!E.red) return;
+    const miInfo = (E.red.jugadoresMesa || []).find((jm) => jm.asiento === E.red.miAsiento);
+    const yaSoyBot = !!(miInfo && miInfo.sustituidoPorBot);
+    marcarAsientoBot(E.red.mesaId, E.red.jugadoresMesa, E.red.miAsiento, !yaSoyBot);
+  });
+  abrirModo();
+})();
+</script>
+</body>
+</html>
