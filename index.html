@@ -37,6 +37,20 @@
     background: var(--verde); color: white; border: none; border-radius: 20px;
     padding: 8px 16px; font-size: 13px; cursor: pointer; font-weight: 600;
   }
+  /* JUEGOS */
+  .juegos-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .juego-card {
+    display: block; text-decoration: none; text-align: center;
+    background: white; border: 1.5px solid var(--verde); border-radius: 10px;
+    padding: 18px 10px; color: var(--verde);
+    font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .juego-card:not(.proximamente):hover { background: var(--verde); color: white; }
+  .juego-card.proximamente { border-color: var(--borde); color: var(--gris); cursor: default; opacity: 0.6; }
+  .juego-nombre { font-size: 18px; }
+  .juego-estado { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; margin-top: 4px; letter-spacing: normal; }
+
   .btn-opcion-votacion {
     display: block; width: 100%; background: white; border: 1.5px solid var(--verde);
     color: var(--verde); border-radius: 10px; padding: 12px; font-size: 15px;
@@ -818,6 +832,7 @@
     <button onclick="mostrarSeccion('loteria')">Lotería</button>
     <button onclick="mostrarSeccion('estatutos')">Estatutos</button>
     <button id="nav-votaciones" onclick="mostrarSeccion('votaciones'); cargarVotaciones();" style="display:none;">Votaciones</button>
+    <button id="nav-juegos" onclick="mostrarSeccion('juegos');" style="display:none;">Juegos</button>
   </nav>
 </header>
 
@@ -1079,6 +1094,41 @@
         <button class="btn-actualizar-votacion" onclick="cargarVotaciones()">🔄 Actualizar</button>
         <div id="votaciones-content" style="margin-top:14px;">
           <div class="loading"><div class="spinner"></div>Cargando...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JUEGOS -->
+  <div id="sec-juegos" class="section">
+    <div class="card">
+      <div class="card-header">Juegos</div>
+      <div class="card-body" style="padding:16px;">
+        <div class="juegos-grid">
+          <a class="juego-card" href="juegos/pocha.html" target="_blank" rel="noopener">
+            <div class="juego-nombre">Pocha</div>
+            <div class="juego-estado">Jugar online</div>
+          </a>
+          <div class="juego-card proximamente">
+            <div class="juego-nombre">Tute</div>
+            <div class="juego-estado">Próximamente</div>
+          </div>
+          <div class="juego-card proximamente">
+            <div class="juego-nombre">Dominó</div>
+            <div class="juego-estado">Próximamente</div>
+          </div>
+          <div class="juego-card proximamente">
+            <div class="juego-nombre">Backgammon</div>
+            <div class="juego-estado">Próximamente</div>
+          </div>
+          <div class="juego-card proximamente">
+            <div class="juego-nombre">Palabrejas</div>
+            <div class="juego-estado">Próximamente</div>
+          </div>
+          <div class="juego-card proximamente">
+            <div class="juego-nombre">Remigio</div>
+            <div class="juego-estado">Próximamente</div>
+          </div>
         </div>
       </div>
     </div>
@@ -2765,6 +2815,10 @@ async function init() {
     if (String(config['Votaciones Visible'] || '').toUpperCase() === 'SI') {
       const navVotaciones = document.getElementById('nav-votaciones');
       if (navVotaciones) navVotaciones.style.display = '';
+    }
+    if (String(config['Juegos Visible'] || '').toUpperCase() === 'SI') {
+      const navJuegos = document.getElementById('nav-juegos');
+      if (navJuegos) navJuegos.style.display = '';
     }
     const clasif = clasificRows.slice(1).filter(r => r[1]);
     const calendario = calendarioRows.slice(1);
