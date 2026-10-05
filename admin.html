@@ -57,6 +57,8 @@
   <div class="loading">Comprobando acceso...</div>
 </div>
 
+<div id="juegos-admin"></div>
+
 <div id="votaciones-admin"></div>
 
 <script>
@@ -510,6 +512,34 @@ async function init() {
 }
 
 // ============================================================
+// JUEGOS (visibilidad de la pestaña, igual que Votaciones)
+// ============================================================
+async function cargarJuegosAdmin() {
+  const cont = document.getElementById('juegos-admin');
+  cont.innerHTML = '<div class="card"><div class="card-header">JUEGOS — VISIBILIDAD</div><div class="card-body loading">Cargando...</div></div>';
+  try {
+    const resp = await fetch(`${API_URL}?clave=${CLAVE_ADMIN}&accion=getJuegosVisible`);
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Error');
+    const visible = !!data.visible;
+    let html = '<div class="card"><div class="card-header">JUEGOS — VISIBILIDAD</div><div class="card-body">';
+    html += `<div style="margin-bottom:10px; font-size:14px;">La pestaña "Juegos" está actualmente <strong style="color:${visible ? 'var(--verde)' : 'var(--rojo)'};">${visible ? 'VISIBLE' : 'OCULTA'}</strong> para el grupo.</div>`;
+    html += `<button onclick="toggleJuegosVisible(${visible ? 'false' : 'true'})" style="background:${visible ? 'var(--rojo)' : 'var(--verde)'}; color:white; border:none; border-radius:8px; padding:10px 16px; font-weight:700; cursor:pointer;">${visible ? 'Ocultar pestaña al grupo' : 'Mostrar pestaña al grupo'}</button>`;
+    html += '</div></div>';
+    cont.innerHTML = html;
+  } catch (e) {
+    cont.innerHTML = '<div class="card"><div class="card-header">JUEGOS — VISIBILIDAD</div><div class="card-body aviso">Error de conexión (¿está desplegada la última versión del Apps Script?).</div></div>';
+  }
+}
+
+async function toggleJuegosVisible(nuevoValor) {
+  const resp = await fetch(`${API_URL}?clave=${CLAVE_ADMIN}&accion=setJuegosVisible&visible=${nuevoValor ? '1' : '0'}`);
+  const data = await resp.json();
+  if (!data.ok) { alert(data.error || 'Error al cambiar la visibilidad.'); return; }
+  cargarJuegosAdmin();
+}
+
+// ============================================================
 // VOTACIONES
 // ============================================================
 async function cargarVotacionesAdmin() {
@@ -633,6 +663,7 @@ if (claveGuardada !== CLAVE_ADMIN) {
 }
 if (claveGuardada === CLAVE_ADMIN) {
   init();
+  cargarJuegosAdmin();
   cargarVotacionesAdmin();
 } else {
   document.getElementById('subtitulo').textContent = 'Acceso denegado.';
