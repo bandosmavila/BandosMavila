@@ -156,6 +156,29 @@ button.principal { background: #2f6d6d; color: white; font-weight: bold; }
 }
 @keyframes pulso-jugable { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 
+/* Último movimiento del rival: origen discontinuo, destino continuo, golpe en rojo. */
+.punto.ult-origen::before,
+.punto.ult-destino::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 3px dashed #2f80ed;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 2;
+}
+.punto.ult-destino::before {
+  border-style: solid;
+  box-shadow: 0 0 10px 2px rgba(47, 128, 237, 0.65);
+  animation: pulso-ultimo 1.4s ease-out 2;
+}
+.punto.ult-golpe::before {
+  border-color: #e0342f;
+  box-shadow: 0 0 10px 2px rgba(224, 52, 47, 0.7);
+}
+.segmento-barra.ult-origen { box-shadow: inset 0 0 0 3px #2f80ed; }
+@keyframes pulso-ultimo { 0% { opacity: 0.2; } 40% { opacity: 1; } 100% { opacity: 1; } }
+
 .pila-fichas {
   position: relative;
   z-index: 1;
@@ -389,7 +412,7 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
     return jugador === 0 ? [0, 5] : [18, 23];
   }
   function indiceEntrada(jugador, pasos) {
-    return jugador === 0 ? 6 - pasos : 18 + pasos - 1;
+    return jugador === 0 ? 24 - pasos : pasos - 1;
   }
   function indiceDestino(jugador, indiceOrigen, pasos) {
     const destino = indiceOrigen + direccion(jugador) * pasos;
@@ -972,7 +995,11 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
     chatMensajes: [],
     // true cuando la mesa pasa a "terminada" (alguien ha pulsado "Terminar
     // partida"), para no procesar ese cambio dos veces.
-    terminandoForzado: false
+    terminandoForzado: false,
+    // Último turno del RIVAL (el que no está sentado delante): { jugador, movs: [{ origen, destino, golpe }] }.
+    // Se marca en el tablero para que se vea qué ha movido. Se vacía al empezar la siguiente partida.
+    ultimoTurnoRival: null,
+    turnoEnCurso: null
   };
   function limpiarConexionRed() {
     if (E.red) {
@@ -990,6 +1017,11 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
   }
   function esHumano(indiceJugador) {
     return !!(E.jugadores[indiceJugador] && E.jugadores[indiceJugador].esHumano);
+  }
+  function asientoEspectador() {
+    if (E.red) return E.red.miAsiento;
+    const humanos = E.jugadores.map((j, i) => j && j.esHumano ? i : -1).filter((i) => i >= 0);
+    return humanos.length === 1 ? humanos[0] : null;
   }
   function esperar(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1034,6 +1066,8 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
     const humanoEnTurno = ev.jugador != null && esHumano(ev.jugador);
     switch (ev.tipo) {
       case "tiradaInicialPartida": {
+        E.ultimoTurnoRival = null;
+        E.turnoEnCurso = null;
         E.numeroPartidaActual = ev.numeroPartida;
         E.registro.push(`— Partida ${ev.numeroPartida}: tirada inicial ${ev.dados.join("-")}, empieza ${nombre(ev.empieza)} —`);
         render();
@@ -1041,6 +1075,8 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
         break;
       }
       case "tirada": {
+        E.turnoEnCurso = { jugador: ev.jugador, movs: [] };
+        if (ev.jugador !== asientoEspectador()) E.ultimoTurnoRival = E.turnoEnCurso;
         E.turnoActual = ev.jugador;
         E.tablero = ev.tablero;
         E.pendiente = null;
@@ -1073,6 +1109,7 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
         break;
       }
       case "movimiento": {
+        if (E.turnoEnCurso) E.turnoEnCurso.movs.push({ origen: ev.origen, destino: ev.destino, golpe: !!ev.golpe });
         E.tablero = ev.tablero;
         E.registro.push(
           `${nombre(ev.jugador)} juega ${describirOrigen(ev.origen)} → ${describirDestino(ev.destino)} (dado ${ev.paso})` + (ev.golpe ? " ¡y golpea una ficha suelta!" : "")
@@ -1084,6 +1121,7 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
         break;
       }
       case "deshacer": {
+        if (E.turnoEnCurso) E.turnoEnCurso.movs.pop();
         E.tablero = ev.tablero;
         E.registro.push(`${nombre(ev.jugador)} deshace la jugada del ${ev.paso}`);
         marcarDado(ev.paso, "usado", "disponible");
@@ -1364,6 +1402,20 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
       renderFila("fila-abajo", Array.from({ length: 12 }, (_, i) => 12 - i));
     }
     const t = E.tablero;
+    const marcaOrigen = /* @__PURE__ */ new Set();
+    const marcaDestino = /* @__PURE__ */ new Set();
+    const marcaGolpe = /* @__PURE__ */ new Set();
+    let marcaBarraRival = null;
+    if (E.ultimoTurnoRival && E.ultimoTurnoRival.movs.length > 0) {
+      for (const m of E.ultimoTurnoRival.movs) {
+        if (m.origen === "barra") marcaBarraRival = E.ultimoTurnoRival.jugador;
+        else marcaOrigen.add(m.origen + 1);
+        if (m.destino !== "fuera") {
+          marcaDestino.add(m.destino + 1);
+          if (m.golpe) marcaGolpe.add(m.destino + 1);
+        }
+      }
+    }
     const puedeJugarHumano = !!(E.pendiente && esHumano(E.pendiente.indiceJugador) && E.pasoSeleccionado != null);
     document.querySelectorAll(".punto").forEach((el) => {
       const numero = Number(el.dataset.punto);
@@ -1372,6 +1424,9 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
       const pila = el.querySelector(".pila-fichas");
       const { fila } = posicionPunto(numero);
       renderPilaFichas(pila, p.jugador, p.cantidad, fila === "arriba");
+      el.classList.toggle("ult-destino", marcaDestino.has(numero));
+      el.classList.toggle("ult-origen", marcaOrigen.has(numero) && !marcaDestino.has(numero));
+      el.classList.toggle("ult-golpe", marcaGolpe.has(numero));
       const opcion = opcionParaOrigen(indice);
       el.classList.toggle("jugable", !!opcion && puedeJugarHumano);
       el.onclick = opcion && puedeJugarHumano ? () => {
@@ -1398,6 +1453,7 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
       const grupo = puedeJugarEstaBarra ? grupoSeleccionado() : null;
       const opcion = grupo ? grupo.opciones.find((o) => o.origen === "barra") : null;
       el.classList.toggle("jugable", !!opcion);
+      el.classList.toggle("ult-origen", marcaBarraRival === jugadorBarra);
       el.onclick = opcion ? () => {
         const { resolve } = E.pendiente;
         const paso = E.pasoSeleccionado;
