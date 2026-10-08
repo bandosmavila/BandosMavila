@@ -437,12 +437,12 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
   #juego { display: block; padding: 0; }
   #tapete { padding: 0; border-radius: 0; min-height: 100dvh; height: 100dvh; gap: 0; position: relative; overflow: visible; }
   #triunfo-visual {
-    position: fixed; top: 50px; right: 6px; z-index: 19; flex-direction: row; gap: 5px; padding: 0;
+    position: fixed; top: 6px; right: 54px; z-index: 19; flex-direction: row; gap: 5px; padding: 0;
     background: rgba(0, 0, 0, 0.5); border-radius: 10px; padding: 3px 8px 3px 6px; align-items: center;
   }
-  #triunfo-visual .triunfo-texto { font-size: 0.62rem; writing-mode: horizontal-tb; max-width: 46px; line-height: 1.1; }
-  #triunfo-visual .carta-mesa { width: 28px; height: 42px; padding: 5px; }
-  #triunfo-visual .carta-mesa .carta-banda { display: none; }
+  #triunfo-visual .triunfo-texto { font-size: 0.7rem; writing-mode: horizontal-tb; max-width: 52px; line-height: 1.1; font-weight: bold; }
+  #triunfo-visual .carta-mesa { width: 42px; height: 62px; padding: 7px; }
+  #triunfo-visual .carta-mesa .carta-banda { top: 6px; width: 8px; }
 
   #mesa-circular {
     width: 100%; height: calc(100dvh - var(--alto-mano)); margin: 0; border-radius: 0; border: none;
@@ -521,8 +521,8 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
 
   /* Triunfo: a la izquierda del botón ☰, en una sola fila pequeña. */
   #triunfo-visual { top: 6px; right: 54px; padding: 2px 6px 2px 5px; gap: 4px; }
-  #triunfo-visual .triunfo-texto { font-size: 0.58rem; max-width: 52px; }
-  #triunfo-visual .carta-mesa { width: 22px; height: 33px; padding: 4px; }
+  #triunfo-visual .triunfo-texto { font-size: 0.64rem; max-width: 52px; }
+  #triunfo-visual .carta-mesa { width: 36px; height: 53px; padding: 6px; }
 
   /* Puestos: solo nombre y cartas que le quedan; sin el recuento de bazas (está en el panel). */
   .puesto-jugador { padding: 2px 8px; gap: 3px 6px; }
