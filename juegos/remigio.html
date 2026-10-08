@@ -220,9 +220,195 @@ dialog h2 { margin-top: 0; }
 #dlg-online.en-lobby > :not(h2):not(#online-estado):not(.dlg-botones) { display: none; }
 #dlg-online.en-lobby ul { columns: 2; list-style: none; padding-left: 0; }
 #dlg-online .codigo-mesa { margin: 4px 0; }
+
+/* ======================================================================
+   Colores FIJOS por asiento (el mismo color para todos los jugadores):
+   el puesto de cada jugador, sus combinaciones en la mesa y su puntito en el
+   marcador. A quien le toca: resplandor BLANCO parpadeante (el dorado se
+   confundiría con el amarillo del asiento 1).
+   ====================================================================== */
+.asiento { border-width: 3px; border-color: var(--col, transparent); background: linear-gradient(var(--col-fondo, transparent), var(--col-fondo, transparent)), rgba(0, 0, 0, 0.3); }
+.asiento.yo { border-color: var(--col, rgba(255, 255, 255, .55)); }
+.asiento.turno {
+  border-color: var(--col, #fff);
+  background: linear-gradient(var(--col-fondo-turno, transparent), var(--col-fondo-turno, transparent)), rgba(0, 0, 0, 0.25);
+  animation: turno-pulso-blanco 1.1s ease-in-out infinite;
+}
+.asiento .nombre { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); }
+@keyframes turno-pulso-blanco {
+  0%, 100% { box-shadow: 0 0 0 2px #fff, 0 0 10px 2px rgba(255, 255, 255, 0.35); }
+  50% { box-shadow: 0 0 0 4px #fff, 0 0 20px 8px rgba(255, 255, 255, 0.8); }
+}
+.comb { border-color: var(--col, transparent); background: linear-gradient(var(--col-suave, transparent), var(--col-suave, transparent)), rgba(255, 255, 255, 0.05); }
+.comb .dueño { background: var(--col, rgba(0, 0, 0, .45)); color: #1a1a1a; font-weight: 700; }
+.comb.nueva { border-color: rgba(242, 193, 78, .9); }
+.punto-asiento { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--col, #999); margin-right: 6px; vertical-align: middle; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
+
+/* ======================================================================
+   MÓVIL
+   Todo lo de abajo solo se activa en pantallas pequeñas; en el ordenador
+   la pantalla queda como antes (salvo los colores de arriba).
+   ====================================================================== */
+.solo-movil { display: none; }
+#aviso-girar { display: none; }
+
+/* Móvil en vertical: se pide que se gire. */
+@media (orientation: portrait) and (max-width: 700px) {
+  #aviso-girar {
+    display: flex; position: fixed; inset: 0; z-index: 2000;
+    flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    background: #0b3a21; color: white; text-align: center; padding: 24px;
+  }
+  body > :not(#aviso-girar) { display: none !important; }
+  html, body { overflow: hidden; }
+  .giro-icono { font-size: 4rem; animation: girar-movil 2.4s ease-in-out infinite; }
+  .giro-titulo { font-size: 1.5rem; font-weight: bold; color: var(--acento); }
+  .giro-texto { font-size: 1.05rem; opacity: 0.9; }
+}
+@keyframes girar-movil { 0%, 20% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+
+/* Móvil en horizontal (pantalla baja y apaisada). */
+@media (max-height: 560px) and (orientation: landscape) {
+  body { overflow: hidden; min-height: 0; }
+  dialog { max-height: 92dvh; overflow-y: auto; padding: 12px 16px; max-width: min(760px, 96vw); }
+  dialog h2 { margin: 0 0 8px; font-size: 1.1rem; }
+  button { padding: 8px 12px; }
+
+  /* Cabecera: solo el botón ☰ (flotante) con el menú desplegable. */
+  #cabecera { position: fixed; top: 4px; right: 4px; z-index: 50; padding: 0; background: none; gap: 0; }
+  #cabecera h1, #info-partida { display: none; }
+  #btn-menu-movil { display: block; width: 42px; height: 34px; padding: 0; font-size: 1.3rem; background: rgba(0, 0, 0, 0.55); color: #fff; border: none; }
+  .botones-cabecera {
+    position: fixed; top: 42px; right: 4px; z-index: 50; width: 200px;
+    flex-direction: column; align-items: stretch; gap: 8px; padding: 10px; border-radius: 10px;
+    background: #082b18; visibility: hidden;
+  }
+  #cabecera.abierto .botones-cabecera { visibility: visible; }
+  .botones-cabecera label { color: #fff; font-size: 0.85rem; display: flex; flex-direction: column; gap: 4px; }
+  #btn-pantalla-completa { display: block; }
+
+  /* Tapete: una sola pantalla, en rejilla. Arriba los asientos; en medio mazo, pozo, mesa y acciones; abajo mi mano. */
+  #juego { display: block; min-height: 0; }
+  #tapete {
+    display: grid; grid-template-columns: 50px 50px minmax(0, 1fr) 156px; grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 3px 6px; padding: 3px 34px 0 6px; height: 100dvh; min-height: 0; border-radius: 0;
+  }
+  #asientos { grid-column: 1 / -1; grid-row: 1; gap: 4px; margin-right: 22px; }
+  #centro { display: contents; }
+  #mazo { grid-column: 1; grid-row: 2; align-self: start; margin-top: 4px; }
+  #pozo { grid-column: 2; grid-row: 2; align-self: start; margin-top: 4px; }
+  #mesa { grid-column: 3; grid-row: 2; min-height: 0; padding: 4px 6px; gap: 12px 8px; }
+  #mesa::before { content: attr(data-info); flex: 0 0 100%; font-size: 0.62rem; color: rgba(255, 255, 255, .7); margin: -2px 0 0; }
+  #mesa .vacia { font-size: 0.75rem; }
+  #acciones { grid-column: 4; grid-row: 2; min-width: 0; max-width: none; overflow-y: auto; gap: 4px; }
+  #zona-mano { grid-column: 1 / -1; grid-row: 3; margin: 0 -34px 0 -6px; border-radius: 0; padding: 2px 40px 4px 8px; }
+
+  /* Asientos: fichas pequeñas con nombre y recuento. */
+  .asiento { padding: 2px 6px; min-height: 0; border-radius: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; overflow: hidden; }
+  .asiento .nombre { flex: 1 1 100%; font-size: 0.72rem; gap: 4px; min-width: 0; white-space: nowrap; overflow: hidden; }
+  .asiento .estilo { display: none; }
+  .asiento .luz { display: none; }
+  .asiento .fila { margin-top: 0; font-size: 0.62rem; gap: 4px; }
+  .asiento .chip { font-size: 0.55rem; padding: 0 4px; }
+  .puntos-reeng { font-size: 0.5rem; letter-spacing: 0; }
+  .mini-reverso { width: 11px; height: 15px; }
+
+  /* Mazo y pozo. */
+  .monton .carta-grande { width: 44px; height: 62px; padding: 7px; }
+  .monton .carta.reverso { padding: 0; }
+  .monton .hueco { width: 44px; height: 62px; }
+  .monton .cuenta { font-size: 0.55rem; bottom: -22px; left: -3px; right: -3px; line-height: 1.1; }
+  .monton .carta-banda { top: 6px; width: 8px; gap: 1px; }
+  .monton .carta-banda b { font-size: 7px; }
+  .monton .carta-banda svg { width: 6px; height: 6px; }
+  .monton .comodin-estrella { font-size: 18px; }
+
+  /* Combinaciones de la mesa. */
+  .comb { padding: 8px 5px 3px; }
+  .comb .dueño { font-size: 8px; top: -8px; }
+  .carta-mesa { width: 40px; height: 57px; padding: 6px; border-radius: 5px; }
+  .carta-mesa .carta-banda { top: 6px; width: 8px; gap: 1px; }
+  .carta-mesa .carta-banda b { font-size: 7px; }
+  .carta-mesa .carta-banda svg { width: 6px; height: 6px; }
+  .comb .carta + .carta { margin-left: -26px; }
+  .carta .repr { font-size: 7px; bottom: -11px; left: -2px; right: -2px; }
+  .carta-mesa .comodin-estrella { font-size: 18px; }
+
+  /* Acciones del turno. */
+  #acciones .estado { font-size: 0.62rem; line-height: 1.2; padding: 3px 6px; }
+  #acciones .estado small { display: none; }
+  #acciones .botones { flex-direction: column; flex-wrap: nowrap; gap: 3px; }
+  #acciones .botones button, .botones-eliminado button { padding: 5px 6px; font-size: 0.72rem; white-space: nowrap; }
+  .botones-eliminado { flex-direction: column; margin-top: 2px; }
+  #eleccion { top: 36%; padding: 8px 12px; flex-wrap: wrap; max-width: 90vw; }
+  #aviso { bottom: auto; top: 44px; padding: 6px 12px; font-size: 0.8rem; max-width: 70vw; }
+  #cubierta { font-size: 1rem; gap: 10px; }
+
+  /* Mi mano. */
+  #titulo-mano { font-size: 0.62rem; margin-bottom: 2px; gap: 8px; flex-wrap: nowrap; white-space: nowrap; }
+  #titulo-mano .ordenar { gap: 4px; }
+  #titulo-mano .ordenar button { padding: 1px 6px; font-size: 0.6rem; }
+  #mano { min-height: 0; gap: 8px; padding-top: 2px; align-items: flex-end; -webkit-overflow-scrolling: touch; }
+  .grupo { padding: 13px 5px 5px; border-radius: 8px; }
+  .grupo .etiqueta { top: 1px; left: 5px; font-size: 0.55rem; padding: 0 5px; }
+  .grupo-nuevo { display: none; }
+  #mano .carta-grande { width: 66px; height: 94px; padding: 10px; }
+  #mano .carta-banda { top: 10px; width: 10px; gap: 2px; }
+  #mano .carta-banda b { font-size: 8px; }
+  #mano .carta-banda svg { width: 8px; height: 8px; }
+  #mano .comodin-estrella { font-size: 24px; }
+  .grupo .carta + .carta { margin-left: -34px; }
+  #mano .carta:hover { transform: none; }
+  #mano .carta.sel { transform: translateY(-9px); }
+
+  /* Panel lateral (marcador, chat y registro): oculto a la derecha, con una flecha para abrirlo. */
+  #lateral {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(340px, 80vw); max-height: none; z-index: 40;
+    border-radius: 12px 0 0 12px; transform: translateX(100%); transition: transform 0.2s ease;
+    box-shadow: -4px 0 14px rgba(0, 0, 0, 0.4);
+  }
+  #lateral.abierto { transform: none; }
+  #btn-panel {
+    display: block; position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 41;
+    width: 30px; height: 64px; padding: 0; font-size: 1.6rem; background: rgba(0, 0, 0, 0.55); color: white;
+    border: none; border-radius: 10px 0 0 10px;
+  }
+  body:has(#lateral.abierto) #btn-panel { right: min(340px, 80vw); }
+  #badge-chat {
+    position: absolute; top: -6px; left: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+    background: #e63946; color: white; font-size: 0.75rem; font-weight: bold; line-height: 20px;
+  }
+  .chat-mensajes { max-height: 120px; }
+
+  /* Fin de mano: tabla más estrecha. */
+  .fin-tabla { font-size: 0.78rem; }
+  .fin-tabla td, .fin-tabla th { padding: 3px 5px; }
+  .fin-tabla .carta-mini { width: 24px; height: 34px; }
+  .titular { font-size: 1rem; }
+}
+
+/* Pantalla apaisada MUY baja (~300 px útiles): todo un punto más pequeño para que nada se pise. */
+@media (max-height: 360px) and (orientation: landscape) {
+  #tapete { grid-template-columns: 46px 46px minmax(0, 1fr) 150px; gap: 2px 5px; }
+  .asiento { padding: 1px 5px; }
+  .asiento .nombre { font-size: 0.68rem; }
+  .monton .carta-grande, .monton .hueco { width: 40px; height: 57px; }
+  .carta-mesa { width: 36px; height: 51px; padding: 5px; }
+  .comb .carta + .carta { margin-left: -24px; }
+  #mano .carta-grande { width: 56px; height: 80px; padding: 8px; }
+  .grupo { padding: 12px 4px 4px; }
+  .grupo .carta + .carta { margin-left: -30px; }
+  #mano .carta.sel { transform: translateY(-7px); }
+  #acciones .botones button, .botones-eliminado button { padding: 4px 6px; font-size: 0.68rem; }
+}
 </style>
 </head>
 <body>
+<div id="aviso-girar" role="alert">
+  <div class="giro-icono">📱</div>
+  <div class="giro-titulo">Gira el móvil</div>
+  <div class="giro-texto">El Remigio se juega mejor con el móvil en horizontal.</div>
+</div>
 <header id="cabecera">
   <h1>Remigio</h1>
   <div id="info-partida"></div>
@@ -234,11 +420,14 @@ dialog h2 { margin-top: 0; }
         <option value="250">Rápida</option>
       </select>
     </label>
+    <button id="btn-pantalla-completa" class="solo-movil">Pantalla completa</button>
     <button id="btn-estadisticas">Estadísticas</button>
     <button id="btn-online">Jugar online</button>
     <button id="btn-nueva">Nueva partida</button>
   </div>
+  <button id="btn-menu-movil" class="solo-movil" aria-label="Menú">☰</button>
 </header>
+<button id="btn-panel" class="solo-movil" aria-label="Marcador, chat y registro">‹<span id="badge-chat" hidden></span></button>
 
 <main id="juego">
   <section id="tapete">
@@ -1717,9 +1906,35 @@ dialog h2 { margin-top: 0; }
     grupos: /* @__PURE__ */ new Map(),
     // asiento -> [[ids]] colocación manual de la mano
     arrastre: null,
-    online: null
+    online: null,
     // datos de la mesa online (null en partida local)
+    panelAbierto: false,
+    // móvil: panel lateral desplegado
+    chatVistos: 0
+    // móvil: mensajes del chat ya vistos (para el puntito rojo)
   };
+  var COLORES_ASIENTO = [
+    { nombre: "amarillo", hex: "#e8b84b" },
+    { nombre: "azul", hex: "#6fa8dc" },
+    { nombre: "rojo", hex: "#ec7b72" },
+    { nombre: "morado", hex: "#b69cec" },
+    { nombre: "naranja", hex: "#f29b5c" },
+    { nombre: "turquesa", hex: "#4fd1c5" }
+  ];
+  function colorAsiento(i) {
+    return COLORES_ASIENTO[i % COLORES_ASIENTO.length];
+  }
+  function rgbaHex(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}, ${a})`;
+  }
+  function ponerColorAsiento(el, i) {
+    const c = colorAsiento(i);
+    el.style.setProperty("--col", c.hex);
+    el.style.setProperty("--col-fondo", rgbaHex(c.hex, 0.3));
+    el.style.setProperty("--col-fondo-turno", rgbaHex(c.hex, 0.55));
+    el.style.setProperty("--col-suave", rgbaHex(c.hex, 0.16));
+  }
   window.__remigio = S;
   window.__remigioRender = () => render();
   window.__remigioHooks = { robarHumano: (o) => robarHumano(o), jugarHumano: (d) => jugarHumano(d), esTurnoHumano: () => esTurnoHumano(), decidirRobo, decidirJugada, perfilBot: () => perfilBotPropio(S.online), botPropio: () => botPropio() };
@@ -2277,6 +2492,7 @@ dialog h2 { margin-top: 0; }
   function renderCabecera() {
     const p = P();
     $("#info-partida").textContent = `Mano ${S.numMano} · Bote ${p.bote} · Apuesta ${p.apuesta} · Reenganches máx. ${p.maxReenganches}${p.doblar ? " (doblando)" : ""}`;
+    $("#mesa").dataset.info = `Mano ${S.numMano} · Bote ${p.bote}`;
   }
   function renderAsientos(v) {
     const p = P();
@@ -2288,6 +2504,7 @@ dialog h2 { margin-top: 0; }
       const l = local(a);
       const div = document.createElement("div");
       div.className = "asiento";
+      ponerColorAsiento(div, a);
       const eliminado = !p.activos.includes(a);
       if (eliminado) div.classList.add("eliminado");
       if (!p.mano.resultado && p.asientoEnTurno === a) div.classList.add("turno");
@@ -2318,6 +2535,7 @@ dialog h2 { margin-top: 0; }
     for (const comb of v.e.mesa) {
       const div = document.createElement("div");
       div.className = "comb";
+      ponerColorAsiento(div, P().asientos[comb.dueño]);
       if (v.nuevas.has(comb.id)) div.classList.add("nueva");
       const et = document.createElement("span");
       et.className = "dueño";
@@ -2591,7 +2809,7 @@ dialog h2 { margin-top: 0; }
     $("#marcador").innerHTML = `<table>
     <tr><th>Jugador</th><th>Reeng.</th><th>Pagado</th><th>Últ. mano</th></tr>
     ${S.jugadores.map((j, a) => `<tr class="${!p.activos.includes(a) ? "eliminado" : ""} ${!p.mano.resultado && p.asientoEnTurno === a ? "turno" : ""}">
-      <td>${j.nombre}</td><td>${p.reenganches[a]}/${p.maxReenganches}</td><td>${p.aportado[a]}</td>
+      <td><span class="punto-asiento" style="--col:${colorAsiento(a).hex}"></span>${j.nombre}</td><td>${p.reenganches[a]}/${p.maxReenganches}</td><td>${p.aportado[a]}</td>
       <td>${ult && ult.puntos[a] != null ? `${ult.puntos[a]}${ult.perdedores.includes(a) ? " ✗" : ""}` : "—"}</td></tr>`).join("")}
   </table><div class="bote">Bote: <b>${p.bote}</b></div>`;
   }
@@ -3024,6 +3242,22 @@ dialog h2 { margin-top: 0; }
     const cont = $("#chat-mensajes");
     cont.innerHTML = S.online.chat.map((m) => `<div class="chat-linea"><strong>${escaparHtml(m.nombre)}:</strong> ${escaparHtml(m.texto)}</div>`).join("");
     cont.scrollTop = cont.scrollHeight;
+    actualizarBadgeChat();
+  }
+  function actualizarBadgeChat() {
+    const badge = $("#badge-chat");
+    if (!badge) return;
+    const total = S.online ? S.online.chat.length : 0;
+    if (S.panelAbierto) S.chatVistos = total;
+    const sinLeer = Math.max(0, total - S.chatVistos);
+    badge.hidden = sinLeer === 0;
+    badge.textContent = String(sinLeer);
+  }
+  function ponerPanelAbierto(abierto) {
+    S.panelAbierto = abierto;
+    $("#lateral").classList.toggle("abierto", abierto);
+    $("#btn-panel").firstChild.textContent = abierto ? "›" : "‹";
+    actualizarBadgeChat();
   }
   function enviarChat() {
     const O = S.online;
@@ -3071,6 +3305,29 @@ dialog h2 { margin-top: 0; }
     abrirModo();
   };
   $("#btn-estadisticas").onclick = mostrarEstadisticas;
+  $("#btn-menu-movil").addEventListener("click", () => {
+    $("#cabecera").classList.toggle("abierto");
+  });
+  document.querySelector(".botones-cabecera").addEventListener("click", (ev) => {
+    if (ev.target.closest("button")) $("#cabecera").classList.remove("abierto");
+  });
+  $("#btn-panel").addEventListener("click", () => ponerPanelAbierto(!S.panelAbierto));
+  var btnPantallaCompleta = $("#btn-pantalla-completa");
+  if (btnPantallaCompleta) {
+    if (!document.documentElement.requestFullscreen) {
+      btnPantallaCompleta.remove();
+    } else {
+      btnPantallaCompleta.addEventListener("click", () => {
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {
+        });
+        else document.documentElement.requestFullscreen({ navigationUI: "hide" }).catch(() => {
+        });
+      });
+      document.addEventListener("fullscreenchange", () => {
+        btnPantallaCompleta.textContent = document.fullscreenElement ? "Salir de pantalla completa" : "Pantalla completa";
+      });
+    }
+  }
   $("#btn-online").onclick = () => {
     if (S.online) {
       if (!confirm("¿Abandonar la mesa online?")) return;

@@ -376,9 +376,195 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
   border-radius: 6px;
   padding: 2px 8px;
 }
+
+/* ======================================================================
+   Colores FIJOS por asiento (el mismo color para todos los jugadores).
+   Cada puesto lleva su color en el borde y teñido el fondo; el texto siempre
+   blanco y legible. A quien le toca: resplandor BLANCO parpadeante.
+   ====================================================================== */
+.puesto-jugador { border: 3px solid var(--col, rgba(255, 255, 255, 0.3)); background: linear-gradient(var(--col-fondo, transparent), var(--col-fondo, transparent)), rgba(0, 0, 0, 0.4); }
+.puesto-jugador.puesto-humano { border-bottom: 3px solid var(--col, var(--acento)); }
+.puesto-jugador .nombre { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); }
+.puesto-jugador.turno, .puesto-jugador.puesto-humano.turno {
+  background: linear-gradient(var(--col-fondo-turno, rgba(255,255,255,.2)), var(--col-fondo-turno, rgba(255,255,255,.2))), rgba(0, 0, 0, 0.3);
+  animation: turno-pulso-blanco 1.1s ease-in-out infinite;
+}
+@keyframes turno-pulso-blanco {
+  0%, 100% { box-shadow: 0 0 0 3px #fff, 0 0 10px 2px rgba(255, 255, 255, 0.35); }
+  50% { box-shadow: 0 0 0 5px #fff, 0 0 22px 10px rgba(255, 255, 255, 0.85); }
+}
+.punto-asiento { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--col, #999); margin-right: 8px; vertical-align: middle; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
+
+/* ======================================================================
+   MÓVIL
+   Todo lo de abajo solo se activa en pantallas pequeñas; en el ordenador
+   la pantalla queda como antes (salvo los colores de arriba).
+   ====================================================================== */
+.solo-movil { display: none; }
+#aviso-girar { display: none; }
+
+/* Móvil en vertical: se pide que se gire. */
+@media (orientation: portrait) and (max-width: 700px) {
+  #aviso-girar {
+    display: flex; position: fixed; inset: 0; z-index: 2000;
+    flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    background: #0a2e1a; color: white; text-align: center; padding: 24px;
+  }
+  body > :not(#aviso-girar) { display: none !important; }
+  html, body { overflow: hidden; }
+  .giro-icono { font-size: 4rem; animation: girar-movil 2.4s ease-in-out infinite; }
+  .giro-titulo { font-size: 1.5rem; font-weight: bold; color: var(--acento); }
+  .giro-texto { font-size: 1.05rem; opacity: 0.9; }
+}
+@keyframes girar-movil { 0%, 20% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+
+/* Táctil: sin "hover" pegajoso en las cartas. */
+@media (hover: none) {
+  .carta.jugable:hover { transform: none; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35); }
+}
+.carta.marcada { transform: translateY(-22px) !important; box-shadow: 0 0 0 4px var(--acento), 0 6px 14px rgba(0, 0, 0, 0.55) !important; z-index: 8; }
+
+/* Móvil en horizontal (pantalla baja y apaisada). */
+@media (max-height: 560px) and (orientation: landscape) {
+  :root { --alto-mano: 106px; }
+  dialog { max-height: 92dvh; overflow-y: auto; padding: 12px 18px; max-width: min(560px, 94vw); }
+  button { padding: 9px 14px; }
+
+  body:has(#juego:not([hidden])) { overflow: hidden; }
+  body:has(#juego:not([hidden])) #cabecera {
+    position: fixed; top: 6px; right: 6px; z-index: 50; padding: 0; background: none; gap: 0; flex-wrap: nowrap;
+  }
+  body:has(#juego:not([hidden])) #cabecera h1,
+  body:has(#juego:not([hidden])) #info-partida { display: none; }
+  body:has(#juego:not([hidden])) #btn-menu-movil {
+    display: block; width: 42px; height: 38px; padding: 0; font-size: 1.3rem; background: rgba(0, 0, 0, 0.5); color: white;
+  }
+  body:has(#juego:not([hidden])) .botones-cabecera {
+    position: fixed; top: 48px; right: 6px; z-index: 50; width: 190px;
+    flex-direction: column; align-items: stretch; gap: 8px; padding: 10px; border-radius: 10px;
+    background: #07210f; visibility: hidden;
+  }
+  body:has(#juego:not([hidden])) #cabecera.abierto .botones-cabecera { visibility: visible; }
+  body:has(#juego:not([hidden])) .botones-cabecera label { color: white; font-size: 0.85rem; display: flex; flex-direction: column; gap: 4px; }
+  body:has(#juego:not([hidden])) #btn-pantalla-completa { display: block; }
+
+  /* Cuadrito de la vuelta, abajo a la derecha (a la derecha de la mano; el triunfo va a la izquierda). */
+  body:has(#juego:not([hidden])) #info-mini {
+    display: block; position: fixed; bottom: 6px; right: 6px; z-index: 20; max-width: 108px;
+    background: rgba(0, 0, 0, 0.5); color: white; border-radius: 10px; padding: 4px 10px;
+  }
+  .im-vuelta { font-size: 0.8rem; font-weight: bold; color: var(--acento); line-height: 1.2; }
+  .im-detalle { font-size: 0.72rem; opacity: 0.9; }
+
+  #juego { display: block; padding: 0; }
+  #tapete { padding: 0; border-radius: 0; min-height: 100dvh; height: 100dvh; gap: 0; position: relative; overflow: visible; }
+  /* Triunfo: abajo a la izquierda, junto a la mano (carta arriba, nombre del palo debajo): así no choca con ningún puesto de la mesa. */
+  #triunfo-visual {
+    position: fixed; bottom: 6px; left: 6px; z-index: 19; flex-direction: column; gap: 2px;
+    background: rgba(0, 0, 0, 0.5); border-radius: 10px; padding: 4px 6px; align-items: center;
+  }
+  #triunfo-visual .triunfo-texto { font-size: 0.66rem; max-width: 60px; line-height: 1.1; text-align: center; order: 2; }
+  #triunfo-visual .carta-mesa { width: 42px; height: 62px; padding: 7px; order: 1; }
+  #triunfo-visual .carta-mesa .carta-banda { top: 6px; width: 8px; }
+
+  #mesa-circular {
+    width: 100%; height: calc(100dvh - var(--alto-mano)); margin: 0; border-radius: 0; border: none;
+  }
+  .puesto-jugador {
+    flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center;
+    gap: 2px 6px; min-width: 0; max-width: 250px; padding: 3px 8px;
+  }
+  .puesto-jugador.lateral { max-width: 116px; padding: 3px 6px; gap: 2px 5px; }
+  .puesto-jugador .nombre { font-size: 0.85rem; }
+  .puesto-jugador .pila { min-height: 0; }
+  .puesto-jugador .pila .carta, .puesto-jugador .pila-bazas { display: none; }
+  .puesto-jugador .puja { display: none; }
+  .puesto-jugador .contador-bazas { font-size: 0.85rem; padding: 2px 8px; }
+  .puesto-jugador .marcador-mini { font-size: 0.72rem; padding: 1px 7px; }
+  .puesto-jugador .badge-mano { top: -14px; font-size: 1.1rem; }
+  .puesto-jugador .etiqueta-bot { font-size: 0.62rem; padding: 1px 5px; }
+  .puesto-jugador .btn-bot-asiento { font-size: 0.62rem; padding: 2px 6px; margin: 0; }
+  #mesa-circular .vacia-circulo { display: none; }
+  .carta-mesa { width: 54px; height: 78px; padding: 9px; }
+  .carta-mesa .carta-banda { top: 9px; width: 8px; }
+  .carta-mesa .carta-banda b { font-size: 8px; }
+  .carta-mesa .carta-banda svg { width: 7px; height: 7px; }
+  .resultado-mano .icono { font-size: 1.3rem; }
+  .resultado-mano .fraccion { font-size: 0.7rem; }
+  .resultado-mano .puntos { font-size: 0.85rem; }
+  /* "Continuar" abajo, sobre la franja de la mano (a esa hora ya está vacía), para no tapar las cartas de la baza. */
+  #btn-continuar-mano { position: fixed; top: auto; bottom: 22px; left: 50%; transform: translateX(-50%); padding: 10px 24px; z-index: 30; animation: none; }
+
+  /* Mi mano, en una franja abajo. */
+  #zona-mano {
+    margin: 0; max-width: none; width: 100%; height: var(--alto-mano); border-radius: 0; padding: 4px 8px 4px;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .cabecera-mano { display: none; }
+  #mano { align-items: flex-end; max-width: calc(100% - 236px); }
+  .fin-mano-arrastre { display: none; }
+  .carta-grande { width: 66px; height: 94px; padding: 10px; }
+  .carta-grande .carta-banda { top: 10px; width: 10px; gap: 2px; }
+  .carta-grande .carta-banda b { font-size: 8px; }
+  .carta-grande .carta-banda svg { width: 8px; height: 8px; }
+
+  /* Panel de marcador, chat y registro: oculto a la derecha, con una flecha para abrirlo. */
+  #lateral {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(340px, 80vw); max-height: none; z-index: 40;
+    border-radius: 12px 0 0 12px; transform: translateX(100%); transition: transform 0.2s ease;
+    box-shadow: -4px 0 14px rgba(0, 0, 0, 0.4);
+  }
+  #lateral.abierto { transform: none; }
+  body:has(#juego:not([hidden])) #btn-panel {
+    display: block; position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 41;
+    width: 30px; height: 64px; padding: 0; font-size: 1.6rem; background: rgba(0, 0, 0, 0.55); color: white;
+    border-radius: 10px 0 0 10px;
+  }
+  body:has(#lateral.abierto) #btn-panel { right: min(340px, 80vw); }
+  #badge-chat {
+    position: absolute; top: -6px; left: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+    background: #e63946; color: white; font-size: 0.75rem; font-weight: bold; line-height: 20px;
+  }
+  .chat-mensajes { max-height: 120px; }
+
+  /* Diálogos de puja / pinte más compactos. */
+  #dlg-decision { min-width: 0; max-width: 90vw; padding: 10px 16px; }
+  #dlg-decision .decision-titulo { margin: 0 0 8px; font-size: 0.95rem; }
+  #dlg-decision .selector-numero { margin-bottom: 8px; }
+}
+
+/* Pantalla apaisada MUY baja (~300 px útiles): todo un punto más pequeño para que nada se pise. */
+@media (max-height: 360px) and (orientation: landscape) {
+  :root { --alto-mano: 90px; }
+  .carta-grande { width: 58px; height: 82px; padding: 9px; }
+  .carta-grande .carta-banda { top: 9px; width: 9px; }
+  .carta.marcada { transform: translateY(-16px) !important; }
+  .carta-mesa { width: 42px; height: 60px; padding: 7px; }
+  .carta-mesa .carta-banda { top: 7px; width: 7px; }
+  .carta-mesa .carta-banda b { font-size: 7px; }
+  body:has(#juego:not([hidden])) #info-mini { padding: 2px 8px; bottom: 5px; }
+  .im-vuelta { font-size: 0.72rem; }
+  .im-detalle { font-size: 0.64rem; }
+  #triunfo-visual { padding: 3px 5px; gap: 1px; bottom: 5px; }
+  #triunfo-visual .triunfo-texto { font-size: 0.6rem; max-width: 56px; }
+  #triunfo-visual .carta-mesa { width: 40px; height: 58px; padding: 7px; }
+  .puesto-jugador { padding: 2px 7px; }
+  .puesto-jugador.lateral { max-width: 108px; }
+  .puesto-jugador .nombre { font-size: 0.78rem; }
+  .puesto-jugador .contador-bazas { font-size: 0.78rem; padding: 1px 6px; }
+  .puesto-jugador .marcador-mini { font-size: 0.66rem; }
+  .puesto-jugador .badge-mano { top: -12px; font-size: 0.95rem; }
+  #dlg-decision .selector-numero .valor-grande { font-size: 1.6rem; }
+  #btn-panel { height: 54px !important; }
+}
 </style>
 </head>
 <body>
+<div id="aviso-girar" role="alert">
+  <div class="giro-icono">📱</div>
+  <div class="giro-titulo">Gira el móvil</div>
+  <div class="giro-texto">La Pocha se juega mejor con el móvil en horizontal.</div>
+</div>
 <header id="cabecera">
   <h1>Pocha</h1>
   <div id="info-partida"></div>
@@ -390,10 +576,14 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
         <option value="150">Rápida</option>
       </select>
     </label>
+    <button id="btn-pantalla-completa" class="solo-movil secundario">Pantalla completa</button>
     <button id="btn-nueva">Nueva partida</button>
     <button id="btn-online" class="secundario">Jugar online</button>
   </div>
+  <button id="btn-menu-movil" class="solo-movil" aria-label="Menú">☰</button>
 </header>
+<div id="info-mini" class="solo-movil"></div>
+<button id="btn-panel" class="solo-movil" aria-label="Marcador, chat y registro">‹<span id="badge-chat" hidden></span></button>
 
 <main id="juego" hidden>
   <section id="tapete">
@@ -1181,8 +1371,46 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     terminandoForzado: false,
     // `resolve` de la promesa de "Continuar" mientras está pendiente (ver
     // `esperarContinuar`); null si no se está esperando ningún clic.
-    continuarPendiente: null
+    continuarPendiente: null,
+    // Móvil: carta marcada con el primer toque (el segundo la juega), panel lateral plegable.
+    cartaMarcada: null,
+    panelAbierto: false,
+    chatVistos: 0
   };
+  var COLORES_ASIENTO = [
+    { nombre: "amarillo", hex: "#e8b84b" },
+    { nombre: "azul", hex: "#6fa8dc" },
+    { nombre: "rojo", hex: "#ec7b72" },
+    { nombre: "verde", hex: "#7fd18b" },
+    { nombre: "morado", hex: "#b69cec" },
+    { nombre: "naranja", hex: "#f29b5c" },
+    { nombre: "turquesa", hex: "#4fd1c5" },
+    { nombre: "rosa", hex: "#f08fc0" },
+    { nombre: "gris", hex: "#c3cad2" },
+    { nombre: "lima", hex: "#cde25e" }
+  ];
+  function colorAsiento(i) {
+    return COLORES_ASIENTO[i % COLORES_ASIENTO.length];
+  }
+  function rgbaHex(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}, ${a})`;
+  }
+  function ponerColorAsiento(el, i) {
+    const c = colorAsiento(i);
+    el.style.setProperty("--col", c.hex);
+    el.style.setProperty("--col-fondo", rgbaHex(c.hex, 0.3));
+    el.style.setProperty("--col-fondo-turno", rgbaHex(c.hex, 0.55));
+  }
+  function esCompacto() {
+    return window.matchMedia("(max-height: 560px) and (orientation: landscape)").matches;
+  }
+  function esMuyBajo() {
+    return window.matchMedia("(max-height: 360px) and (orientation: landscape)").matches;
+  }
+  function esTactil() {
+    return window.matchMedia("(pointer: coarse)").matches;
+  }
   function limpiarConexionRed() {
     if (E.red) {
       E.red.dejarDeEscucharMesa?.();
@@ -1246,6 +1474,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
   }
   function onEvento(ev) {
     if (ev.tipo === "reparto") {
+      E.cartaMarcada = null;
       E.actual = {
         definicion: ev.definicion,
         indiceMano: ev.indiceMano,
@@ -1423,6 +1652,8 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     renderRegistro();
     renderChat();
     renderControlesMesa();
+    renderInfoMini();
+    actualizarBadgeChat();
   }
   function renderChat() {
     const caja = document.getElementById("chat-caja");
@@ -1481,7 +1712,8 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     cont.hidden = false;
     const texto = document.createElement("span");
     texto.className = "triunfo-texto";
-    texto.textContent = E.actual.paloTriunfo === null ? "Esta mano se juega sin triunfo" : `Triunfo: ${NOMBRE_PALO[E.actual.paloTriunfo]}`;
+    const corto = esCompacto();
+    texto.textContent = E.actual.paloTriunfo === null ? corto ? "Sin triunfo" : "Esta mano se juega sin triunfo" : `Triunfo: ${NOMBRE_PALO[E.actual.paloTriunfo]}`;
     cont.appendChild(texto);
     if (E.actual.cartaTriunfo) {
       cont.appendChild(elCarta(E.actual.cartaTriunfo, { tam: "mesa" }));
@@ -1490,13 +1722,51 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
   function renderMarcador() {
     const cont = document.getElementById("marcador");
     cont.innerHTML = "";
-    const filas = E.jugadores.map((j, i) => ({ nombre: j.nombre, puntos: E.puntuacion[i] || 0 })).sort((a, b) => b.puntos - a.puntos);
+    const filas = E.jugadores.map((j, i) => ({ i, nombre: j.nombre, puntos: E.puntuacion[i] || 0 })).sort((a, b) => b.puntos - a.puntos);
     for (const f of filas) {
       const div = document.createElement("div");
       div.className = "fila-marcador";
-      div.textContent = `${f.nombre}: ${f.puntos}`;
+      const punto = document.createElement("span");
+      punto.className = "punto-asiento";
+      ponerColorAsiento(punto, f.i);
+      div.appendChild(punto);
+      div.appendChild(document.createTextNode(`${f.nombre}: ${f.puntos}`));
       cont.appendChild(div);
     }
+  }
+  function renderInfoMini() {
+    const cont = document.getElementById("info-mini");
+    if (!cont) return;
+    if (!E.actual) {
+      cont.textContent = "";
+      return;
+    }
+    const { definicion, indiceMano } = E.actual;
+    const nombreVuelta = NOMBRE_VUELTA[definicion.tipo] || definicion.tipo;
+    cont.innerHTML = "";
+    const l1 = document.createElement("div");
+    l1.className = "im-vuelta";
+    l1.textContent = nombreVuelta;
+    const l2 = document.createElement("div");
+    l2.className = "im-detalle";
+    l2.textContent = `${definicion.nCartas} ${definicion.nCartas === 1 ? "carta" : "cartas"} · 🖐️ ${nombreJ(indiceMano)}`;
+    cont.appendChild(l1);
+    cont.appendChild(l2);
+  }
+  function actualizarBadgeChat() {
+    const badge = document.getElementById("badge-chat");
+    if (!badge) return;
+    if (E.panelAbierto) E.chatVistos = E.chatMensajes.length;
+    const sinLeer = E.red ? Math.max(0, E.chatMensajes.length - E.chatVistos) : 0;
+    badge.hidden = sinLeer === 0;
+    badge.textContent = String(sinLeer);
+  }
+  function ponerPanelAbierto(abierto) {
+    E.panelAbierto = abierto;
+    document.getElementById("lateral").classList.toggle("abierto", abierto);
+    const btn = document.getElementById("btn-panel");
+    btn.firstChild.textContent = abierto ? "›" : "‹";
+    actualizarBadgeChat();
   }
   function indiceEnTurno() {
     if (E.pendiente) return E.pendiente.indiceJugador;
@@ -1517,8 +1787,24 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
   }
   function colocarEnCirculo(el, i, radioPorc) {
     const angulo = anguloJugador(i) * Math.PI / 180;
-    const x = 50 + radioPorc * Math.sin(angulo);
-    const y = 50 - radioPorc * Math.cos(angulo);
+    let rx = radioPorc;
+    let ry = radioPorc;
+    if (esCompacto()) {
+      const bajo = esMuyBajo();
+      if (radioPorc === 15) {
+        rx = 15;
+        ry = bajo ? E.jugadores.length >= 6 ? 15 : 12 : 17;
+      } else if (radioPorc === 47) {
+        rx = 0;
+        ry = bajo ? 38.5 : 40;
+      } else {
+        rx = 40;
+        ry = bajo ? 37 : 36;
+      }
+    }
+    const x = 50 + rx * Math.sin(angulo);
+    let y = 50 - ry * Math.cos(angulo);
+    if (esCompacto() && radioPorc !== 15 && radioPorc !== 47 && Math.abs(Math.sin(angulo)) > 0.8) y += 5;
     el.style.left = `${x}%`;
     el.style.top = `${y}%`;
   }
@@ -1533,6 +1819,8 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
       const puesto = document.createElement("div");
       puesto.className = `puesto-jugador${i === enTurno ? " turno" : ""}${esHumano ? " puesto-humano" : ""}`;
       colocarEnCirculo(puesto, i, esHumano ? 47 : 40);
+      ponerColorAsiento(puesto, i);
+      if (Math.abs(Math.sin(anguloJugador(i) * Math.PI / 180)) > 0.8) puesto.classList.add("lateral");
       if (i === E.actual.indiceMano) {
         const mano = document.createElement("div");
         mano.className = "badge-mano";
@@ -1703,6 +1991,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
       if (!carta) continue;
       const esJugable = jugables ? jugables.some((c) => idCarta(c) === id) : null;
       const el = elCarta(carta, { tam: "grande", jugable: esJugable });
+      if (esJugable && E.cartaMarcada === id) el.classList.add("marcada");
       el.draggable = true;
       el.dataset.id = id;
       el.addEventListener("dragstart", (ev) => {
@@ -1731,6 +2020,12 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
       });
       if (esJugable) {
         el.addEventListener("click", () => {
+          if (esTactil() && E.cartaMarcada !== id) {
+            E.cartaMarcada = id;
+            render();
+            return;
+          }
+          E.cartaMarcada = null;
           const resolver = E.pendiente.resolve;
           E.pendiente = null;
           resolver(carta);
@@ -1876,11 +2171,11 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
   }
   function mostrarFin(resultado, { forzada = false } = {}) {
     const dlg = document.getElementById("dlg-fin");
-    const filas = E.jugadores.map((j, i) => ({ nombre: j.nombre, puntos: resultado.puntuacionTotal[i] })).sort((a, b) => b.puntos - a.puntos);
+    const filas = E.jugadores.map((j, i) => ({ i, nombre: j.nombre, puntos: resultado.puntuacionTotal[i] })).sort((a, b) => b.puntos - a.puntos);
     dlg.innerHTML = `
     <h2>${forzada ? "Partida terminada" : "Fin de la partida"}</h2>
     ${forzada ? "<p>El creador de la mesa ha terminado la partida. Marcador en ese momento:</p>" : ""}
-    <ol>${filas.map((f) => `<li>${f.nombre}: ${f.puntos} puntos</li>`).join("")}</ol>
+    <ol>${filas.map((f) => `<li><span class="punto-asiento" style="--col:${colorAsiento(f.i).hex}"></span>${f.nombre}: ${f.puntos} puntos</li>`).join("")}</ol>
     ${forzada ? "" : `<p><strong>Gana ${filas[0].nombre}</strong></p>`}
     <button id="btn-cerrar-fin">Cerrar</button>
   `;
@@ -2093,6 +2388,36 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     });
     dlg.showModal();
   }
+  document.getElementById("btn-menu-movil").addEventListener("click", () => {
+    document.getElementById("cabecera").classList.toggle("abierto");
+  });
+  document.querySelector(".botones-cabecera").addEventListener("click", (ev) => {
+    if (ev.target.closest("button")) document.getElementById("cabecera").classList.remove("abierto");
+  });
+  document.getElementById("btn-panel").addEventListener("click", () => ponerPanelAbierto(!E.panelAbierto));
+  var btnPantallaCompleta = document.getElementById("btn-pantalla-completa");
+  if (btnPantallaCompleta) {
+    if (!document.documentElement.requestFullscreen) {
+      btnPantallaCompleta.remove();
+    } else {
+      btnPantallaCompleta.addEventListener("click", () => {
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {
+        });
+        else document.documentElement.requestFullscreen({ navigationUI: "hide" }).catch(() => {
+        });
+      });
+      document.addEventListener("fullscreenchange", () => {
+        btnPantallaCompleta.textContent = document.fullscreenElement ? "Salir de pantalla completa" : "Pantalla completa";
+      });
+    }
+  }
+  var temporizadorRedim = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(temporizadorRedim);
+    temporizadorRedim = setTimeout(() => {
+      if (E.actual) render();
+    }, 150);
+  });
   document.getElementById("btn-nueva").addEventListener("click", () => abrirSecuencia("local"));
   document.getElementById("btn-online").addEventListener("click", () => abrirSecuencia("online"));
   document.getElementById("chat-enviar").addEventListener("click", enviarChatDesdeFormulario);
