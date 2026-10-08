@@ -374,9 +374,164 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
   padding: 2px 7px;
   margin-top: 2px;
 }
+
+/* ======================================================================
+   COLORES DE LAS PAREJAS (fijos y iguales para todos los jugadores)
+   Amarillos = asientos 0 y 2; Azules = asientos 1 y 3.
+   ====================================================================== */
+[hidden] { display: none !important; }
+.puesto-jugador { border: 3px solid var(--col, transparent); background: linear-gradient(rgba(255,255,255,0.0), rgba(255,255,255,0.0)), rgba(0, 0, 0, 0.35); }
+.puesto-jugador.equipo-0 { background: linear-gradient(rgba(232, 184, 75, 0.28), rgba(232, 184, 75, 0.28)), rgba(0, 0, 0, 0.3); }
+.puesto-jugador.equipo-1 { background: linear-gradient(rgba(111, 168, 220, 0.28), rgba(111, 168, 220, 0.28)), rgba(0, 0, 0, 0.3); }
+.puesto-jugador.equipo-0, .puesto-jugador.equipo-1 { border-bottom-width: 3px; }
+.puesto-jugador.turno { animation: turno-pulso-blanco 1.1s ease-in-out infinite; box-shadow: none; }
+.puesto-jugador.equipo-0.turno { background: linear-gradient(rgba(232, 184, 75, 0.5), rgba(232, 184, 75, 0.5)), rgba(0, 0, 0, 0.25); }
+.puesto-jugador.equipo-1.turno { background: linear-gradient(rgba(111, 168, 220, 0.5), rgba(111, 168, 220, 0.5)), rgba(0, 0, 0, 0.25); }
+.puesto-jugador .nombre { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); color: #fff; }
+.puesto-jugador .equipo-txt { background: var(--col); }
+@keyframes turno-pulso-blanco {
+  0%, 100% { box-shadow: 0 0 0 2px #fff, 0 0 10px 2px rgba(255, 255, 255, 0.35); }
+  50% { box-shadow: 0 0 0 4px #fff, 0 0 20px 8px rgba(255, 255, 255, 0.8); }
+}
+#mesa-circular.mi-eq-1 ~ #zona-mano { border-top-color: #6fa8dc; }
+#mesa-circular:not(.mi-eq-1) ~ #zona-mano { border-top-color: #e8b84b; }
+.punto-asiento { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--col, #999); margin-right: 6px; vertical-align: middle; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
+.fila-marcador.mi-pareja { font-weight: bold; }
+
+/* ======================================================================
+   MÓVIL (solo pantallas pequeñas; en el ordenador queda como antes)
+   ====================================================================== */
+.solo-movil { display: none; }
+#aviso-girar { display: none; }
+#marcador-mini { display: none; }
+
+@media (orientation: portrait) and (max-width: 700px) {
+  #aviso-girar {
+    display: flex; position: fixed; inset: 0; z-index: 2000;
+    flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    background: #0b3a21; color: white; text-align: center; padding: 24px;
+  }
+  body > :not(#aviso-girar) { display: none !important; }
+  html, body { overflow: hidden; }
+  .giro-icono { font-size: 4rem; animation: girar-movil 2.4s ease-in-out infinite; }
+  .giro-titulo { font-size: 1.5rem; font-weight: bold; color: var(--acento); }
+  .giro-texto { font-size: 1.05rem; opacity: 0.9; }
+}
+@keyframes girar-movil { 0%, 20% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+
+@media (max-height: 560px) and (orientation: landscape) {
+  body { overflow: hidden; min-height: 0; }
+  dialog { max-height: 92dvh; overflow-y: auto; padding: 12px 16px; max-width: min(760px, 96vw); }
+  dialog h2 { margin: 0 0 8px; font-size: 1.1rem; }
+  button { padding: 8px 12px; }
+
+  #cabecera { position: fixed; top: 4px; right: 4px; z-index: 50; padding: 0; background: none; gap: 0; }
+  #cabecera h1, #info-partida { display: none; }
+  #btn-menu-movil { display: block; width: 42px; height: 34px; padding: 0; font-size: 1.3rem; background: rgba(0, 0, 0, 0.55); color: #fff; }
+  .botones-cabecera {
+    position: fixed; top: 42px; right: 4px; z-index: 50; width: 200px;
+    flex-direction: column; align-items: stretch; gap: 8px; padding: 10px; border-radius: 10px;
+    background: #082b18; visibility: hidden;
+  }
+  #cabecera.abierto .botones-cabecera { visibility: visible; }
+  .botones-cabecera label { color: #fff; font-size: 0.85rem; display: flex; flex-direction: column; gap: 4px; }
+  #btn-pantalla-completa { display: block; }
+
+  /* Marcador mini siempre visible, arriba a la izquierda. */
+  #marcador-mini {
+    display: block; position: fixed; top: 4px; left: 6px; z-index: 20; padding: 3px 8px; border-radius: 8px;
+    background: rgba(0, 0, 0, 0.5); color: #fff; font-size: 0.68rem; line-height: 1.3;
+  }
+  #marcador-mini .mini-fila.yo { font-weight: bold; }
+  #marcador-mini .punto-asiento { width: 9px; height: 9px; margin-right: 4px; }
+  #marcador-mini .mini-obj { opacity: 0.7; font-size: 0.6rem; }
+
+  /* Tapete: una sola pantalla. Mesa rectangular arriba y mi mano abajo. */
+  #juego { display: block; padding: 0; min-height: 0; }
+  #tapete { height: 100dvh; min-height: 0; padding: 3px 0 0; gap: 0; border-radius: 0; }
+  #mesa-circular {
+    flex: 1 1 auto; min-height: 0; width: calc(100% - 12px); height: auto; margin: 0 6px; border-radius: 18px;
+    background: rgba(0, 0, 0, 0.18);
+  }
+  #mesa-circular::before {
+    content: attr(data-info); position: absolute; left: 10px; bottom: 4px; font-size: 0.6rem; color: rgba(255, 255, 255, 0.7);
+  }
+  #cadena-fichas { top: 53%; }
+  #cadena-fichas .vacia-circulo { font-size: 0.75rem; }
+
+  /* Puestos: chips pequeños. */
+  .puesto-jugador { padding: 3px 7px; gap: 2px; min-width: 0; border-radius: 10px; max-width: 128px; }
+  .puesto-jugador .nombre { font-size: 0.78rem; line-height: 1.1; max-width: 118px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .puesto-jugador .pila { min-height: 0; gap: 4px; }
+  .puesto-jugador .pila .ficha-mesa { width: 14px; height: 28px; border-width: 2px; }
+  .puesto-jugador .marcador-mini { font-size: 0.65rem; padding: 0 6px; }
+  .puesto-jugador .equipo-txt { display: none; }
+  .puesto-jugador .badge-mano { top: -14px; left: auto; right: -8px; transform: none; font-size: 1rem; }
+  .etiqueta-accion { font-size: 0.62rem; padding: 1px 6px; margin-top: 0; white-space: normal; text-align: center; }
+  .puesto-jugador .btn-bot-asiento, .puesto-jugador .etiqueta-bot { font-size: 0.55rem; padding: 1px 5px; }
+  .mano-final { max-width: 124px; gap: 2px; margin-top: 2px; }
+  .ficha-mini { width: 15px; height: 30px; border-radius: 3px; }
+  .ficha-mini .mitad { padding: 1px; gap: 0; }
+  .ficha-mini .punto { width: 2px; height: 2px; }
+  .puesto-jugador.puesto-humano { flex-direction: row; gap: 8px; max-width: 300px; }
+  .puesto-jugador.puesto-humano .nombre { max-width: 90px; }
+  .puesto-jugador.puesto-humano .mano-final { max-width: 130px; }
+
+  .banner-mano { padding: 8px 14px; font-size: 0.85rem; max-width: 56%; transform: translate(-50%, calc(-100% - 4px)); }
+  #btn-continuar-mano { padding: 8px 20px; font-size: 0.95rem; transform: translate(-50%, 4px); }
+
+  /* Mi mano: una sola fila de fichas. */
+  #zona-mano {
+    margin: 0; max-width: none; width: 100%; border-radius: 0; padding: 2px 40px 4px 8px; flex: 0 0 auto;
+  }
+  .cabecera-mano { margin-bottom: 2px; }
+  #titulo-mano { font-size: 0.65rem; font-weight: normal; }
+  #mano { flex-wrap: nowrap; gap: 5px; justify-content: center; align-items: flex-end; min-height: 0; }
+  .ficha-grande { width: 40px; height: 80px; border-radius: 6px; }
+  .ficha-grande .mitad { padding: 4px; gap: 1px; }
+  .ficha-grande .punto { width: 6px; height: 6px; }
+  .ficha.jugable:hover { transform: none; }
+  .ficha.jugable.marcada { transform: translateY(-10px); box-shadow: 0 0 0 3px #fff, 0 0 10px 3px rgba(255, 255, 255, 0.7); }
+  #zona-mano.mi-turno { box-shadow: none; background: rgba(255, 255, 255, 0.1); }
+
+  #dlg-decision { min-width: 0; max-width: 90vw; }
+  #dlg-decision .decision-titulo { font-size: 0.95rem; margin-bottom: 8px; }
+
+  /* Panel lateral (marcador, chat y registro): cajón a la derecha. */
+  #lateral {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(340px, 80vw); max-height: none; z-index: 40;
+    border-radius: 12px 0 0 12px; transform: translateX(100%); transition: transform 0.2s ease;
+    box-shadow: -4px 0 14px rgba(0, 0, 0, 0.4);
+  }
+  #lateral.abierto { transform: none; }
+  #btn-panel {
+    display: block; position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 41;
+    width: 30px; height: 64px; padding: 0; font-size: 1.6rem; background: rgba(0, 0, 0, 0.55); color: white;
+    border: none; border-radius: 10px 0 0 10px;
+  }
+  body:has(#lateral.abierto) #btn-panel { right: min(340px, 80vw); }
+  #badge-chat {
+    position: absolute; top: -6px; left: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+    background: #e63946; color: white; font-size: 0.75rem; font-weight: bold; line-height: 20px;
+  }
+  .chat-mensajes { max-height: 120px; }
+}
+
+@media (max-height: 360px) and (orientation: landscape) {
+  .ficha-grande { width: 36px; height: 72px; }
+  .ficha-grande .punto { width: 5px; height: 5px; }
+  .puesto-jugador .nombre { font-size: 0.72rem; }
+  .puesto-jugador .pila .ficha-mesa { width: 12px; height: 24px; }
+  #mano { gap: 4px; }
+}
 </style>
 </head>
 <body>
+<div id="aviso-girar" role="alert">
+  <div class="giro-icono">📱</div>
+  <div class="giro-titulo">Gira el móvil</div>
+  <div class="giro-texto">El Dominó se juega mejor con el móvil en horizontal.</div>
+</div>
 <header id="cabecera">
   <h1>Dominó</h1>
   <div id="info-partida"></div>
@@ -388,10 +543,14 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
         <option value="150">Rápida</option>
       </select>
     </label>
+    <button id="btn-pantalla-completa" class="solo-movil">Pantalla completa</button>
     <button id="btn-nueva">Nueva partida</button>
     <button id="btn-online" class="secundario">Jugar online</button>
   </div>
+  <button id="btn-menu-movil" class="solo-movil" aria-label="Menú">☰</button>
 </header>
+<button id="btn-panel" class="solo-movil" aria-label="Marcador, chat y registro">‹<span id="badge-chat" hidden></span></button>
+<div id="marcador-mini" class="solo-movil"></div>
 
 <main id="juego" hidden>
   <section id="tapete">
@@ -964,8 +1123,21 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     // `resolve` de la promesa de "Continuar" al acabar una mano, mientras
     // está pendiente (ver `esperarContinuar`); null si no se está esperando
     // ningún clic.
-    continuarPendiente: null
+    continuarPendiente: null,
+    // Móvil: ficha de la mano marcada con el primer toque (el segundo la juega).
+    fichaMarcada: null,
+    // Móvil: panel lateral desplegado y mensajes del chat ya vistos.
+    panelAbierto: false,
+    chatVistos: 0
   };
+  function esCompacto() {
+    return window.matchMedia("(max-height: 560px) and (orientation: landscape)").matches;
+  }
+  function esTactil() {
+    return window.matchMedia("(pointer: coarse)").matches;
+  }
+  var NOMBRE_EQUIPO = ["Amarillos", "Azules"];
+  var COLOR_EQUIPO = ["#e8b84b", "#6fa8dc"];
   function limpiarConexionRed() {
     if (E.red) {
       E.red.dejarDeEscucharMesa?.();
@@ -1015,8 +1187,12 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
   function equipoDe2(i) {
     return E.parejas.findIndex((p) => p.includes(i));
   }
+  function yo() {
+    const h = E.jugadores.findIndex((j) => j.esHumano);
+    return h >= 0 ? h : 0;
+  }
   function esMiEquipo(i) {
-    return equipoDe2(i) === equipoDe2(0);
+    return equipoDe2(i) === equipoDe2(yo());
   }
   function crearDriverHumano(indice) {
     return {
@@ -1085,7 +1261,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     render();
   }
   function equipoTexto(equipo) {
-    return equipo === equipoDe2(0) ? "tu pareja" : "la pareja rival";
+    return equipo === equipoDe2(yo()) ? "tu pareja" : "la pareja rival";
   }
   function mostrarBannerMano(texto) {
     const banner = document.getElementById("banner-mano");
@@ -1199,6 +1375,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     renderRegistro();
     renderChat();
     renderControlesMesa();
+    actualizarBadgeChat();
   }
   function renderChat() {
     const caja = document.getElementById("chat-caja");
@@ -1208,6 +1385,21 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     const cont = document.getElementById("chat-mensajes");
     cont.innerHTML = E.chatMensajes.map((m) => `<div class="chat-linea"><strong>${escaparHtml(m.nombre)}:</strong> ${escaparHtml(m.texto)}</div>`).join("");
     cont.scrollTop = cont.scrollHeight;
+  }
+  function actualizarBadgeChat() {
+    const badge = document.getElementById("badge-chat");
+    if (!badge) return;
+    const total = E.red ? E.chatMensajes.length : 0;
+    if (E.panelAbierto) E.chatVistos = total;
+    const sinLeer = Math.max(0, total - E.chatVistos);
+    badge.hidden = sinLeer === 0;
+    badge.textContent = String(sinLeer);
+  }
+  function ponerPanelAbierto(abierto) {
+    E.panelAbierto = abierto;
+    document.getElementById("lateral").classList.toggle("abierto", abierto);
+    document.getElementById("btn-panel").firstChild.textContent = abierto ? "›" : "‹";
+    actualizarBadgeChat();
   }
   function enviarChatDesdeFormulario() {
     if (!E.red) return;
@@ -1245,19 +1437,37 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     const restantes = E.actual.manos ? E.actual.manos.reduce((s, m) => s + m.length, 0) : 0;
     const extremosTxt = E.actual.extremos[0] == null ? "sin abrir" : `${E.actual.extremos[0]} · ${E.actual.extremos[1]}`;
     info.textContent = `Objetivo: ${E.objetivo} pts · extremos: ${extremosTxt} · fichas en juego: ${restantes}`;
+    const mc = document.getElementById("mesa-circular");
+    if (mc) mc.dataset.info = `Extremos: ${extremosTxt} · fichas: ${restantes}`;
   }
   function renderMarcador() {
     const cont = document.getElementById("marcador");
     cont.innerHTML = "";
-    const filas = [
-      { nombre: `Tu pareja (${E.parejas[equipoDe2(0)].map((i) => nombreJ(i)).join(" y ")})`, puntos: E.puntuacion[equipoDe2(0)] },
-      { nombre: `Rivales (${E.parejas[equipoDe2(0) === 0 ? 1 : 0].map((i) => nombreJ(i)).join(" y ")})`, puntos: E.puntuacion[equipoDe2(0) === 0 ? 1 : 0] }
-    ];
-    for (const f of filas) {
+    const miEq = equipoDe2(yo());
+    const mini = document.getElementById("marcador-mini");
+    if (mini) mini.innerHTML = "";
+    for (const eq of [0, 1]) {
+      const nombres = E.parejas[eq].map((i) => nombreJ(i)).join(" y ");
       const div = document.createElement("div");
-      div.className = "fila-marcador";
-      div.textContent = `${f.nombre}: ${f.puntos} / ${E.objetivo}`;
+      div.className = `fila-marcador${eq === miEq ? " mi-pareja" : ""}`;
+      const punto = document.createElement("span");
+      punto.className = "punto-asiento";
+      punto.style.setProperty("--col", COLOR_EQUIPO[eq]);
+      div.appendChild(punto);
+      div.appendChild(document.createTextNode(`${NOMBRE_EQUIPO[eq]}${eq === miEq ? " (tu pareja)" : ""} — ${nombres}: ${E.puntuacion[eq]} / ${E.objetivo}`));
       cont.appendChild(div);
+      if (mini) {
+        const m = document.createElement("div");
+        m.className = eq === miEq ? "mini-fila yo" : "mini-fila";
+        m.innerHTML = `<span class="punto-asiento" style="--col:${COLOR_EQUIPO[eq]}"></span>${NOMBRE_EQUIPO[eq]} <b>${E.puntuacion[eq]}</b>`;
+        mini.appendChild(m);
+      }
+    }
+    if (mini) {
+      const o = document.createElement("div");
+      o.className = "mini-obj";
+      o.textContent = `a ${E.objetivo}`;
+      mini.appendChild(o);
     }
   }
   function anguloJugador(i) {
@@ -1269,8 +1479,15 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
   }
   function colocarEnCirculo(el, i, radioPorc) {
     const angulo = anguloJugador(i) * Math.PI / 180;
-    const x = 50 + radioPorc * Math.sin(angulo);
-    const y = 50 - radioPorc * Math.cos(angulo);
+    let x = 50 + radioPorc * Math.sin(angulo);
+    let y = 50 - radioPorc * Math.cos(angulo);
+    if (esCompacto()) {
+      const humano = i === yo();
+      const rx = 42.5;
+      const ry = humano ? 39 : 34;
+      x = 50 + rx * Math.sin(angulo);
+      y = 50 - ry * Math.cos(angulo);
+    }
     el.style.left = `${x}%`;
     el.style.top = `${y}%`;
   }
@@ -1447,10 +1664,12 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
       return;
     }
     const humano = E.jugadores.findIndex((j) => j.esHumano);
+    cont.classList.toggle("mi-eq-1", equipoDe2(yo()) === 1);
     E.jugadores.forEach((j, i) => {
       const puesto = document.createElement("div");
       const esHumano = i === humano;
       puesto.className = `puesto-jugador equipo-${equipoDe2(i)}${i === E.actual.turno ? " turno" : ""}${esHumano ? " puesto-humano" : ""}`;
+      puesto.style.setProperty("--col", COLOR_EQUIPO[equipoDe2(i)]);
       colocarEnCirculo(puesto, i, esHumano ? 48 : 43);
       if (i === E.actual.salidor) {
         const badge = document.createElement("div");
@@ -1484,8 +1703,8 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
         puesto.appendChild(pila);
       }
       const equipoTxt = document.createElement("div");
-      equipoTxt.className = "marcador-mini";
-      equipoTxt.textContent = esMiEquipo(i) ? "Tu pareja" : "Rival";
+      equipoTxt.className = "marcador-mini equipo-txt";
+      equipoTxt.textContent = `${NOMBRE_EQUIPO[equipoDe2(i)]}${esMiEquipo(i) ? " · tu pareja" : ""}`;
       puesto.appendChild(equipoTxt);
       const infoAsiento = (E.red?.jugadoresMesa || []).find((jm) => jm.asiento === i);
       const esBot = !!(infoAsiento && infoAsiento.sustituidoPorBot);
@@ -1545,6 +1764,16 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
       cadenaDiv.style.width = `${CONTENEDOR}px`;
       cadenaDiv.style.height = `${CONTENEDOR}px`;
       cadenaDiv.style.transform = "translate(-50%, -50%)";
+      if (esCompacto()) {
+        const libreW = cont.clientWidth * 0.68;
+        const libreH = cont.clientHeight * 0.4;
+        const bw = layout.maxX - layout.minX + 6;
+        const bh = layout.maxY - layout.minY + 6;
+        const esc = Math.max(0.3, Math.min(1, libreW / bw, libreH / bh));
+        const cx = (layout.minX + layout.maxX) / 2;
+        const cy = (layout.minY + layout.maxY) / 2;
+        cadenaDiv.style.transform = `translate(-50%, -50%) scale(${esc}) translate(${-cx}px, ${-cy}px)`;
+      }
       layout.colocadas.forEach((colocada, i) => {
         const el = elFicha(colocada.ficha, { tam: "cadena", girada: colocada.girada });
         el.style.position = "absolute";
@@ -1609,6 +1838,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     const zona = document.getElementById("zona-mano");
     cont.innerHTML = "";
     const esMiTurnoDeFicha = !!(E.pendiente && E.pendiente.tipo === "ficha");
+    if (!esMiTurnoDeFicha) E.fichaMarcada = null;
     zona.classList.toggle("mi-turno", esMiTurnoDeFicha);
     const humano = E.jugadores.findIndex((j) => j.esHumano);
     let manoBase = null;
@@ -1618,7 +1848,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
       manoBase = E.pendiente.contexto.manoPropia;
       jugables = E.pendiente.contexto.jugables;
       extremosActuales = E.pendiente.contexto.extremos;
-      titulo.textContent = `Elige una ficha, ${nombreJ(E.pendiente.indiceJugador)}`;
+      titulo.textContent = esTactil() ? "Toca una ficha para marcarla y otra vez para jugarla" : `Elige una ficha, ${nombreJ(E.pendiente.indiceJugador)}`;
     } else if (E.actual && humano >= 0 && E.actual.manos && E.actual.manos[humano]) {
       manoBase = E.actual.manos[humano];
       titulo.textContent = `Tu mano (${E.jugadores[humano].nombre})`;
@@ -1632,7 +1862,14 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
       const esJugable = jugables ? !!opcion : null;
       const el = elFicha(ficha, { tam: "grande", jugable: esJugable });
       if (opcion) {
+        if (E.fichaMarcada === id) el.classList.add("marcada");
         el.addEventListener("click", async () => {
+          if (esTactil() && E.fichaMarcada !== id) {
+            E.fichaMarcada = id;
+            renderManoHumana();
+            return;
+          }
+          E.fichaMarcada = null;
           const { resolve } = E.pendiente;
           let extremo = opcion.extremos[0];
           if (opcion.extremos.length === 2 && extremosActuales[0] !== extremosActuales[1]) {
@@ -1728,11 +1965,11 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
   function mostrarFin(resultado, { forzada = false } = {}) {
     const dlg = document.getElementById("dlg-fin");
     const puntuacion = resultado.puntuacion || E.puntuacion;
-    const cuerpo = forzada ? "<p>Alguien ha terminado la partida. Se queda con el marcador que había en este momento.</p>" : `<p><strong>${resultado.equipoGanador === equipoDe2(0) ? "Habéis ganado tu pareja y tú" : "Ha ganado la pareja rival"}</strong></p>`;
+    const cuerpo = forzada ? "<p>Alguien ha terminado la partida. Se queda con el marcador que había en este momento.</p>" : `<p><strong>${resultado.equipoGanador === equipoDe2(yo()) ? "Habéis ganado tu pareja y tú" : "Ha ganado la pareja rival"}</strong></p>`;
     dlg.innerHTML = `
     <h2>${forzada ? "Partida terminada" : "Fin de la partida"}</h2>
     ${cuerpo}
-    <p>${puntuacion[0]} - ${puntuacion[1]}</p>
+    <p><span class="punto-asiento" style="--col:${COLOR_EQUIPO[0]}"></span>${NOMBRE_EQUIPO[0]} ${puntuacion[0]} — <span class="punto-asiento" style="--col:${COLOR_EQUIPO[1]}"></span>${NOMBRE_EQUIPO[1]} ${puntuacion[1]}</p>
     <button id="btn-cerrar-fin">Cerrar</button>
   `;
     dlg.showModal();
@@ -1928,6 +2165,36 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     dlg.showModal();
   }
   document.getElementById("btn-nueva").addEventListener("click", abrirConfig);
+  document.getElementById("btn-menu-movil").addEventListener("click", () => {
+    document.getElementById("cabecera").classList.toggle("abierto");
+  });
+  document.querySelector(".botones-cabecera").addEventListener("click", (ev) => {
+    if (ev.target.closest("button")) document.getElementById("cabecera").classList.remove("abierto");
+  });
+  document.getElementById("btn-panel").addEventListener("click", () => ponerPanelAbierto(!E.panelAbierto));
+  var btnPantallaCompleta = document.getElementById("btn-pantalla-completa");
+  if (btnPantallaCompleta) {
+    if (!document.documentElement.requestFullscreen) {
+      btnPantallaCompleta.remove();
+    } else {
+      btnPantallaCompleta.addEventListener("click", () => {
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {
+        });
+        else document.documentElement.requestFullscreen({ navigationUI: "hide" }).catch(() => {
+        });
+      });
+      document.addEventListener("fullscreenchange", () => {
+        btnPantallaCompleta.textContent = document.fullscreenElement ? "Salir de pantalla completa" : "Pantalla completa";
+      });
+    }
+  }
+  var temporizadorResize = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(temporizadorResize);
+    temporizadorResize = setTimeout(() => {
+      if (E.actual) render();
+    }, 150);
+  });
   document.getElementById("btn-online").addEventListener("click", abrirOnline);
   document.getElementById("chat-enviar").addEventListener("click", enviarChatDesdeFormulario);
   document.getElementById("chat-input").addEventListener("keydown", (ev) => {
