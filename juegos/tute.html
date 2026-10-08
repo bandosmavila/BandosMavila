@@ -352,9 +352,207 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
 .chat-entrada { display: flex; gap: 6px; }
 .chat-entrada input { flex: 1; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; }
 .chat-entrada button { padding: 6px 12px; font-size: 0.85rem; }
+
+/* ======================================================================
+   Tabla de puntos del fin de mano (sirve en ordenador y en móvil)
+   ====================================================================== */
+.tabla-fin { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 1.05rem; }
+.tabla-fin th, .tabla-fin td { padding: 6px 12px; text-align: center; }
+.tabla-fin th { font-size: 0.85rem; color: #555; }
+.tabla-fin td:first-child { text-align: left; font-weight: 600; }
+.tabla-fin tr.total td { border-top: 2px solid #2a1a3d; font-weight: 900; font-size: 1.25rem; }
+
+/* ======================================================================
+   MÓVIL
+   Todo lo de abajo solo se activa en pantallas pequeñas; en el ordenador
+   la pantalla queda exactamente igual que antes.
+   ====================================================================== */
+.solo-movil { display: none; }
+#aviso-girar { display: none; }
+
+/* Móvil en vertical: se pide que se gire (Tute se juega en horizontal). */
+@media (orientation: portrait) and (max-width: 700px) {
+  #aviso-girar {
+    display: flex; position: fixed; inset: 0; z-index: 2000;
+    flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    background: #130b1d; color: white; text-align: center; padding: 24px;
+  }
+  /* Con el aviso puesto no se pinta nada más (ni los diálogos), para que la página no se salga de la pantalla. */
+  body > :not(#aviso-girar) { display: none !important; }
+  html, body { overflow: hidden; }
+  .giro-icono { font-size: 4rem; animation: girar-movil 2.4s ease-in-out infinite; }
+  .giro-titulo { font-size: 1.5rem; font-weight: bold; color: var(--acento); }
+  .giro-texto { font-size: 1.05rem; opacity: 0.9; }
+}
+@keyframes girar-movil { 0%, 20% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+
+/* Táctil: sin "hover" pegajoso en las cartas. */
+@media (hover: none) {
+  .carta.jugable:hover { transform: none; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35); }
+  .carta.orientacion-legal:hover { box-shadow: 0 0 0 3px #2ecc71; }
+}
+.carta.marcada { transform: translateY(-22px) !important; box-shadow: 0 0 0 4px var(--acento), 0 6px 14px rgba(0, 0, 0, 0.55) !important; z-index: 8; }
+
+/* Móvil en horizontal (pantalla baja y apaisada). */
+@media (max-height: 560px) and (orientation: landscape) {
+  :root { --alto-mano: 106px; }
+  dialog { max-height: 92dvh; overflow-y: auto; padding: 12px 18px; max-width: min(560px, 94vw); }
+  button { padding: 9px 14px; }
+
+  /* Antes de empezar (juego oculto) se ve la cabecera normal; en partida pasa a un menú ☰. */
+  body:has(#juego:not([hidden])) { overflow: hidden; }
+  body:has(#juego:not([hidden])) #cabecera {
+    position: fixed; top: 6px; right: 6px; z-index: 50; padding: 0; background: none; gap: 0; flex-wrap: nowrap;
+  }
+  body:has(#juego:not([hidden])) #cabecera h1,
+  body:has(#juego:not([hidden])) #info-partida { display: none; }
+  body:has(#juego:not([hidden])) #btn-menu-movil {
+    display: block; width: 42px; height: 38px; padding: 0; font-size: 1.3rem; background: rgba(0, 0, 0, 0.5); color: white;
+  }
+  body:has(#juego:not([hidden])) .botones-cabecera {
+    position: fixed; top: 48px; right: 6px; z-index: 50; width: 190px;
+    flex-direction: column; align-items: stretch; gap: 8px; padding: 10px; border-radius: 10px;
+    background: #130b1d; visibility: hidden;
+  }
+  body:has(#juego:not([hidden])) #cabecera.abierto .botones-cabecera { visibility: visible; }
+  body:has(#juego:not([hidden])) .botones-cabecera label { color: white; font-size: 0.85rem; display: flex; flex-direction: column; gap: 4px; }
+  /* El botón de renuncio no se esconde en el menú: queda siempre a mano, abajo a la izquierda. */
+  body:has(#juego:not([hidden])) #btn-renuncio {
+    visibility: visible; position: fixed; left: 8px; bottom: 8px; z-index: 30; padding: 7px 10px; font-size: 0.8rem;
+  }
+
+  /* Marcador compacto y triunfo, arriba a la izquierda. */
+  body:has(#juego:not([hidden])) #marcador-mini {
+    display: block; position: fixed; top: 6px; left: 6px; z-index: 20;
+    background: rgba(0, 0, 0, 0.5); color: white; border-radius: 10px; padding: 4px 12px; text-align: center;
+  }
+  .mm-juegos { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .mm-lado { display: flex; flex-direction: column; align-items: center; line-height: 1; padding: 2px 6px; border-radius: 6px; }
+  .mm-lado small { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.4px; opacity: 0.85; }
+  .mm-lado b { font-size: 1.7rem; }
+  .mm-guion { font-size: 1.3rem; opacity: 0.6; }
+  .mm-mano { font-size: 0.72rem; color: var(--acento); }
+  .mm-objetivo { font-size: 0.6rem; opacity: 0.7; }
+
+  #juego { display: block; padding: 0; }
+  #tapete { padding: 0; border-radius: 0; min-height: 100dvh; height: 100dvh; gap: 0; position: relative; overflow: visible; }
+  #triunfo-visual {
+    position: fixed; top: 50px; right: 6px; z-index: 19; flex-direction: row; gap: 5px; padding: 0;
+    background: rgba(0, 0, 0, 0.5); border-radius: 10px; padding: 3px 8px 3px 6px; align-items: center;
+  }
+  #triunfo-visual .triunfo-texto { font-size: 0.62rem; writing-mode: horizontal-tb; max-width: 46px; line-height: 1.1; }
+  #triunfo-visual .carta-mesa { width: 28px; height: 42px; padding: 5px; }
+  #triunfo-visual .carta-mesa .carta-banda { display: none; }
+
+  #mesa-circular {
+    width: 100%; height: calc(100dvh - var(--alto-mano)); margin: 0; border-radius: 0; border: none;
+  }
+  .puesto-jugador {
+    flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center;
+    gap: 4px 8px; min-width: 0; max-width: 220px; padding: 4px 10px;
+  }
+  .puesto-jugador.lateral { flex-direction: column; max-width: 104px; padding: 4px 8px; gap: 3px; }
+  .puesto-jugador .nombre { font-size: 0.9rem; }
+  .puesto-jugador .etiqueta-pareja { display: none; }
+  .puesto-jugador .pila { min-height: 0; }
+  .puesto-jugador .pila .carta, .puesto-jugador .pila-bazas .carta-mini { display: none; }
+  .puesto-jugador .badge-mano { top: -14px; font-size: 1.1rem; }
+  #mesa-circular .vacia-circulo { display: none; }
+  .carta-mesa { width: 54px; height: 78px; padding: 9px; }
+  .carta-mesa .carta-banda { top: 9px; width: 8px; }
+  .carta-mesa .carta-banda b { font-size: 8px; }
+  .carta-mesa .carta-banda svg { width: 7px; height: 7px; }
+
+  /* Mi mano, en una franja abajo: cartas más pequeñas, solapadas, en una sola fila. */
+  #zona-mano {
+    margin: 0; max-width: none; width: 100%; height: var(--alto-mano); border-radius: 0; padding: 4px 8px 4px;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .cabecera-mano { display: none; }
+  .carta-grande { width: 66px; height: 94px; padding: 10px; }
+  .carta-grande .carta-banda { top: 10px; width: 10px; gap: 2px; }
+  .carta-grande .carta-banda b { font-size: 8px; }
+  .carta-grande .carta-banda svg { width: 8px; height: 8px; }
+  #mano .carta { margin-left: -22px; }
+  #mano .carta:first-child { margin-left: 0; }
+
+  /* Panel de chat y registro: oculto a la derecha, con una flecha para abrirlo. */
+  #lateral {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(340px, 80vw); max-height: none; z-index: 40;
+    border-radius: 12px 0 0 12px; transform: translateX(100%); transition: transform 0.2s ease;
+    box-shadow: -4px 0 14px rgba(0, 0, 0, 0.4);
+  }
+  #lateral.abierto { transform: none; }
+  body:has(#juego:not([hidden])) #btn-panel {
+    display: block; position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 41;
+    width: 30px; height: 64px; padding: 0; font-size: 1.6rem; background: rgba(0, 0, 0, 0.55); color: white;
+    border-radius: 10px 0 0 10px;
+  }
+  body:has(#lateral.abierto) #btn-panel { right: min(340px, 80vw); }
+  #badge-chat {
+    position: absolute; top: -6px; left: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+    background: #e63946; color: white; font-size: 0.75rem; font-weight: bold; line-height: 20px;
+  }
+  .chat-mensajes { max-height: 120px; }
+}
+
+
+/* ======================================================================
+   Colores FIJOS de las parejas (iguales para los cuatro jugadores):
+   Amarillos (asientos 0 y 2) y Azules (asientos 1 y 3). Tonos claros con el texto
+   siempre legible (nunca negro sobre fondo oscuro).
+   ====================================================================== */
+.puesto-jugador { border-width: 3px; }
+.puesto-jugador.pareja-0 {
+  background: linear-gradient(rgba(232, 184, 75, 0.32), rgba(232, 184, 75, 0.32)), rgba(0, 0, 0, 0.4);
+  border-color: var(--pareja-a);
+}
+.puesto-jugador.pareja-1 {
+  background: linear-gradient(rgba(111, 168, 220, 0.32), rgba(111, 168, 220, 0.32)), rgba(0, 0, 0, 0.4);
+  border-color: var(--pareja-b);
+}
+.puesto-jugador.puesto-humano.pareja-0 { border-bottom: 3px solid var(--pareja-a); }
+.puesto-jugador.puesto-humano.pareja-1 { border-bottom: 3px solid var(--pareja-b); }
+.puesto-jugador .nombre { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); }
+.puesto-jugador.pareja-0 .etiqueta-pareja { color: #ffe08a; opacity: 1; }
+.puesto-jugador.pareja-1 .etiqueta-pareja { color: #bfe0ff; opacity: 1; }
+/* A quien le toca: resplandor BLANCO que parpadea (el dorado se confundiría con el amarillo de una pareja). */
+.puesto-jugador.turno, .puesto-jugador.puesto-humano.turno { animation: turno-pulso-blanco 1.1s ease-in-out infinite; }
+.puesto-jugador.pareja-0.turno {
+  background: linear-gradient(rgba(232, 184, 75, 0.55), rgba(232, 184, 75, 0.55)), rgba(0, 0, 0, 0.3);
+}
+.puesto-jugador.pareja-1.turno {
+  background: linear-gradient(rgba(111, 168, 220, 0.55), rgba(111, 168, 220, 0.55)), rgba(0, 0, 0, 0.3);
+}
+@keyframes turno-pulso-blanco {
+  0%, 100% { box-shadow: 0 0 0 3px #fff, 0 0 10px 2px rgba(255, 255, 255, 0.35); }
+  50% { box-shadow: 0 0 0 5px #fff, 0 0 22px 10px rgba(255, 255, 255, 0.85); }
+}
+
+/* Marcador (panel): cada lado en su color. */
+.mg-lado.amarillo { background: #fff3c4; border: 3px solid #e8b84b; }
+.mg-lado.azul { background: #dcefff; border: 3px solid #6fa8dc; }
+.mg-lado.va-ganando { box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); }
+.mg-nombres { font-size: 0.72rem; color: #333; margin-top: 3px; line-height: 1.2; }
+.punto-color { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin: 0 4px; vertical-align: middle; }
+.punto-color.amarillo { background: #e8b84b; }
+.punto-color.azul { background: #6fa8dc; }
+.tabla-fin th.amarillo { background: #fff3c4; border-bottom: 3px solid #e8b84b; color: #1a1a1a; }
+.tabla-fin th.azul { background: #dcefff; border-bottom: 3px solid #6fa8dc; color: #1a1a1a; }
+.tabla-fin th small { display: block; font-weight: normal; font-size: 0.72rem; color: #444; }
+
+/* Marcador compacto del móvil. */
+.mm-lado.amarillo { background: rgba(232, 184, 75, 0.9); color: #1a1a1a; }
+.mm-lado.azul { background: rgba(111, 168, 220, 0.92); color: #1a1a1a; }
+.mm-lado.va-ganando { outline: 2px solid #fff; }
 </style>
 </head>
 <body>
+<div id="aviso-girar" role="alert">
+  <div class="giro-icono">📱</div>
+  <div class="giro-titulo">Gira el móvil</div>
+  <div class="giro-texto">Tute se juega mejor con el móvil en horizontal.</div>
+</div>
 <header id="cabecera">
   <h1>Tute</h1>
   <div id="info-partida"></div>
@@ -370,7 +568,10 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     <button id="btn-nueva">Nueva partida</button>
     <button id="btn-online" class="secundario">Jugar online</button>
   </div>
+  <button id="btn-menu-movil" class="solo-movil" aria-label="Menú">☰</button>
 </header>
+<div id="marcador-mini" class="solo-movil"></div>
+<button id="btn-panel" class="solo-movil" aria-label="Chat y registro">‹<span id="badge-chat" hidden></span></button>
 
 <main id="juego" hidden>
   <section id="tapete">
@@ -1375,6 +1576,10 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
 
   // ui/app.js
   var NOMBRE_PALO = { oros: "Oros", copas: "Copas", espadas: "Espadas", bastos: "Bastos" };
+  var PAREJAS = [
+    { nombre: "Amarillos", clase: "amarillo" },
+    { nombre: "Azules", clase: "azul" }
+  ];
   function escaparHtml(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   }
@@ -1418,9 +1623,19 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     chatMensajes: [],
     // Se pone a true cuando la mesa pasa a "terminada" (alguien ha pulsado
     // "Terminar partida"), para no procesar ese cambio dos veces.
-    terminandoForzado: false
+    terminandoForzado: false,
+    // Modo móvil: carta marcada con el primer toque (el segundo la juega), y estado del panel lateral.
+    cartaMarcada: null,
+    panelAbierto: false,
+    chatVistos: 0
   };
   var ARRASTRE = { id: null };
+  function esCompacto() {
+    return window.matchMedia("(max-height: 560px) and (orientation: landscape)").matches;
+  }
+  function esTactil() {
+    return window.matchMedia("(pointer: coarse)").matches;
+  }
   function limpiarConexionRed() {
     if (E.red) {
       E.red.dejarDeEscucharMesa?.();
@@ -1757,17 +1972,31 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     E.terminandoForzado = true;
     mostrarFin({ juegosGanados: juegosActuales, parejaGanadoraEncuentro: null }, { forzada: true });
   }
+  function tablaPuntosMano(r) {
+    if (!r.puntosBazas || !r.puntosCantes) return "";
+    const fila = (txt, a, b, clase = "") => `<tr class="${clase}"><td>${txt}</td><td>${a}</td><td>${b}</td></tr>`;
+    const t0 = r.totalPareja0 ?? r.puntosBazas[0] + r.puntosCantes[0];
+    const t1 = r.totalPareja1 ?? r.puntosBazas[1] + r.puntosCantes[1];
+    return `<table class="tabla-fin">
+    <tr><th></th>
+      <th class="amarillo">${PAREJAS[0].nombre}<small>${escaparHtml(nombrePareja(0))}</small></th>
+      <th class="azul">${PAREJAS[1].nombre}<small>${escaparHtml(nombrePareja(1))}</small></th></tr>
+    ${fila("Bazas", r.puntosBazas[0], r.puntosBazas[1])}
+    ${fila("Cantes", r.puntosCantes[0], r.puntosCantes[1])}
+    ${fila("TOTAL", t0, t1, "total")}
+  </table>`;
+  }
   function mostrarFinMano(r) {
     if (!haySupervisionHumana()) {
       render();
       return esperar(Math.max(velocidadBots(), 900));
     }
     const dlg = document.getElementById("dlg-finmano");
-    const cuerpo = r.interrumpidaPorTute ? `<p>¡Tute de ${r.interrumpidaPorTute.tipo}! ${nombreJ(r.interrumpidaPorTute.jugador)} tenía los 4 ${r.interrumpidaPorTute.tipo} en la mano. Mano cortada aquí mismo.</p>` : r.interrumpidaPorRenuncio ? `<p>Mano cortada por renuncio.</p>` : `<p>${nombrePareja(0)}: ${r.totalPareja0} puntos · ${nombrePareja(1)}: ${r.totalPareja1} puntos${r.desempatePorUltimaBaza ? " (empate, decide la última baza)" : ""}</p>`;
+    const cuerpo = r.interrumpidaPorTute ? `<p>¡Tute de ${r.interrumpidaPorTute.tipo}! ${nombreJ(r.interrumpidaPorTute.jugador)} tenía los 4 ${r.interrumpidaPorTute.tipo} en la mano. Mano cortada aquí mismo.</p>` : r.interrumpidaPorRenuncio ? `<p>Mano cortada por renuncio.</p>` : `${tablaPuntosMano(r) || `<p>${nombrePareja(0)}: ${r.totalPareja0} puntos · ${nombrePareja(1)}: ${r.totalPareja1} puntos</p>`}${r.desempatePorUltimaBaza ? "<p>(empate, decide la última baza)</p>" : ""}`;
     dlg.innerHTML = `
     <h2>Fin de la mano</h2>
     ${cuerpo}
-    <p><strong>Gana la mano: ${nombrePareja(r.parejaGanadora)}</strong>${r.esDoble ? " — ¡DOBLE! (2 juegos)" : " (1 juego)"}</p>
+    <p><strong>Gana la mano: ${PAREJAS[r.parejaGanadora].nombre} (${escaparHtml(nombrePareja(r.parejaGanadora))})</strong>${r.esDoble ? " — ¡DOBLE! (2 juegos)" : " (1 juego)"}</p>
     <button class="principal" id="btn-cerrar-finmano">Siguiente mano</button>
   `;
     dlg.showModal();
@@ -1795,6 +2024,22 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     const cont = document.getElementById("chat-mensajes");
     cont.innerHTML = E.chatMensajes.map((m) => `<div class="chat-linea"><strong>${escaparHtml(m.nombre)}:</strong> ${escaparHtml(m.texto)}</div>`).join("");
     cont.scrollTop = cont.scrollHeight;
+    actualizarBadgeChat();
+  }
+  function actualizarBadgeChat() {
+    const badge = document.getElementById("badge-chat");
+    if (!badge) return;
+    if (E.panelAbierto) E.chatVistos = E.chatMensajes.length;
+    const sinLeer = E.red ? Math.max(0, E.chatMensajes.length - E.chatVistos) : 0;
+    badge.hidden = sinLeer === 0;
+    badge.textContent = String(sinLeer);
+  }
+  function ponerPanelAbierto(abierto) {
+    E.panelAbierto = abierto;
+    document.getElementById("lateral").classList.toggle("abierto", abierto);
+    const btn = document.getElementById("btn-panel");
+    btn.firstChild.textContent = abierto ? "›" : "‹";
+    actualizarBadgeChat();
   }
   function enviarChatDesdeFormulario() {
     if (!E.red) return;
@@ -1854,33 +2099,35 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     cabecera.textContent = `Partida a ${E.objetivoJuegos} juegos`;
     cont.appendChild(cabecera);
     const humano = E.jugadores.findIndex((j) => j.esHumano);
-    const nosotros = humano >= 0 ? parejaDe(humano) : 0;
-    const ellos = nosotros === 0 ? 1 : 0;
-    const juegosNosotros = E.juegosGanados[nosotros] || 0;
-    const juegosEllos = E.juegosGanados[ellos] || 0;
-    const vaGanandoNosotros = juegosNosotros > juegosEllos;
-    const vaGanandoEllos = juegosEllos > juegosNosotros;
+    const miPareja = humano >= 0 ? parejaDe(humano) : null;
+    const juegos = [E.juegosGanados[0] || 0, E.juegosGanados[1] || 0];
+    const lideran = [juegos[0] > juegos[1], juegos[1] > juegos[0]];
+    const puntosMano = E.actual ? [0, 1].map((p) => (E.actual.puntosBazas[p] || 0) + (E.actual.puntosCantes[p] || 0)) : null;
+    const ladoGrande = (p) => `
+    <div class="mg-lado ${PAREJAS[p].clase}${lideran[p] ? " va-ganando" : ""}">
+      <div class="mg-etiqueta">${PAREJAS[p].nombre}${miPareja === p ? " ★" : ""}</div>
+      <div class="mg-cifra">${juegos[p]}</div>
+      <div class="mg-nombres">${escaparHtml(nombrePareja(p))}${miPareja === p ? "<br><b>tu pareja</b>" : ""}</div>
+    </div>`;
     const marcadorGrande = document.createElement("div");
     marcadorGrande.className = "marcador-grande";
-    marcadorGrande.innerHTML = `
-    <div class="mg-lado${vaGanandoNosotros ? " va-ganando" : ""}">
-      <div class="mg-etiqueta">Nosotros</div>
-      <div class="mg-cifra">${juegosNosotros}</div>
-    </div>
-    <div class="mg-guion">-</div>
-    <div class="mg-lado${vaGanandoEllos ? " va-ganando" : ""}">
-      <div class="mg-etiqueta">Ellos</div>
-      <div class="mg-cifra">${juegosEllos}</div>
-    </div>
-  `;
+    marcadorGrande.innerHTML = `${ladoGrande(0)}<div class="mg-guion">-</div>${ladoGrande(1)}`;
     cont.appendChild(marcadorGrande);
-    if (E.actual) {
-      const extraNosotros = (E.actual.puntosBazas[nosotros] || 0) + (E.actual.puntosCantes[nosotros] || 0);
-      const extraEllos = (E.actual.puntosBazas[ellos] || 0) + (E.actual.puntosCantes[ellos] || 0);
+    let textoMano = "";
+    if (puntosMano) {
       const extra = document.createElement("div");
       extra.className = "marcador-extra";
-      extra.textContent = `Esta mano: ${extraNosotros} - ${extraEllos} pts`;
+      extra.innerHTML = `Esta mano: <span class="punto-color amarillo"></span>${puntosMano[0]} - ${puntosMano[1]}<span class="punto-color azul"></span> pts`;
       cont.appendChild(extra);
+      textoMano = `Mano: <span class="punto-color amarillo"></span>${puntosMano[0]} - ${puntosMano[1]}<span class="punto-color azul"></span>`;
+    }
+    const mini = document.getElementById("marcador-mini");
+    if (mini) {
+      const ladoMini = (p) => `<span class="mm-lado ${PAREJAS[p].clase}${lideran[p] ? " va-ganando" : ""}"><small>${PAREJAS[p].nombre}${miPareja === p ? " ★" : ""}</small><b>${juegos[p]}</b></span>`;
+      mini.innerHTML = `
+      <div class="mm-juegos">${ladoMini(0)}<span class="mm-guion">-</span>${ladoMini(1)}</div>
+      <div class="mm-mano">${textoMano}</div>
+      <div class="mm-objetivo">a ${E.objetivoJuegos} juegos</div>`;
     }
   }
   function indiceEnTurno() {
@@ -1900,8 +2147,22 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
   }
   function colocarEnCirculo(el, i, radioPorc) {
     const angulo = anguloJugador(i) * Math.PI / 180;
-    const x = 50 + radioPorc * Math.sin(angulo);
-    const y = 50 - radioPorc * Math.cos(angulo);
+    let rx = radioPorc;
+    let ry = radioPorc;
+    if (esCompacto()) {
+      if (radioPorc === 15) {
+        rx = 15;
+        ry = 18;
+      } else if (radioPorc === 47) {
+        rx = 0;
+        ry = 40;
+      } else {
+        rx = 40;
+        ry = 38;
+      }
+    }
+    const x = 50 + rx * Math.sin(angulo);
+    const y = 50 - ry * Math.cos(angulo);
     el.style.left = `${x}%`;
     el.style.top = `${y}%`;
   }
@@ -1923,6 +2184,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
       const puesto = document.createElement("div");
       puesto.className = `puesto-jugador pareja-${parejaDe(i)}${i === enTurno ? " turno" : ""}${esHumano ? " puesto-humano" : ""}`;
       colocarEnCirculo(puesto, i, esHumano ? 47 : 40);
+      if (Math.abs(Math.sin(anguloJugador(i) * Math.PI / 180)) > 0.5) puesto.classList.add("lateral");
       if (i === E.actual.indiceMano) {
         const mano = document.createElement("div");
         mano.className = "badge-mano";
@@ -1936,7 +2198,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
       puesto.appendChild(nombre);
       const parejaTxt = document.createElement("div");
       parejaTxt.className = "etiqueta-pareja";
-      parejaTxt.textContent = `pareja ${parejaDe(i) === 0 ? "A" : "B"} (con ${nombreJ(companeroDe(i))})`;
+      parejaTxt.textContent = `${PAREJAS[parejaDe(i)].nombre} (con ${nombreJ(companeroDe(i))})`;
       puesto.appendChild(parejaTxt);
       const cantosDeEste = E.actual.cantosCantados[i];
       if (cantosDeEste && cantosDeEste.length > 0) {
@@ -2005,6 +2267,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     cont.innerHTML = "";
     const esMiTurnoDeCarta = !!E.pendiente;
     zona.classList.toggle("mi-turno", esMiTurnoDeCarta);
+    if (!esMiTurnoDeCarta) E.cartaMarcada = null;
     const humano = E.jugadores.findIndex((j) => j.esHumano);
     let cartasBase = null;
     if (esMiTurnoDeCarta) {
@@ -2036,6 +2299,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
       const esLegal = legalesAhora ? legalesAhora.some((c) => idCarta(c) === id) : null;
       const el = elCarta(carta, { tam: "grande", jugable: esMiTurnoDeCarta ? true : null });
       if (esMiTurnoDeCarta) el.classList.toggle("orientacion-legal", !!esLegal);
+      el.classList.toggle("marcada", esMiTurnoDeCarta && E.cartaMarcada === id);
       el.draggable = true;
       el.dataset.id = id;
       el.addEventListener("dragstart", (ev) => {
@@ -2064,6 +2328,12 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
       });
       if (esMiTurnoDeCarta) {
         el.addEventListener("click", () => {
+          if (esTactil() && E.cartaMarcada !== id) {
+            E.cartaMarcada = id;
+            render();
+            return;
+          }
+          E.cartaMarcada = null;
           const resolver = E.pendiente.resolve;
           E.pendiente = null;
           resolver(carta);
@@ -2083,11 +2353,11 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
   }
   function mostrarFin(resultado, { forzada = false } = {}) {
     const dlg = document.getElementById("dlg-fin");
-    const cuerpo = forzada ? "<p>Alguien ha terminado la partida. Se queda con el marcador de juegos que había en este momento.</p>" : `<p><strong>Gana ${nombrePareja(resultado.parejaGanadoraEncuentro)}</strong></p>`;
+    const cuerpo = forzada ? "<p>Alguien ha terminado la partida. Se queda con el marcador de juegos que había en este momento.</p>" : `<p><strong>Gana ${PAREJAS[resultado.parejaGanadoraEncuentro].nombre} (${escaparHtml(nombrePareja(resultado.parejaGanadoraEncuentro))})</strong></p>`;
     dlg.innerHTML = `
     <h2>${forzada ? "Partida terminada" : "Fin del encuentro"}</h2>
     ${cuerpo}
-    <p>${nombrePareja(0)}: ${resultado.juegosGanados[0]} juegos · ${nombrePareja(1)}: ${resultado.juegosGanados[1]} juegos</p>
+    <p>${PAREJAS[0].nombre} (${escaparHtml(nombrePareja(0))}): ${resultado.juegosGanados[0]} juegos · ${PAREJAS[1].nombre} (${escaparHtml(nombrePareja(1))}): ${resultado.juegosGanados[1]} juegos</p>
     <button id="btn-cerrar-fin">Cerrar</button>
   `;
     dlg.showModal();
@@ -2283,6 +2553,13 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     });
     dlg.showModal();
   }
+  document.getElementById("btn-menu-movil").addEventListener("click", () => {
+    document.getElementById("cabecera").classList.toggle("abierto");
+  });
+  document.querySelector(".botones-cabecera").addEventListener("click", (ev) => {
+    if (ev.target.closest("button")) document.getElementById("cabecera").classList.remove("abierto");
+  });
+  document.getElementById("btn-panel").addEventListener("click", () => ponerPanelAbierto(!E.panelAbierto));
   document.getElementById("btn-nueva").addEventListener("click", abrirConfig);
   document.getElementById("btn-online").addEventListener("click", abrirOnline);
   document.getElementById("btn-renuncio").addEventListener("click", abrirDialogoRenuncio);
