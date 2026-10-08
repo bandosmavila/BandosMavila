@@ -494,6 +494,44 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     background: #e63946; color: white; font-size: 0.75rem; font-weight: bold; line-height: 20px;
   }
   .chat-mensajes { max-height: 120px; }
+  body:has(#juego:not([hidden])) #btn-pantalla-completa { display: block; }
+}
+
+/* Pantalla apaisada MUY baja (~300 px útiles): todo un punto más pequeño para que nada se pise. */
+@media (max-height: 360px) and (orientation: landscape) {
+  :root { --alto-mano: 90px; }
+  .carta-grande { width: 58px; height: 82px; padding: 9px; }
+  .carta-grande .carta-banda { top: 9px; width: 9px; }
+  #mano .carta { margin-left: -21px; }
+  #mano .carta:first-child { margin-left: 0; }
+  .carta.marcada { transform: translateY(-16px) !important; }
+  .carta-mesa { width: 42px; height: 60px; padding: 7px; }
+  .carta-mesa .carta-banda { top: 7px; width: 7px; }
+  .carta-mesa .carta-banda b { font-size: 7px; }
+
+  /* Marcador: una sola fila, sin la línea de "a 10 juegos". */
+  body:has(#juego:not([hidden])) #marcador-mini { padding: 2px 8px; border-radius: 8px; }
+  .mm-juegos { gap: 5px; }
+  .mm-lado { padding: 1px 6px; flex-direction: row; gap: 5px; align-items: baseline; }
+  .mm-lado small { font-size: 0.55rem; }
+  .mm-lado b { font-size: 1.15rem; }
+  .mm-guion { font-size: 1rem; }
+  .mm-mano { font-size: 0.62rem; }
+  .mm-objetivo { display: none; }
+
+  /* Triunfo: a la izquierda del botón ☰, en una sola fila pequeña. */
+  #triunfo-visual { top: 6px; right: 54px; padding: 2px 6px 2px 5px; gap: 4px; }
+  #triunfo-visual .triunfo-texto { font-size: 0.58rem; max-width: 52px; }
+  #triunfo-visual .carta-mesa { width: 22px; height: 33px; padding: 4px; }
+
+  /* Puestos: solo nombre y cartas que le quedan; sin el recuento de bazas (está en el panel). */
+  .puesto-jugador { padding: 2px 8px; gap: 3px 6px; }
+  .puesto-jugador.lateral { max-width: 84px; padding: 3px 6px; }
+  .puesto-jugador .nombre { font-size: 0.8rem; }
+  .puesto-jugador .pila-bazas { display: none; }
+  .puesto-jugador .badge-mano { top: -12px; font-size: 0.95rem; }
+  #btn-renuncio { padding: 5px 8px !important; font-size: 0.72rem !important; bottom: 6px !important; }
+  #btn-panel { height: 54px !important; }
 }
 
 
@@ -564,6 +602,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
         <option value="150">Rápida</option>
       </select>
     </label>
+    <button id="btn-pantalla-completa" class="solo-movil secundario">Pantalla completa</button>
     <button id="btn-renuncio" class="peligro">¡Renuncio!</button>
     <button id="btn-nueva">Nueva partida</button>
     <button id="btn-online" class="secundario">Jugar online</button>
@@ -1630,6 +1669,9 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     chatVistos: 0
   };
   var ARRASTRE = { id: null };
+  function esMuyBajo() {
+    return window.matchMedia("(max-height: 360px) and (orientation: landscape)").matches;
+  }
   function esCompacto() {
     return window.matchMedia("(max-height: 560px) and (orientation: landscape)").matches;
   }
@@ -2152,13 +2194,13 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
     if (esCompacto()) {
       if (radioPorc === 15) {
         rx = 15;
-        ry = 18;
+        ry = esMuyBajo() ? 15 : 18;
       } else if (radioPorc === 47) {
         rx = 0;
-        ry = 40;
+        ry = esMuyBajo() ? 41 : 40;
       } else {
         rx = 40;
-        ry = 38;
+        ry = esMuyBajo() ? 40 : 38;
       }
     }
     const x = 50 + rx * Math.sin(angulo);
@@ -2558,6 +2600,29 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
   });
   document.querySelector(".botones-cabecera").addEventListener("click", (ev) => {
     if (ev.target.closest("button")) document.getElementById("cabecera").classList.remove("abierto");
+  });
+  var btnPantallaCompleta = document.getElementById("btn-pantalla-completa");
+  if (btnPantallaCompleta) {
+    if (!document.documentElement.requestFullscreen) {
+      btnPantallaCompleta.remove();
+    } else {
+      btnPantallaCompleta.addEventListener("click", () => {
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {
+        });
+        else document.documentElement.requestFullscreen({ navigationUI: "hide" }).catch(() => {
+        });
+      });
+      document.addEventListener("fullscreenchange", () => {
+        btnPantallaCompleta.textContent = document.fullscreenElement ? "Salir de pantalla completa" : "Pantalla completa";
+      });
+    }
+  }
+  var temporizadorRedim = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(temporizadorRedim);
+    temporizadorRedim = setTimeout(() => {
+      if (E.actual) render();
+    }, 150);
   });
   document.getElementById("btn-panel").addEventListener("click", () => ponerPanelAbierto(!E.panelAbierto));
   document.getElementById("btn-nueva").addEventListener("click", abrirConfig);
