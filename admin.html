@@ -44,6 +44,24 @@
   .perla-hecho { background:var(--verde-claro); }
   .perla-incumplido { background:var(--rojo); }
   .perla-etiqueta { font-size:10px; color:var(--gris); white-space:nowrap; margin-top:2px; }
+  /* Notas para la cena */
+  .nota { border-bottom:1px solid #f0ede6; padding:12px 0; }
+  .nota:last-child { border-bottom:none; }
+  .nota-texto { white-space:pre-wrap; word-break:break-word; font-size:15px; line-height:1.4; }
+  .nota-meta { font-size:12px; color:var(--gris); margin-top:4px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .chip { background:#eee9dc; border-radius:10px; padding:1px 8px; font-size:12px; }
+  .chip-ok { background:#d8efe1; color:var(--verde); font-weight:700; }
+  .chip-pend { background:#f7dcd8; color:var(--rojo); font-weight:700; }
+  .nota-res { margin-top:6px; padding:6px 10px; background:#f3f8f4; border-left:3px solid var(--verde-claro); font-size:14px; white-space:pre-wrap; word-break:break-word; }
+  .nota-btns { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .nbtn { border:1px solid var(--borde); background:white; border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer; font-family:inherit; }
+  .nbtn.prim { background:var(--verde); color:white; border-color:var(--verde); font-weight:700; }
+  .notas-form textarea, .notas-form input, .notas-form select { width:100%; font-family:inherit; font-size:15px; padding:8px; border:1px solid var(--borde); border-radius:8px; margin-top:6px; }
+  .notas-form textarea { min-height:90px; resize:vertical; }
+  .notas-tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .notas-tabs .nbtn.act { background:var(--tinta); color:white; border-color:var(--tinta); }
+  .modo-cena .nota-texto { font-size:19px; }
+  .modo-cena .nota-meta { font-size:14px; }
 </style>
 </head>
 <body>
@@ -60,6 +78,8 @@
 <div id="juegos-admin"></div>
 
 <div id="votaciones-admin"></div>
+
+<div id="notas-admin"></div>
 
 <script>
 const SHEET_ID = '1Gcbt0ND0K1fmBdqwf55DuoGKakrZR9s7eP2r0RIG9hY'; // el mismo que en index.html
@@ -653,6 +673,194 @@ function renderResultadoVotacionAdmin(v) {
   return html;
 }
 
+// ============================================================
+// NOTAS PARA LA CENA (se guardan en una hoja de cálculo aparte; usan la clave de admin)
+// ============================================================
+const NOTAS = { lista: [], filtro: 'pendientes', cena: false, editando: null, cargado: false };
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function leerLS(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function escribirLS(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+
+function fechaCorta(ms) {
+  if (!ms) return '';
+  return new Date(ms).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+async function llamarNotas(accion, extra) {
+  const p = new URLSearchParams({ clave: CLAVE_ADMIN, accion });
+  Object.entries(extra || {}).forEach(([k, v]) => p.set(k, v));
+  const resp = await fetch(`${API_URL}?${p.toString()}`);
+  const data = await resp.json();
+  if (!data.ok) {
+    throw new Error(data.error || 'Error');
+  }
+  return data;
+}
+
+function tituloNotas(extra) {
+  return `<div class="card-header">NOTAS PARA LA CENA${extra || ''}</div>`;
+}
+
+async function cargarNotasAdmin() {
+  const cont = document.getElementById('notas-admin');
+  if (!NOTAS.cargado) cont.innerHTML = `<div class="card">${tituloNotas()}<div class="card-body loading">Cargando...</div></div>`;
+  try {
+    const data = await llamarNotas('notasListar');
+    NOTAS.lista = data.notas || [];
+    NOTAS.cargado = true;
+    pintarNotas();
+  } catch (e) {
+    cont.innerHTML = `<div class="card">${tituloNotas()}<div class="card-body aviso">${esc(e.message)}<br>(¿está desplegada la última versión del Apps Script?)<br><br><button class="nbtn" onclick="cargarNotasAdmin()">Reintentar</button></div></div>`;
+  }
+}
+
+function notasFiltradas() {
+  const l = NOTAS.lista.slice();
+  let r;
+  if (NOTAS.filtro === 'pendientes') r = l.filter(n => !n.archivada && n.estado === 'Pendiente');
+  else if (NOTAS.filtro === 'tratadas') r = l.filter(n => !n.archivada && n.estado === 'Tratada');
+  else if (NOTAS.filtro === 'archivadas') r = l.filter(n => n.archivada);
+  else r = l.filter(n => !n.archivada);
+  return r.sort((a, b) => b.fecha - a.fecha);
+}
+
+function pintarNota(n) {
+  if (NOTAS.editando === n.id) {
+    return `<div class="nota notas-form" data-id="${esc(n.id)}">
+      <textarea data-f="texto" maxlength="2000">${esc(n.texto)}</textarea>
+      <input data-f="etiqueta" maxlength="30" placeholder="Etiqueta (opcional)" value="${esc(n.etiqueta)}" list="notas-etiquetas">
+      <select data-f="estado"><option value="Pendiente"${n.estado === 'Pendiente' ? ' selected' : ''}>Pendiente</option><option value="Tratada"${n.estado === 'Tratada' ? ' selected' : ''}>Tratada</option></select>
+      <textarea data-f="resultado" maxlength="1000" placeholder="Resultado (p. ej. votación: 7 a favor, 3 en contra)">${esc(n.resultado)}</textarea>
+      <div class="nota-btns"><button class="nbtn prim" data-a="guardar">Guardar</button><button class="nbtn" data-a="cancelar">Cancelar</button></div>
+    </div>`;
+  }
+  const estado = n.estado === 'Tratada'
+    ? `<span class="chip chip-ok">Tratada${n.fechaTratada ? ' · ' + fechaCorta(n.fechaTratada) : ''}</span>`
+    : '<span class="chip chip-pend">Pendiente</span>';
+  let h = `<div class="nota" data-id="${esc(n.id)}"><div class="nota-texto">${esc(n.texto)}</div>`;
+  h += `<div class="nota-meta">${estado}${n.etiqueta ? `<span class="chip">${esc(n.etiqueta)}</span>` : ''}<span>${fechaCorta(n.fecha)}</span></div>`;
+  if (n.resultado) h += `<div class="nota-res"><strong>Resultado:</strong> ${esc(n.resultado)}</div>`;
+  h += '<div class="nota-btns">';
+  if (n.archivada) {
+    h += '<button class="nbtn" data-a="desarchivar">Recuperar</button>';
+  } else {
+    if (n.estado === 'Pendiente') h += '<button class="nbtn prim" data-a="tratar">Marcar tratada…</button>';
+    else h += '<button class="nbtn" data-a="reabrir">Volver a pendiente</button>';
+    h += '<button class="nbtn" data-a="editar">Editar</button><button class="nbtn" data-a="archivar">Archivar</button>';
+  }
+  h += '</div></div>';
+  return h;
+}
+
+function pintarNotas() {
+  const cont = document.getElementById('notas-admin');
+  const activas = NOTAS.lista.filter(n => !n.archivada);
+  const cuenta = f => NOTAS.lista.filter(f).length;
+  const tabs = [
+    ['pendientes', `Pendientes (${cuenta(n => !n.archivada && n.estado === 'Pendiente')})`],
+    ['tratadas', `Tratadas (${cuenta(n => !n.archivada && n.estado === 'Tratada')})`],
+    ['todas', `Todas (${activas.length})`],
+    ['archivadas', `Archivadas (${cuenta(n => n.archivada)})`]
+  ];
+  const etiquetas = [...new Set(NOTAS.lista.map(n => n.etiqueta).filter(Boolean))];
+  let h = `<div class="card${NOTAS.cena ? ' modo-cena' : ''}">${tituloNotas()}<div class="card-body">`;
+  if (!NOTAS.cena) {
+    h += `<div class="notas-form">
+      <textarea id="nota-nueva" maxlength="2000" placeholder="Nueva nota para la cena… (Ctrl+Intro para añadir)">${esc(leerLS('notas_borrador') || '')}</textarea>
+      <input id="nota-etiqueta" maxlength="30" placeholder="Etiqueta (opcional: reglas, dinero, juegos…)" list="notas-etiquetas">
+      <datalist id="notas-etiquetas">${etiquetas.map(t => `<option value="${esc(t)}">`).join('')}</datalist>
+      <div class="nota-btns"><button class="nbtn prim" id="nota-add">Añadir nota</button></div>
+    </div><hr style="border:none; border-top:1px solid var(--borde); margin:12px 0;">`;
+  }
+  h += '<div class="notas-tabs">' + tabs.map(([k, t]) => `<button class="nbtn${NOTAS.filtro === k ? ' act' : ''}" data-filtro="${k}">${t}</button>`).join('') + '</div>';
+  const lista = notasFiltradas();
+  h += lista.length ? lista.map(pintarNota).join('') : '<div class="aviso">No hay notas aquí.</div>';
+  h += `<div class="nota-btns" style="margin-top:12px;">
+    <button class="nbtn" id="nota-cena">${NOTAS.cena ? 'Salir del modo cena' : 'Modo cena (lectura grande)'}</button>
+    <button class="nbtn" id="nota-txt">Descargar como texto</button>
+    <button class="nbtn" id="nota-recargar">Recargar</button>
+  </div>`;
+  h += '</div></div>';
+  cont.innerHTML = h;
+  enlazarNotas();
+}
+
+function enlazarNotas() {
+  const cont = document.getElementById('notas-admin');
+  const ta = document.getElementById('nota-nueva');
+  if (ta) {
+    ta.oninput = () => escribirLS('notas_borrador', ta.value || null);
+    ta.onkeydown = ev => { if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); anadirNota(); } };
+    document.getElementById('nota-add').onclick = anadirNota;
+  }
+  cont.querySelectorAll('[data-filtro]').forEach(b => b.onclick = () => { NOTAS.filtro = b.dataset.filtro; NOTAS.editando = null; pintarNotas(); });
+  cont.querySelectorAll('.nota [data-a]').forEach(b => b.onclick = () => accionNota(b.closest('.nota'), b.dataset.a));
+  document.getElementById('nota-cena').onclick = () => { NOTAS.cena = !NOTAS.cena; NOTAS.editando = null; pintarNotas(); };
+  document.getElementById('nota-txt').onclick = descargarNotasTxt;
+  document.getElementById('nota-recargar').onclick = cargarNotasAdmin;
+}
+
+async function enviarNota(n) {
+  return llamarNotas('notaGuardar', {
+    id: n.id || '', texto: n.texto, etiqueta: n.etiqueta || '', estado: n.estado || 'Pendiente',
+    resultado: n.resultado || '', archivada: n.archivada ? '1' : '0'
+  });
+}
+
+let notasOcupado = false;
+async function conBloqueo(fn) {
+  if (notasOcupado) return;
+  notasOcupado = true;
+  try { await fn(); }
+  catch (e) {
+    alert('No se ha podido guardar: ' + e.message + '\nTu texto sigue en pantalla; vuelve a intentarlo.');
+  } finally { notasOcupado = false; }
+}
+
+function anadirNota() {
+  return conBloqueo(async () => {
+    const texto = document.getElementById('nota-nueva').value.trim();
+    if (!texto) return;
+    const etiqueta = document.getElementById('nota-etiqueta').value.trim();
+    await enviarNota({ texto, etiqueta });
+    escribirLS('notas_borrador', null); // solo se borra el borrador cuando el servidor ha confirmado
+    await cargarNotasAdmin();
+  });
+}
+
+function accionNota(el, a) {
+  const id = el.dataset.id;
+  const n = NOTAS.lista.find(x => x.id === id);
+  if (!n) return;
+  if (a === 'editar') { NOTAS.editando = id; pintarNotas(); return; }
+  if (a === 'cancelar') { NOTAS.editando = null; pintarNotas(); return; }
+  if (a === 'guardar') {
+    const g = f => el.querySelector(`[data-f="${f}"]`).value;
+    const nuevo = Object.assign({}, n, { texto: g('texto').trim(), etiqueta: g('etiqueta').trim(), estado: g('estado'), resultado: g('resultado').trim() });
+    if (!nuevo.texto) { alert('La nota no puede quedar vacía.'); return; }
+    return conBloqueo(async () => { await enviarNota(nuevo); NOTAS.editando = null; await cargarNotasAdmin(); });
+  }
+  if (a === 'tratar') {
+    const res = prompt('Resultado (p. ej. "Aprobado 7-3"). Puede quedar en blanco:', n.resultado || '');
+    if (res === null) return;
+    return conBloqueo(async () => { await enviarNota(Object.assign({}, n, { estado: 'Tratada', resultado: res.trim() })); await cargarNotasAdmin(); });
+  }
+  const cambios = { reabrir: { estado: 'Pendiente' }, archivar: { archivada: true }, desarchivar: { archivada: false } }[a];
+  if (cambios) return conBloqueo(async () => { await enviarNota(Object.assign({}, n, cambios)); await cargarNotasAdmin(); });
+}
+
+function descargarNotasTxt() {
+  const orden = NOTAS.lista.filter(n => !n.archivada).sort((a, b) => (a.estado === b.estado ? a.fecha - b.fecha : (a.estado === 'Pendiente' ? -1 : 1)));
+  const txt = orden.map(n => `[${n.estado}] ${n.etiqueta ? '(' + n.etiqueta + ') ' : ''}${n.texto}${n.resultado ? '\n   Resultado: ' + n.resultado : ''}\n   ${fechaCorta(n.fecha)}`).join('\n\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt || '(sin notas)'], { type: 'text/plain;charset=utf-8' }));
+  a.download = 'notas-cena.txt';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
 // Barrera ligera: pide la clave la primera vez, luego la recuerda en este navegador
 let claveGuardada = localStorage.getItem('admin_clave');
 if (claveGuardada !== CLAVE_ADMIN) {
@@ -665,6 +873,7 @@ if (claveGuardada === CLAVE_ADMIN) {
   init();
   cargarJuegosAdmin();
   cargarVotacionesAdmin();
+  cargarNotasAdmin();
 } else {
   document.getElementById('subtitulo').textContent = 'Acceso denegado.';
   document.getElementById('contenido').innerHTML = '';
