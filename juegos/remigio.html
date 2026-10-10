@@ -202,7 +202,7 @@ dialog h2 { margin-top: 0; }
 /* --- Online: lobby, controles de la mesa y chat --- */
 .fila-config { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; align-items: flex-end; }
 .fila-config label { display: flex; flex-direction: column; font-size: 13px; gap: 4px; }
-#dlg-online, #dlg-modo { max-width: 520px; }
+#dlg-online, #dlg-modo, #dlg-pregunta { max-width: 520px; }
 #dlg-online .codigo-mesa { font-size: 30px; font-weight: bold; letter-spacing: 4px; color: #1f5f99; text-align: center; margin: 10px 0; }
 #dlg-online ul { padding-left: 18px; margin: 6px 0; }
 #dlg-online .error-online { color: var(--peligro); font-weight: 700; }
@@ -505,6 +505,7 @@ dialog h2 { margin-top: 0; }
 <dialog id="dlg-online"></dialog>
 <dialog id="dlg-config"></dialog>
 <dialog id="dlg-fin"></dialog>
+<dialog id="dlg-pregunta"></dialog>
 <dialog id="dlg-estadisticas"></dialog>
 
 <script>(() => {
@@ -946,32 +947,63 @@ dialog h2 { margin-top: 0; }
   // src/partida.js
   var Partida = class {
     /**
-     * @param maxReenganches  reenganches permitidos; quien pierde sin reenganches disponibles queda eliminado
-     * @param doblar          cada reenganche cuesta el doble que el anterior (si no, siempre la apuesta)
+     * @param tope             puntos de pérdida a partir de los cuales hay que reengancharse o retirarse
+     * @param maxReenganches   reenganches permitidos por jugador
+     * @param precio           unidades que se pagan al quedar eliminado y en cada reenganche
      */
-    constructor({ numJugadores = 6, apuesta = 1, maxReenganches = 5, doblar = true, rng = Math.random, repartidor } = {}) {
+    constructor({ numJugadores = 6, tope = 3, maxReenganches = 2, precio = 1, rng = Math.random, repartidor } = {}) {
       this.n = numJugadores;
-      this.apuesta = apuesta;
+      this.tope = tope;
       this.maxReenganches = maxReenganches;
-      this.doblar = doblar;
+      this.precio = precio;
       this.rng = rng;
-      this.pagoActual = new Array(this.n).fill(apuesta);
-      this.aportado = new Array(this.n).fill(apuesta);
-      this.bote = apuesta * this.n;
+      this.puntos = new Array(this.n).fill(0);
+      this.aportado = new Array(this.n).fill(0);
       this.reenganches = new Array(this.n).fill(0);
       this.activos = [...Array(this.n).keys()];
       this.eliminados = [];
+      this.pendientes = [];
+      this._decisiones = {};
       this.repartidor = repartidor ?? Math.floor(rng() * this.n);
+      this._rotar = false;
       this.manos = [];
       this.mano = null;
       this.asientos = null;
       this.terminada = false;
       this.ganador = null;
+      this.ganadores = [];
+      this.repartido = false;
       this.neto = null;
+    }
+    /** Total pagado hasta ahora: lo que se llevará quien gane. */
+    get bote() {
+      return this.aportado.reduce((a, b) => a + b, 0);
+    }
+    /** Pendientes que todavía no han decidido. */
+    get sinDecidir() {
+      return this.pendientes.filter((j) => !(j in this._decisiones));
+    }
+    /** ¿Pueden los dos jugadores que quedan acordar repartir? Solo si están empatados a puntos. */
+    get puedeRepartir() {
+      return !this.terminada && !this.pendientes.length && this.activos.length === 2 && this.puntos[this.activos[0]] === this.puntos[this.activos[1]];
+    }
+    /** Puntos con los que volvería quien se reengancha: los del peor de los que siguen sin haber caído. */
+    peorQueQuedan() {
+      const vivos = this.activos.filter((j) => !this.pendientes.includes(j));
+      return vivos.length ? Math.max(...vivos.map((j) => this.puntos[j])) : 0;
     }
     /** Asientos que juegan la próxima mano (los activos) y posición local del repartidor. */
     preparaMano() {
       if (this.terminada) throw new Error("La partida ya ha terminado.");
+      if (this.pendientes.length) throw new Error("Faltan decisiones de reenganche.");
+      if (this._rotar) {
+        let s = this.repartidor;
+        do
+          s = (s + 1) % this.n;
+        while (!this.activos.includes(s));
+        this.repartidor = s;
+        this._rotar = false;
+      }
       this.asientos = this.activos.slice();
       return { numJugadores: this.asientos.length, repartidor: this.asientos.indexOf(this.repartidor) };
     }
@@ -1002,6 +1034,25 @@ dialog h2 { margin-top: 0; }
       if (this.mano.resultado) this._resolverMano();
       return this.mano;
     }
+    _pagar(j) {
+      this.aportado[j] += this.precio;
+    }
+    _eliminar(j, resumen) {
+      this.activos = this.activos.filter((a) => a !== j);
+      this.eliminados.push(j);
+      this._pagar(j);
+      resumen.eliminados.push(j);
+    }
+    _finalizar(ganadores, resumen) {
+      this.terminada = true;
+      this.ganadores = ganadores.slice();
+      this.ganador = ganadores[0];
+      const total = this.bote;
+      this.neto = this.aportado.map((a, j) => (ganadores.includes(j) ? total / ganadores.length : 0) - a);
+      resumen.ganadores = this.ganadores;
+      resumen.ganador = this.ganador;
+      resumen.bote = total;
+    }
     _resolverMano() {
       const r = this.mano.resultado;
       const aAsiento = (i) => this.asientos[i];
@@ -1014,45 +1065,78 @@ dialog h2 { margin-top: 0; }
         tablas: !!r.tablas,
         perdedores,
         puntos: Object.fromEntries(r.puntos.map((pt, i) => [aAsiento(i), pt])),
+        // puntos de cartas en la mano
+        puntosPartida: {},
+        // puntos de pérdida de la partida tras esta mano (antes de reengancharse)
         reenganchan: [],
-        eliminados: []
+        eliminados: [],
+        pendientes: []
       };
-      let ganador = null;
-      if (resumen.remi != null) ganador = resumen.remi;
-      else if (!r.tablas) {
-        const supervivientes = this.asientos.filter((j) => !perdedores.includes(j));
-        if (supervivientes.length === 1) ganador = supervivientes[0];
-        else {
-          for (const j of perdedores) {
-            if (this.reenganches[j] < this.maxReenganches) {
-              this.pagoActual[j] = this.doblar ? this.pagoActual[j] * 2 : this.apuesta;
-              this.aportado[j] += this.pagoActual[j];
-              this.bote += this.pagoActual[j];
-              this.reenganches[j]++;
-              resumen.reenganchan.push({ jugador: j, paga: this.pagoActual[j] });
-            } else {
-              this.activos = this.activos.filter((a) => a !== j);
-              this.eliminados.push(j);
-              resumen.eliminados.push(j);
-            }
+      this.manos.push(resumen);
+      if (resumen.remi != null) {
+        for (const j of this.activos.slice()) if (j !== resumen.remi) this._eliminar(j, resumen);
+        this._finalizar([resumen.remi], resumen);
+      } else if (!r.tablas) {
+        for (const j of perdedores) this.puntos[j]++;
+        for (const j of this.activos) resumen.puntosPartida[j] = this.puntos[j];
+        const caidos = perdedores.filter((j) => this.puntos[j] >= this.tope);
+        const sinReeng = caidos.filter((j) => this.reenganches[j] >= this.maxReenganches);
+        const vivos = this.activos.filter((j) => !caidos.includes(j));
+        if (caidos.length && vivos.length === 1) {
+          for (const j of caidos) this._eliminar(j, resumen);
+          this._finalizar(vivos, resumen);
+        } else if (sinReeng.length === this.activos.length) {
+          this._finalizar(this.activos.slice(), resumen);
+        } else {
+          for (const j of sinReeng) this._eliminar(j, resumen);
+          if (this.activos.length === 1) this._finalizar(this.activos.slice(), resumen);
+          else {
+            this.pendientes = caidos.filter((j) => !sinReeng.includes(j));
+            this._decisiones = {};
+            resumen.pendientes = this.pendientes.slice();
           }
-          if (this.activos.length === 1) ganador = this.activos[0];
         }
       }
-      resumen.bote = this.bote;
-      if (ganador != null) {
-        this.terminada = true;
-        this.ganador = ganador;
-        this.neto = this.aportado.map((a, j) => (j === ganador ? this.bote : 0) - a);
-        resumen.ganador = ganador;
-      } else {
-        let s = this.repartidor;
-        do
-          s = (s + 1) % this.n;
-        while (!this.activos.includes(s));
-        this.repartidor = s;
+      if (!this.terminada && !this.pendientes.length) this._rotar = true;
+    }
+    /**
+     * Un jugador que ha llegado al tope decide: `seguir` = reengancharse (true) o retirarse (false).
+     * Cuando han decidido todos se aplican las decisiones.
+     */
+    decidir(asiento, seguir) {
+      if (!this.pendientes.includes(asiento)) throw new Error(`El asiento ${asiento} no tiene que decidir.`);
+      this._decisiones[asiento] = !!seguir;
+      if (this.pendientes.every((j) => j in this._decisiones)) this._aplicarDecisiones();
+    }
+    /** Atajo para simulaciones y bots: todos los pendientes se reenganchan (o se retiran si `seguir` es false). */
+    decidirTodos(seguir = true) {
+      for (const j of this.pendientes.slice()) this.decidir(j, seguir);
+    }
+    _aplicarDecisiones() {
+      const resumen = this.manos.at(-1);
+      const seguir = this.pendientes.filter((j) => this._decisiones[j]);
+      for (const j of this.pendientes.filter((x) => !this._decisiones[x])) this._eliminar(j, resumen);
+      this.pendientes = [];
+      this._decisiones = {};
+      if (this.activos.length === 1) {
+        this._finalizar(this.activos.slice(), resumen);
+        return;
       }
-      this.manos.push(resumen);
+      const vivos = this.activos.filter((j) => !seguir.includes(j));
+      const peor = vivos.length ? Math.max(...vivos.map((j) => this.puntos[j])) : 0;
+      for (const j of seguir) {
+        this.reenganches[j]++;
+        this._pagar(j);
+        this.puntos[j] = peor;
+        resumen.reenganchan.push({ jugador: j, paga: this.precio });
+      }
+      this._rotar = true;
+    }
+    /** Los dos jugadores que quedan, empatados a puntos, acuerdan repartir: se llevan la mitad cada uno. */
+    repartir() {
+      if (!this.puedeRepartir) throw new Error("No se puede repartir: hacen falta dos jugadores empatados a puntos.");
+      this.repartido = true;
+      this._finalizar(this.activos.slice(), this.manos.at(-1));
     }
   };
 
@@ -1495,7 +1579,7 @@ dialog h2 { margin-top: 0; }
   }
 
   // ui/estadisticas.js
-  var CLAVE = "remigio.estadisticas.v1";
+  var CLAVE = "remigio.estadisticas.v2";
   var vacio = () => ({ partidas: 0, ganadas: 0, neto: 0, manos: 0, cierres: 0, manosPerdidas: 0, secosHechos: 0, secosSufridos: 0, reenganches: 0, eliminaciones: 0, remis: 0 });
   function cargar() {
     try {
@@ -1527,6 +1611,11 @@ dialog h2 { margin-top: 0; }
       de(resumen.cierra).secosHechos++;
       for (const a of resumen.perdedores) de(a).secosSufridos++;
     }
+    guardar(d);
+  }
+  function registrarResolucion(jugadores, resumen) {
+    const d = cargar();
+    const de = (a) => d[jugadores[a].clave] ??= vacio();
     for (const r of resumen.reenganchan) de(r.jugador).reenganches++;
     for (const a of resumen.eliminados) de(a).eliminaciones++;
     guardar(d);
@@ -1536,7 +1625,7 @@ dialog h2 { margin-top: 0; }
     jugadores.forEach((j, a) => {
       const e = d[j.clave] ??= vacio();
       e.partidas++;
-      if (partida.ganador === a) e.ganadas++;
+      if (partida.ganadores.includes(a) && partida.ganadores.length === 1) e.ganadas++;
       e.neto += partida.neto[a];
     });
     guardar(d);
@@ -1715,7 +1804,34 @@ dialog h2 { margin-top: 0; }
       const j = decidirJugada(partida.mano, perfil);
       await jugarPropio(j.ops, j.descarte);
     }
-    return { repartir, robarMazoPropio, robarPozoPropio, jugarPropio, turnoRemoto, turnoBotPropio };
+    async function resolverDecisiones(decidirPropia) {
+      for (const a of partida.pendientes.slice().sort((x, y) => x - y)) {
+        let seguir;
+        if (a === miAsiento) {
+          seguir = !!await decidirPropia();
+          await publicar({ tipo: "decision", jugador: a, valor: { seguir } });
+        } else {
+          seguir = !!(await esperarEvento("decision", a)).seguir;
+        }
+        partida.decidir(a, seguir);
+      }
+    }
+    async function resolverReparto(votarPropio) {
+      if (!partida.puedeRepartir) return false;
+      const [a, b] = partida.activos.slice().sort((x, y) => x - y);
+      const votos = {};
+      if (miAsiento === a || miAsiento === b) {
+        votos[miAsiento] = !!await votarPropio();
+        await publicar({ tipo: "votoReparto", jugador: miAsiento, valor: { si: votos[miAsiento] } });
+      }
+      for (const x of [a, b]) if (x !== miAsiento) votos[x] = !!(await esperarEvento("votoReparto", x)).si;
+      if (votos[a] && votos[b]) {
+        partida.repartir();
+        return true;
+      }
+      return false;
+    }
+    return { repartir, robarMazoPropio, robarPozoPropio, jugarPropio, turnoRemoto, turnoBotPropio, resolverDecisiones, resolverReparto };
   }
 
   // ui/firebaseCliente.js
@@ -1767,7 +1883,7 @@ dialog h2 { margin-top: 0; }
     for (let i = 0; i < longitud; i++) s += ALFABETO_CODIGO[Math.floor(Math.random() * ALFABETO_CODIGO.length)];
     return s;
   }
-  async function crearMesa({ nombre: nombre2, nJugadores, apuesta = 1, maxReenganches = 5, doblar = true, asiento = 0 }) {
+  async function crearMesa({ nombre: nombre2, nJugadores, tope = 3, maxReenganches = 2, asiento = 0 }) {
     const uid = await conectar();
     const { doc, collection, setDoc, serverTimestamp } = _fs;
     const codigo = codigoAleatorio();
@@ -1779,7 +1895,7 @@ dialog h2 { margin-top: 0; }
       creadoEn: serverTimestamp(),
       estado: "espera",
       jugadores: [{ uid, nombre: nombre2, asiento, sustituidoPorBot: false }],
-      configuracion: { nJugadores, apuesta, maxReenganches, doblar, repartidorInicial: Math.floor(Math.random() * nJugadores) },
+      configuracion: { nJugadores, tope, maxReenganches, repartidorInicial: Math.floor(Math.random() * nJugadores) },
       partidaN: 0
     });
     return { mesaId: ref.id, codigo, miAsiento: asiento, uid };
@@ -1916,7 +2032,7 @@ dialog h2 { margin-top: 0; }
 
   // ui/app.js
   var $ = (s) => document.querySelector(s);
-  var CLAVE_CONFIG = "remigio.config.v1";
+  var CLAVE_CONFIG = "remigio.config.v2";
   var NUM = 6;
   var S = {
     config: null,
@@ -2037,9 +2153,8 @@ dialog h2 { margin-top: 0; }
   function configPorDefecto() {
     return {
       asientos: [{ tipo: "humano", nombre: "Fidel" }, ...Array.from({ length: NUM - 1 }, () => ({ tipo: "aleatorio" }))],
-      apuesta: 1,
-      maxReenganches: 5,
-      doblar: true
+      tope: 3,
+      maxReenganches: 2
     };
   }
   function cargarConfig() {
@@ -2075,9 +2190,8 @@ dialog h2 { margin-top: 0; }
         <div id="as-extra-${i}"></div>`).join("")}
     </div>
     <div class="config-opciones">
-      <label>Apuesta inicial <input id="cf-apuesta" type="number" min="1" value="${c.apuesta}" style="width:70px"></label>
-      <label>Reenganches máximos <input id="cf-reeng" type="number" min="0" max="30" value="${c.maxReenganches}" style="width:60px"></label>
-      <label><input id="cf-doblar" type="checkbox" ${c.doblar ? "checked" : ""}> Cada reenganche cuesta el doble</label>
+      <label>Puntos de pérdida para quedar fuera <input id="cf-tope" type="number" min="1" max="9" value="${c.tope ?? 3}" style="width:60px"></label>
+      <label>Reenganches máximos <input id="cf-reeng" type="number" min="0" max="10" value="${c.maxReenganches}" style="width:60px"></label>
     </div>
     <div class="error" id="cf-error"></div>
     <div class="dlg-botones">
@@ -2112,9 +2226,8 @@ dialog h2 { margin-top: 0; }
       }
       S.config = {
         asientos,
-        apuesta: Math.max(1, Number($("#cf-apuesta").value) || 1),
-        maxReenganches: Math.max(0, Number($("#cf-reeng").value) || 0),
-        doblar: $("#cf-doblar").checked
+        tope: Math.max(1, Number($("#cf-tope").value) || 3),
+        maxReenganches: Math.max(0, Number($("#cf-reeng").value) || 0)
       };
       guardarConfig(S.config);
       dlg.close();
@@ -2139,6 +2252,7 @@ dialog h2 { margin-top: 0; }
     if (S.online) limpiarOnline();
     clearTimeout(S.temporizador);
     S.rapido = false;
+    S.espera = "";
     const usados = new Set(S.config.asientos.filter((a) => a.tipo === "bot").map((a) => a.bot));
     const libres = PLANTILLA.filter((b) => !usados.has(b.id)).sort(() => Math.random() - 0.5);
     S.jugadores = S.config.asientos.map((a) => {
@@ -2148,15 +2262,14 @@ dialog h2 { margin-top: 0; }
     });
     S.partida = new Partida({
       numJugadores: NUM,
-      apuesta: S.config.apuesta,
-      maxReenganches: S.config.maxReenganches,
-      doblar: S.config.doblar
+      tope: S.config.tope,
+      maxReenganches: S.config.maxReenganches
     });
     S.registro = [];
     S.numMano = 0;
     S.vista = S.jugadores.findIndex((j) => j.humano);
     if (S.vista < 0) S.vista = null;
-    log(`Empieza la partida. Cada uno pone ${S.config.apuesta} en el bote.`, true);
+    log(textoReglas(), true);
     nuevaMano2();
   }
   function nuevaMano2() {
@@ -2240,7 +2353,7 @@ dialog h2 { margin-top: 0; }
     S.rapido = true;
     $("#dlg-fin").close();
     aviso("Acabando la partida sin pausas…", "info");
-    if (P().mano.resultado) nuevaMano2();
+    if (P().mano.resultado) continuarTrasMano();
     else siguiente2();
   }
   function terminarPartida() {
@@ -2250,59 +2363,89 @@ dialog h2 { margin-top: 0; }
     S.partida.terminada = true;
     mostrarConfig();
   }
+  var u = (x) => Number.isInteger(x) ? String(x) : x.toFixed(1).replace(".", ",");
+  var plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  function textoReglas() {
+    const p = P();
+    return `Empieza la partida. Quedas fuera al llegar a ${p.tope} puntos de pérdida (o te reenganchas: ${plural(p.maxReenganches, "reenganche", "reenganches")} como máximo). Quien se elimina paga ${u(p.precio)} y cada reenganche ${u(p.precio)}: el ganador se lleva todo. Si solo queda uno en pie no hay reenganche: gana.`;
+  }
+  function textoFinPartida(p) {
+    if (p.ganadores.length > 1) {
+      const quienes = p.ganadores.map(nombre).join(" y ");
+      return p.repartido ? `${quienes} reparten lo pagado (${u(p.bote)}) a medias.` : `Caen todos a la vez: ${quienes} reparten lo pagado (${u(p.bote)}).`;
+    }
+    return `${nombre(p.ganador)} gana la partida y se lleva ${u(p.bote)}.`;
+  }
+  function tablaNeto(p) {
+    return `<h3>Resultado de la partida</h3>
+    <table class="fin-tabla"><tr><th>Jugador</th><th>Ha pagado</th><th>Gana / pierde</th></tr>
+    ${[...Array(S.jugadores.length).keys()].sort((x, y) => p.neto[y] - p.neto[x]).map((a) => `<tr><td>${nombre(a)}</td><td>${u(p.aportado[a])}</td><td><b>${p.neto[a] > 0 ? "+" : ""}${u(p.neto[a])}</b></td></tr>`).join("")}
+    </table>`;
+  }
+  function manoResuelta() {
+    const p = P();
+    const res = p.manos.at(-1);
+    if (res.contada) return;
+    res.contada = true;
+    for (const r of res.reenganchan) log(`${nombre(r.jugador)} se reengancha (paga ${u(r.paga)}) y vuelve con ${plural(p.puntos[r.jugador], "punto", "puntos")}.`);
+    for (const a of res.eliminados) log(`${nombre(a)} queda eliminado (paga ${u(p.precio)}).`, true);
+    if (!S.online) registrarResolucion(S.jugadores, res);
+    if (p.terminada) {
+      log(textoFinPartida(p), true);
+      registrarFinLocal();
+    }
+  }
+  function registrarFinLocal() {
+    const p = P();
+    if (S.online || p.estRegistrada) return;
+    p.estRegistrada = true;
+    registrarPartida(S.jugadores, p);
+  }
   function finMano() {
     const p = P();
     const res = p.manos.at(-1);
     const m = p.mano;
-    if (!S.online) {
-      registrarMano(S.jugadores, p.asientos, res);
-      if (p.terminada) registrarPartida(S.jugadores, p);
-    }
-    if (S.rapido && !p.terminada) {
-      for (const a of res.eliminados) log(`${nombre(a)} pierde sin reenganches: queda eliminado.`, true);
-      S.temporizador = setTimeout(nuevaMano2, 0);
-      return;
-    }
-    S.rapido = false;
+    if (!S.online) registrarMano(S.jugadores, p.asientos, res);
     let titular;
     if (res.remi != null) titular = `¡REMI de ${nombre(res.remi)}! Gana la partida.`;
     else if (res.tablas) titular = "Mano anulada: no quedan cartas para robar.";
     else if (res.seco) titular = `¡SECO! Cierra ${nombre(res.cierra)} y nadie más se había abierto.`;
     else titular = `Cierra ${nombre(res.cierra)}.`;
     log(titular, true);
-    for (const r of res.reenganchan) log(`${nombre(r.jugador)} pierde y se reengancha (paga ${r.paga}).`);
-    for (const a of res.eliminados) log(`${nombre(a)} pierde sin reenganches: queda eliminado.`, true);
-    if (p.terminada) log(`${nombre(p.ganador)} gana la partida y se lleva ${p.bote}.`, true);
+    if (res.remi == null && res.perdedores.length) log(`Suman un punto: ${res.perdedores.map((a) => `${nombre(a)} (${res.puntosPartida[a]})`).join(", ")}.`);
+    for (const a of res.pendientes) log(`${nombre(a)} llega a ${p.tope} puntos: tiene que decidir.`, true);
+    if (!p.pendientes.length) manoResuelta();
+    if (S.rapido && !p.terminada) {
+      S.temporizador = setTimeout(continuarTrasMano, 0);
+      return;
+    }
+    S.rapido = false;
     render();
     const dlg = $("#dlg-fin");
     const filas = p.asientos.map((a) => {
       const l = local(a);
-      const cartas = ordenarCartas(m.manos[l].filter((c) => !c.oculta));
       const pierde = res.perdedores.includes(a);
-      const re = res.reenganchan.find((r) => r.jugador === a);
-      const elim = res.eliminados.includes(a);
       let estado = m.abiertos[l] ? "Abierto" : "Sin abrir";
       if (res.cierra === a) estado = "Cierra";
       if (res.remi === a) estado = "REMI";
       let resultado = "—";
-      if (pierde && res.remi == null) resultado = elim ? "<b>Pierde · eliminado</b>" : re ? `<b>Pierde</b> · se reengancha (paga ${re.paga})` : "<b>Pierde</b>";
-      if (p.terminada && p.ganador === a) resultado = `<b>Gana la partida (+${p.bote})</b>`;
+      if (pierde && res.remi == null) {
+        resultado = `<b>Pierde</b> · ${res.puntosPartida[a]}/${p.tope}`;
+        if (res.eliminados.includes(a)) resultado += " · eliminado";
+        else if (res.pendientes.includes(a)) resultado += " · decide si se reengancha";
+      }
+      if (p.terminada && p.ganadores.includes(a)) resultado = `<b>${p.ganadores.length > 1 ? "Reparte" : "Gana la partida"} (${p.neto[a] > 0 ? "+" : ""}${u(p.neto[a])})</b>`;
       return `<tr class="${pierde ? "pierde" : ""} ${res.cierra === a ? "cierra" : ""}">
       <td><b>${nombre(a)}</b></td><td>${estado}</td>
       <td><div class="cartas" data-asiento="${a}"></div></td>
       <td>${res.puntos[a]} ptos</td><td>${resultado}</td></tr>`;
     }).join("");
-    const neto = p.terminada ? `
-    <h3>Resultado de la partida</h3>
-    <table class="fin-tabla"><tr><th>Jugador</th><th>Ha pagado</th><th>Gana / pierde</th></tr>
-    ${[...Array(S.jugadores.length).keys()].sort((x, y) => p.neto[y] - p.neto[x]).map((a) => `<tr><td>${nombre(a)}</td><td>${p.aportado[a]}</td><td><b>${p.neto[a] > 0 ? "+" : ""}${p.neto[a]}</b></td></tr>`).join("")}
-    </table>` : "";
     dlg.innerHTML = `
     <div class="titular">${titular}</div>
     ${m.cerrada ? '<p>Carta con la que cierra (boca abajo): <span id="fin-cerrada"></span></p>' : ""}
     <table class="fin-tabla"><tr><th>Jugador</th><th>Estado</th><th>Cartas en la mano</th><th>Puntos</th><th>Resultado</th></tr>${filas}</table>
-    <p>Bote: <b>${p.bote}</b></p>
-    ${neto}
+    <p>Pagado hasta ahora (se lo llevará quien gane): <b>${u(p.bote)}</b></p>
+    ${p.terminada ? tablaNeto(p) : ""}
     <div class="dlg-botones">
       ${S.online ? botonesFinOnline(p) : p.terminada ? '<button id="fin-config">Cambiar jugadores</button><button class="principal" id="fin-revancha">Otra partida igual</button>' : humanosFuera() ? '<button id="fin-terminar">Terminar partida</button><button id="fin-rapido">Acabar rápido</button><button class="principal" id="fin-seguir">Ver la siguiente mano</button>' : '<button class="principal" id="fin-seguir">Siguiente mano</button>'}
     </div>`;
@@ -2313,10 +2456,14 @@ dialog h2 { margin-top: 0; }
       for (const c of cartas) div.appendChild(elCarta(c, { tam: "mini" }));
     });
     if (m.cerrada) $("#fin-cerrada").appendChild(elCarta(m.cerrada, { tam: "mini" }));
+    enlazarBotonesFin(dlg);
+    dlg.showModal();
+  }
+  function enlazarBotonesFin(dlg) {
     $("#fin-seguir")?.addEventListener("click", () => {
       dlg.close();
       if (S.online) S.online.alContinuar?.();
-      else nuevaMano2();
+      else continuarTrasMano();
     });
     $("#fin-online-revancha")?.addEventListener("click", () => empezarSiguientePartida(S.online.mesaId, S.online.partidaN + 1));
     $("#fin-online-salir")?.addEventListener("click", () => {
@@ -2333,7 +2480,93 @@ dialog h2 { margin-top: 0; }
       dlg.close();
       mostrarConfig();
     });
-    dlg.showModal();
+  }
+  function mostrarFinal() {
+    const p = P();
+    const dlg = $("#dlg-fin");
+    dlg.innerHTML = `
+    <div class="titular">${textoFinPartida(p)}</div>
+    ${tablaNeto(p)}
+    <div class="dlg-botones">
+      ${S.online ? botonesFinOnline(p) : '<button id="fin-config">Cambiar jugadores</button><button class="principal" id="fin-revancha">Otra partida igual</button>'}
+    </div>`;
+    enlazarBotonesFin(dlg);
+    if (!dlg.open) dlg.showModal();
+  }
+  function preguntar({ titulo, texto, botones }) {
+    return new Promise((resolve) => {
+      const dlg = $("#dlg-pregunta");
+      dlg.innerHTML = `<h2>${titulo}</h2><p>${texto}</p>
+      <div class="dlg-botones">${botones.map((b, i) => `<button data-i="${i}" class="${b.principal ? "principal" : ""}">${b.texto}</button>`).join("")}</div>`;
+      dlg.oncancel = (e) => e.preventDefault();
+      dlg.querySelectorAll("button").forEach((b) => {
+        b.onclick = () => {
+          dlg.close();
+          resolve(botones[Number(b.dataset.i)].valor);
+        };
+      });
+      if (!dlg.open) dlg.showModal();
+    });
+  }
+  function preguntarDecision(a) {
+    const p = P();
+    const quedan = p.maxReenganches - p.reenganches[a];
+    const vuelve = p.peorQueQuedan();
+    return preguntar({
+      titulo: `${nombre(a)}, llegas a ${p.tope} puntos`,
+      texto: `Te ${quedan === 1 ? "queda 1 reenganche" : `quedan ${quedan} reenganches`}. Si te <b>reenganchas</b>, pagas ${u(p.precio)} y sigues con ${plural(vuelve, "punto", "puntos")} (los del peor de los que quedan). Si te <b>retiras</b>, pagas ${u(p.precio)} y quedas eliminado.`,
+      botones: [
+        { texto: `Reengancharme (pago ${u(p.precio)})`, valor: true, principal: true },
+        { texto: `Retirarme (pago ${u(p.precio)})`, valor: false }
+      ]
+    });
+  }
+  function preguntarReparto(a, otro) {
+    const p = P();
+    return preguntar({
+      titulo: "Quedáis dos, empatados a puntos",
+      texto: `${nombre(a)}: tú y ${nombre(otro)} tenéis ${plural(p.puntos[a], "punto", "puntos")}. ¿Repartís lo pagado (${u(p.bote)}) a medias? Solo se reparte si aceptáis los dos.`,
+      botones: [
+        { texto: "Repartir a medias", valor: true, principal: true },
+        { texto: "Seguir jugando", valor: false }
+      ]
+    });
+  }
+  async function resolverDecisionesLocal() {
+    const p = P();
+    while (p.pendientes.length) {
+      const a = p.sinDecidir[0];
+      const seguir = !S.jugadores[a].humano || S.rapido ? true : await preguntarDecision(a);
+      p.decidir(a, seguir);
+    }
+  }
+  async function votarRepartoLocal() {
+    const p = P();
+    const [a, b] = p.activos;
+    const humanos = [a, b].filter((x) => S.jugadores[x].humano);
+    if (!humanos.length) return false;
+    for (const h of humanos) {
+      if (!await preguntarReparto(h, h === a ? b : a)) return false;
+    }
+    return true;
+  }
+  async function continuarTrasMano() {
+    clearTimeout(S.temporizador);
+    const p = P();
+    await resolverDecisionesLocal();
+    manoResuelta();
+    if (!p.terminada && !S.rapido && p.puedeRepartir && await votarRepartoLocal()) {
+      p.repartir();
+      log(textoFinPartida(p), true);
+      registrarFinLocal();
+    }
+    if (p.terminada) {
+      S.rapido = false;
+      render();
+      mostrarFinal();
+      return;
+    }
+    nuevaMano2();
   }
   async function robarHumano(origen) {
     if (!esTurnoHumano() || manoActual().fase !== "robar") return;
@@ -2525,8 +2758,9 @@ dialog h2 { margin-top: 0; }
   }
   function renderCabecera() {
     const p = P();
-    $("#info-partida").textContent = `Mano ${S.numMano} · Bote ${p.bote} · Apuesta ${p.apuesta} · Reenganches máx. ${p.maxReenganches}${p.doblar ? " (doblando)" : ""}`;
-    $("#mesa").dataset.info = `Mano ${S.numMano} · Bote ${p.bote}`;
+    const espera = S.espera ? ` · ${S.espera}` : "";
+    $("#info-partida").textContent = `Mano ${S.numMano} · Pagado ${u(p.bote)} · Fuera con ${p.tope} puntos · Reenganches máx. ${p.maxReenganches}${espera}`;
+    $("#mesa").dataset.info = `Mano ${S.numMano} · Pagado ${u(p.bote)}${espera}`;
   }
   function renderAsientos(v) {
     const p = P();
@@ -2552,7 +2786,7 @@ dialog h2 { margin-top: 0; }
       <div class="estilo">${j.humano || S.online ? "&nbsp;" : `${j.bot.estilo} ${"★".repeat(j.bot.nivel)}`}</div>
       <div class="fila">${eliminado ? "Eliminado" : `<span class="mini-reverso"></span> ${nCartas}
         ${abierto ? '<span class="chip abierto">Abierto</span>' : ""}`}</div>
-      <div class="fila puntos-reeng" title="Reenganches usados">${"●".repeat(Math.min(r, p.maxReenganches))}${"○".repeat(Math.max(0, p.maxReenganches - r))}</div>`;
+      <div class="fila puntos-reeng" title="Puntos de pérdida (✗) y reenganches usados">${"✗".repeat(Math.min(p.puntos[a], p.tope))}${"○".repeat(Math.max(0, p.tope - p.puntos[a]))} · R ${r}/${p.maxReenganches}</div>`;
       cont.appendChild(div);
     }
   }
@@ -2959,11 +3193,11 @@ dialog h2 { margin-top: 0; }
     const p = P();
     const ult = p.manos.at(-1);
     $("#marcador").innerHTML = `<table>
-    <tr><th>Jugador</th><th>Reeng.</th><th>Pagado</th><th>Últ. mano</th></tr>
+    <tr><th>Jugador</th><th>Pérd.</th><th>Reeng.</th><th>Pagado</th><th>Últ. mano</th></tr>
     ${S.jugadores.map((j, a) => `<tr class="${!p.activos.includes(a) ? "eliminado" : ""} ${!p.mano.resultado && p.asientoEnTurno === a ? "turno" : ""}">
-      <td><span class="punto-asiento" style="--col:${colorAsiento(a).hex}"></span>${j.nombre}</td><td>${p.reenganches[a]}/${p.maxReenganches}</td><td>${p.aportado[a]}</td>
+      <td><span class="punto-asiento" style="--col:${colorAsiento(a).hex}"></span>${j.nombre}</td><td>${p.puntos[a]}/${p.tope}</td><td>${p.reenganches[a]}/${p.maxReenganches}</td><td>${u(p.aportado[a])}</td>
       <td>${ult && ult.puntos[a] != null ? `${ult.puntos[a]}${ult.perdedores.includes(a) ? " ✗" : ""}` : "—"}</td></tr>`).join("")}
-  </table><div class="bote">Bote: <b>${p.bote}</b></div>`;
+  </table><div class="bote">Pagado: <b>${u(p.bote)}</b></div>`;
   }
   function renderRegistro() {
     $("#registro").innerHTML = S.registro.slice(0, 60).map((r) => `<li class="${r.destacado ? "destacado" : ""}">${r.texto}</li>`).join("");
@@ -2974,11 +3208,11 @@ dialog h2 { margin-top: 0; }
     const filas = Object.entries(d).sort((x, y) => y[1].neto - x[1].neto).map(([k, e]) => {
       const n = k.startsWith("h:") ? k.slice(2) : `${perfilPorId(k.slice(2))?.nombre ?? k.slice(2)} (bot)`;
       return `<tr><td>${n}</td><td>${e.partidas}</td><td>${e.ganadas}</td><td>${e.partidas ? Math.round(100 * e.ganadas / e.partidas) : 0}%</td>
-      <td><b>${e.neto > 0 ? "+" : ""}${e.neto}</b></td><td>${e.manos}</td><td>${e.cierres}</td><td>${e.manosPerdidas}</td>
+      <td><b>${e.neto > 0 ? "+" : ""}${u(e.neto)}</b></td><td>${e.manos}</td><td>${e.cierres}</td><td>${e.manosPerdidas}</td>
       <td>${e.secosHechos}</td><td>${e.secosSufridos}</td><td>${e.reenganches}</td><td>${e.eliminaciones}</td><td>${e.remis}</td></tr>`;
     }).join("");
     dlg.innerHTML = `<h2>Estadísticas</h2>
-    ${filas ? `<table class="est-tabla"><tr><th>Jugador</th><th>Partidas</th><th>Ganadas</th><th>%</th><th>Dinero</th><th>Manos</th><th>Cierres</th>
+    ${filas ? `<table class="est-tabla"><tr><th>Jugador</th><th>Partidas</th><th>Ganadas</th><th>%</th><th>Unidades</th><th>Manos</th><th>Cierres</th>
       <th>Manos perdidas</th><th>Secos hechos</th><th>Secos sufridos</th><th>Reenganches</th><th>Eliminado</th><th>Remis</th></tr>${filas}</table>` : "<p>Todavía no hay estadísticas. Se guardan en este navegador al terminar cada mano.</p>"}
     <div class="dlg-botones"><button id="est-borrar">Borrar estadísticas</button><button class="principal" id="est-cerrar">Cerrar</button></div>`;
     $("#est-cerrar").onclick = () => dlg.close();
@@ -3034,9 +3268,8 @@ dialog h2 { margin-top: 0; }
           <option value="5">5</option><option value="6" selected>6</option>
         </select>
       </label>
-      <label>Apuesta inicial <input id="online-apuesta" type="number" min="1" value="1" style="width:70px"></label>
-      <label>Reenganches máx. <input id="online-reeng" type="number" min="0" max="30" value="5" style="width:70px"></label>
-      <label><span>Doblar cada reenganche</span><input id="online-doblar" type="checkbox" checked></label>
+      <label>Puntos para quedar fuera <input id="online-tope" type="number" min="1" max="9" value="3" style="width:60px"></label>
+      <label>Reenganches máx. <input id="online-reeng" type="number" min="0" max="10" value="2" style="width:60px"></label>
       <button id="btn-crear-mesa">Crear mesa nueva</button>
     </div>
     <div class="fila-config">
@@ -3064,7 +3297,7 @@ dialog h2 { margin-top: 0; }
       estadoDiv.innerHTML = `
       <p class="codigo-mesa">${mesaInfo.codigo}</p>
       ${avisoYaSentado ? `<p class="error-online">${escaparHtml(avisoYaSentado)}</p>` : ""}
-      <p>Apuesta ${cfg.apuesta} · reenganches máx. ${cfg.maxReenganches}${cfg.doblar ? " (doblando)" : ""} · Sentados (${jugadores.length}/${n}):</p>
+      <p>Fuera con ${cfg.tope ?? 3} puntos · reenganches máx. ${cfg.maxReenganches} · Sentados (${jugadores.length}/${n}):</p>
       <ul>${filas}</ul>
       ${esCreador ? `<button id="btn-empezar-online" class="principal" ${completa ? "" : "disabled"}>Empezar partida</button>` : "<p><em>Esperando a que el creador empiece la partida...</em></p>"}`;
       if (esCreador) estadoDiv.querySelector("#btn-empezar-online")?.addEventListener("click", () => marcarMesaJugando(mesaInfo.mesaId));
@@ -3099,15 +3332,14 @@ dialog h2 { margin-top: 0; }
     dlg.querySelector("#btn-crear-mesa").addEventListener("click", () => {
       const nombreJ = dlg.querySelector("#online-nombre").value.trim() || "Jugador";
       const nJugadores = Number(dlg.querySelector("#online-njugadores").value);
-      const apuesta = Math.max(1, Number(dlg.querySelector("#online-apuesta").value) || 1);
+      const tope = Math.max(1, Number(dlg.querySelector("#online-tope").value) || 3);
       const maxReenganches = Math.max(0, Number(dlg.querySelector("#online-reeng").value) || 0);
-      const doblar = dlg.querySelector("#online-doblar").checked;
       dlg.querySelectorAll("button:not(#btn-cerrar-online)").forEach((b) => {
         b.disabled = true;
       });
       mostrarSelectorAsiento(nJugadores, [], (asiento) => {
         estadoDiv.textContent = "Creando mesa...";
-        crearMesa({ nombre: nombreJ, nJugadores, apuesta, maxReenganches, doblar, asiento }).then(escucharLobby).catch((e) => {
+        crearMesa({ nombre: nombreJ, nJugadores, tope, maxReenganches, asiento }).then(escucharLobby).catch((e) => {
           console.error(e);
           estadoDiv.innerHTML = `<p class="error-online">${escaparHtml(e.message)}</p>`;
         });
@@ -3161,7 +3393,7 @@ dialog h2 { margin-top: 0; }
     tokenOnline++;
     $("#mesa-controles").hidden = true;
     $("#chat-caja").hidden = true;
-    for (const d of ["#dlg-fin", "#dlg-online"]) if ($(d).open) $(d).close();
+    for (const d of ["#dlg-fin", "#dlg-online", "#dlg-pregunta"]) if ($(d).open) $(d).close();
   }
   function salirDeLaMesa() {
     limpiarOnline();
@@ -3202,9 +3434,8 @@ dialog h2 { margin-top: 0; }
     S.jugadores = jugadoresMesa.map((j) => ({ nombre: j.nombre, humano: true, clave: `h:${j.nombre}` }));
     S.partida = new Partida({
       numJugadores: n,
-      apuesta: cfg.apuesta,
+      tope: cfg.tope ?? 3,
       maxReenganches: cfg.maxReenganches,
-      doblar: cfg.doblar,
       repartidor: ((cfg.repartidorInicial ?? 0) + numeroPartida) % n
     });
     S.registro = [];
@@ -3212,6 +3443,7 @@ dialog h2 { margin-top: 0; }
     S.vista = miAsiento;
     S.cubierto = false;
     S.rapido = false;
+    S.espera = "";
     S.pendientes = [];
     S.seleccion = [];
     S.robadaId = null;
@@ -3269,7 +3501,7 @@ dialog h2 { margin-top: 0; }
   }
   async function bucleOnline(O) {
     const vivo = () => S.online === O;
-    log(`Empieza la partida. Cada uno pone ${P().apuesta} en el bote.`, true);
+    log(textoReglas(), true);
     while (vivo() && !P().terminada) {
       S.pendientes = [];
       S.seleccion = [];
@@ -3306,7 +3538,41 @@ dialog h2 { margin-top: 0; }
         }
       });
       O.alContinuar = null;
+      if (!vivo()) return;
+      await resolverFinOnline(O);
+      if (!vivo()) return;
+      if (P().terminada) {
+        O.terminada = true;
+        render();
+        mostrarFinal();
+        if (O.partidaPendiente) iniciarPartidaOnline(O.mesaInfo, O.ultimosDatos, O.partidaPendiente);
+        return;
+      }
     }
+  }
+  async function resolverFinOnline(O) {
+    const vivo = () => S.online === O;
+    const p = P();
+    if (p.pendientes.length) {
+      const otros = p.pendientes.filter((a) => a !== O.miAsiento);
+      S.espera = otros.length ? `Esperando a ${otros.map(nombre).join(" y ")}…` : "";
+      render();
+      await O.sync.resolverDecisiones(() => botPropio() ? Promise.resolve(true) : preguntarDecision(O.miAsiento));
+      S.espera = "";
+      if (!vivo()) return;
+      manoResuelta();
+    }
+    if (!p.terminada && p.puedeRepartir) {
+      const [a, b] = p.activos;
+      const otro = a === O.miAsiento ? b : a;
+      S.espera = "Dos empatados a puntos: votando si se reparte…";
+      render();
+      const hecho = await O.sync.resolverReparto(() => botPropio() ? Promise.resolve(true) : preguntarReparto(O.miAsiento, otro));
+      S.espera = "";
+      if (!vivo()) return;
+      if (hecho) log(textoFinPartida(p), true);
+    }
+    render();
   }
   var perfilBotPropio = (O) => PLANTILLA[(O.miAsiento * 3 + 1) % PLANTILLA.length].p;
   function logTurnoOnline(a, antes) {
@@ -3377,7 +3643,7 @@ dialog h2 { margin-top: 0; }
     $("#chat-caja").hidden = true;
     const dlg = $("#dlg-fin");
     dlg.innerHTML = `<div class="titular">El creador ha terminado la partida.</div>
-    <p>Bote: <b>${p.bote}</b> · Se quedó en la mano ${S.numMano}.</p>
+    <p>Pagado: <b>${u(p.bote)}</b> · Se quedó en la mano ${S.numMano}.</p>
     <div class="dlg-botones"><button class="principal" id="fin-forzada-cerrar">Cerrar</button></div>`;
     if (dlg.open) dlg.close();
     dlg.showModal();
