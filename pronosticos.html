@@ -23,11 +23,6 @@
     margin: 0;
     padding: 16px;
   }
-  .header, #contenido, .btn-enviar {
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-  }
   .header {
     background: var(--verde);
     color: white;
@@ -120,6 +115,10 @@
     font-size: 16px;
     text-align: center;
   }
+  .p15-caja { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; }
+  .p15-caja select { flex:1; max-width:110px; padding:10px; border:2px solid var(--borde); border-radius:8px; font-family:'JetBrains Mono', monospace; font-size:18px; text-align:center; background:white; }
+  .p15-caja span { font-family:'JetBrains Mono', monospace; font-size:18px; }
+  .p15-nota { width:100%; font-size:12px; color:var(--gris); text-align:center; margin-top:4px; }
   .btn-enviar {
     display: block;
     width: 100%;
@@ -154,48 +153,14 @@ const API_URL = 'https://script.google.com/macros/s/AKfycby1Kj3flwsFSYUe6-T6iYFh
 const CLAVE = 'Ad0lf013';
 
 const params = new URLSearchParams(window.location.search);
-let JUGADOR = (params.get('jugador') || localStorage.getItem('bandosmavila_jugador') || '').toUpperCase();
+const JUGADOR = (params.get('jugador') || '').toUpperCase();
 
 let datosJornada = null;
 let seleccion = {}; // { numPartido: ['1'] o ['1','X'] }
 
-function elegirJugador(nombre) {
-  JUGADOR = nombre;
-  localStorage.setItem('bandosmavila_jugador', nombre);
-  cargarDatos();
-}
-
-function cambiarJugador() {
-  localStorage.removeItem('bandosmavila_jugador');
-  JUGADOR = '';
-  mostrarSelector();
-}
-
-async function mostrarSelector() {
-  document.getElementById('subtitulo').textContent = 'Elige tu nombre';
-  document.getElementById('contenido').innerHTML = '<div class="loading">Cargando lista de jugadores...</div>';
-  try {
-    const url = `${API_URL}?clave=${CLAVE}&accion=jugadoresActivos`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-    if (!data.ok) {
-      document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">Error cargando la lista de jugadores.</div>';
-      return;
-    }
-    let html = '<div class="card"><div class="card-header"><span>¿QUIÉN ERES?</span></div>';
-    data.jugadores.forEach(nombre => {
-      html += `<div class="partido"><div class="opcion" style="width:100%" onclick="elegirJugador('${nombre}')">${nombre}</div></div>`;
-    });
-    html += '</div>';
-    document.getElementById('contenido').innerHTML = html;
-  } catch (e) {
-    document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">Error de conexión. Recarga la página.</div>';
-  }
-}
-
 async function cargarDatos() {
   if (!JUGADOR) {
-    mostrarSelector();
+    document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">Enlace incorrecto: falta el nombre de jugador.</div>';
     return;
   }
   try {
@@ -207,7 +172,7 @@ async function cargarDatos() {
       return;
     }
     datosJornada = data;
-    document.getElementById('subtitulo').innerHTML = JUGADOR + ' · Jornada ' + data.jornada + ' · <a href="#" onclick="cambiarJugador();return false;" style="color:white;text-decoration:underline;">cambiar</a>';
+    document.getElementById('subtitulo').textContent = JUGADOR + ' · Jornada ' + data.jornada;
 
     if (data.eliminado) {
       document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">Estás eliminado esta Vuelta.<br>No puedes enviar pronósticos.</div>';
@@ -217,7 +182,7 @@ async function cargarDatos() {
     // Precargar selección previa, si la había
     data.partidos.forEach(p => {
       if (p.previo) {
-        seleccion[p.num] = p.num === 15 ? p.previo : p.previo.split('');
+        seleccion[p.num] = p.num === 15 ? normalizarPleno(p.previo) : p.previo.split('');
       }
     });
 
@@ -225,6 +190,21 @@ async function cargarDatos() {
   } catch (e) {
     document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">Error cargando datos. Recarga la página.</div>';
   }
+}
+
+// Pleno al 15: cada equipo marca 0, 1, 2 o M (3 goles o más). Cualquier otra forma de escribirlo se traduce a esto.
+function normalizarPleno(v) {
+  const m = String(v || '').trim().toUpperCase().match(/^([0-9]+|M)\s*[-:\/ ]\s*([0-9]+|M)$/);
+  if (!m) return '';
+  const g = x => (x === 'M' || parseInt(x, 10) >= 3) ? 'M' : String(parseInt(x, 10));
+  return g(m[1]) + '-' + g(m[2]);
+}
+
+function opcionesPleno(lado) {
+  const bruto = String(seleccion[15] || '');
+  const partes = (normalizarPleno(bruto) || bruto).split('-');
+  const actual = partes.length === 2 ? partes[lado - 1] : '';
+  return '<option value="">-</option>' + ['0', '1', '2', 'M'].map(o => `<option value="${o}"${o === actual ? ' selected' : ''}>${o}</option>`).join('');
 }
 
 function contarDobles() {
@@ -251,7 +231,12 @@ function pintar(data) {
       html += `<div class="partido">
         <div class="partido-num">PLENO AL 15</div>
         <div class="partido-equipos">${p.local} — ${p.visitante}</div>
-        <input type="text" class="p15-input" id="p15" maxlength="3" placeholder="Ej: 1-2, M-0" value="${seleccion[15] || ''}">
+        <div class="p15-caja">
+          <select id="p15-local" aria-label="Goles del local">${opcionesPleno(1)}</select>
+          <span>-</span>
+          <select id="p15-visit" aria-label="Goles del visitante">${opcionesPleno(2)}</select>
+        </div>
+        <div class="p15-nota">M = 3 goles o más (un 3-1 se marca como M-1)</div>
       </div>`;
     } else {
       const sel = seleccion[p.num] || [];
@@ -270,7 +255,12 @@ function pintar(data) {
     <div id="mensajeFinal"></div>`;
 
   document.getElementById('contenido').innerHTML = html;
-  document.getElementById('p15').addEventListener('input', e => { seleccion[15] = e.target.value; });
+  const alCambiarPleno = () => {
+    const a = document.getElementById('p15-local').value, b = document.getElementById('p15-visit').value;
+    seleccion[15] = (a || b) ? a + '-' + b : '';
+  };
+  document.getElementById('p15-local').addEventListener('change', alCambiarPleno);
+  document.getElementById('p15-visit').addEventListener('change', alCambiarPleno);
 }
 
 function toggleOpcion(numPartido, opcion) {
@@ -298,7 +288,11 @@ async function enviar() {
   for (let np = 1; np <= 14; np++) {
     signos[np] = (seleccion[np] || []).join('');
   }
-  signos[15] = seleccion[15] || '';
+  signos[15] = normalizarPleno(seleccion[15]);
+  if (seleccion[15] && !signos[15]) {
+    alert('El pleno al 15 está incompleto: elige los goles de los dos equipos (0, 1, 2 o M).');
+    return;
+  }
 
   const faltan = [];
   for (let np = 1; np <= 15; np++) {
