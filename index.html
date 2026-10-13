@@ -1153,7 +1153,9 @@ function cargarLoteria(rows, avatarPorNombre) {
   rows.forEach(row => {
     const nombre = row[0] || '';
     if (!nombre || nombre.toUpperCase() === 'TOTAL') return;
-    const numero = row[1] || '-';
+    // Los décimos tienen 5 cifras: si Sheets se ha comido el 0 inicial (01822 -> 1822), se restituye
+    let numero = String(row[1] || '').trim() || '-';
+    if (/^\d{1,4}$/.test(numero)) numero = numero.padStart(5, '0');
     const lugar = row[2] || '';
     const premio = parseFloat(row[3]) || 0;
     total += premio;
@@ -1251,13 +1253,25 @@ async function cargarSelectorNombreVotacion() {
   }
 }
 
+// El botón "Rellenar pronósticos" lleva el nombre recordado en este dispositivo (si lo hay)
+function actualizarLinkPronosticos() {
+  try {
+    const n = localStorage.getItem('bandosmavila_jugador');
+    const a = document.getElementById('link-pronosticos');
+    if (a) a.href = n ? 'pronosticos.html?jugador=' + encodeURIComponent(n) : 'pronosticos.html';
+  } catch (e) {}
+}
+actualizarLinkPronosticos();
+
 function elegirJugadorVotacion(nombre) {
   localStorage.setItem('bandosmavila_jugador', nombre);
+  actualizarLinkPronosticos();
   cargarVotaciones();
 }
 
 function cambiarJugadorVotacion() {
   localStorage.removeItem('bandosmavila_jugador');
+  actualizarLinkPronosticos();
   cargarVotaciones();
 }
 

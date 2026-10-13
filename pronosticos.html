@@ -153,14 +153,41 @@ const API_URL = 'https://script.google.com/macros/s/AKfycby1Kj3flwsFSYUe6-T6iYFh
 const CLAVE = 'Ad0lf013';
 
 const params = new URLSearchParams(window.location.search);
-const JUGADOR = (params.get('jugador') || '').toUpperCase();
+let JUGADOR = (params.get('jugador') || '').toUpperCase();
+// Si el enlace no trae nombre (p. ej. se entra desde el botón de la web), se usa el recordado en este dispositivo;
+// si tampoco hay, se pregunta quién eres. Si el enlace trae nombre, se recuerda para la próxima vez.
+try {
+  if (JUGADOR) localStorage.setItem('bandosmavila_jugador', JUGADOR);
+  else JUGADOR = (localStorage.getItem('bandosmavila_jugador') || '').toUpperCase();
+} catch (e) { /* sin almacenamiento: se preguntará siempre */ }
+const NOMBRES_PEÑA = ['ADOLFO','AGUS','BOZO','CACHO','CHUCHI','FIDE','JAVI','JOSE','JULIO','LOLO','LUISFER','MANOLO','MICHEL','NESTOR'];
+
+function elegirJugador(nombre) {
+  try { localStorage.setItem('bandosmavila_jugador', nombre); } catch (e) {}
+  window.location.href = 'pronosticos.html?jugador=' + encodeURIComponent(nombre);
+}
+
+function mostrarSelectorJugador() {
+  const cont = document.getElementById('contenido');
+  cont.innerHTML = '<div style="text-align:center;padding:20px 8px;"><div style="font-size:18px;font-weight:bold;margin-bottom:14px;">¿Quién eres?</div>' +
+    '<div id="selector-jugador" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;"></div></div>';
+  const caja = document.getElementById('selector-jugador');
+  NOMBRES_PEÑA.forEach(function (n) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = n;
+    b.style.cssText = 'flex:1 1 40%;padding:14px 8px;font-size:16px;border:2px solid #2d6a4f;border-radius:10px;background:#fff;color:#2d6a4f;font-weight:bold;cursor:pointer;';
+    b.onclick = function () { elegirJugador(n); };
+    caja.appendChild(b);
+  });
+}
 
 let datosJornada = null;
 let seleccion = {}; // { numPartido: ['1'] o ['1','X'] }
 
 async function cargarDatos() {
   if (!JUGADOR) {
-    document.getElementById('contenido').innerHTML = '<div class="eliminado-msg">Enlace incorrecto: falta el nombre de jugador.</div>';
+    mostrarSelectorJugador();
     return;
   }
   try {
