@@ -1372,20 +1372,33 @@ async function leerHojasBatch(nombres, serial) {
   const rangesParam = nombres.map(n => `ranges=${encodeURIComponent(n)}`).join('&');
   const extra = serial ? '&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER' : '';
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchGet?${rangesParam}&key=${API_KEY}${extra}`;
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-    const porNombre = {};
-    (data.valueRanges || []).forEach((vr, i) => {
-      porNombre[nombres[i]] = vr.values || [];
-    });
-    return porNombre;
-  } catch (e) {
-    console.error('Error leyendo hojas (batch):', e);
-    const vacio = {};
-    nombres.forEach(n => vacio[n] = []);
-    return vacio;
+  const claveCache = 'bm_cache_' + nombres.join(',') + (serial ? '_s' : '');
+  // Hasta 3 intentos con espera creciente (Google devuelve 429 si se piden muchas lecturas seguidas)
+  for (let intento = 0; intento < 3; intento++) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (!data.valueRanges) throw new Error('respuesta sin datos');
+      const porNombre = {};
+      data.valueRanges.forEach((vr, i) => {
+        porNombre[nombres[i]] = vr.values || [];
+      });
+      try { localStorage.setItem(claveCache, JSON.stringify(porNombre)); } catch (e2) {}
+      return porNombre;
+    } catch (e) {
+      console.error('Error leyendo hojas (batch), intento ' + (intento + 1) + ':', e);
+      if (intento < 2) await new Promise(r => setTimeout(r, 1200 * (intento + 1)));
+    }
   }
+  // Sin conexión con Google: se usa la última copia buena guardada en este dispositivo
+  try {
+    const guardado = localStorage.getItem(claveCache);
+    if (guardado) { console.warn('Usando la última copia guardada de los datos.'); return JSON.parse(guardado); }
+  } catch (e3) {}
+  const vacio = {};
+  nombres.forEach(n => vacio[n] = []);
+  return vacio;
 }
 
 function serialToDate(serial) {
@@ -1891,8 +1904,11 @@ function renderAvatarMini(nombre, avatarPorNombre) {
 }
   
 function calcularCandidatosGranFinal(clasif, campeonesRows) {
-  const camp1 = campeonesRows.find(r => String(r[1]) === '1');
-  const camp2 = campeonesRows.find(r => String(r[1]) === '2');
+  // Solo cuentan los campeones del año en curso (si no, en el segundo año se mostrarían los del anterior)
+  const anioCand = String(new Date().getFullYear());
+  const delAnio = campeonesRows.filter(r => String(r[0]) === anioCand);
+  const camp1 = [...delAnio].reverse().find(r => String(r[1]) === '1');
+  const camp2 = [...delAnio].reverse().find(r => String(r[1]) === '2');
   const hayVuelta2Definitiva = !!camp2;
 
   function maxPorCriterio(filas, obtenerValor) {
