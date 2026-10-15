@@ -127,7 +127,7 @@
 <body>
 
 <div class="header">
-  <h1>MI AVATAR</h1>
+  <h1><a href="index.html" style="color:inherit;text-decoration:none;" title="Volver a la web">MI AVATAR</a></h1>
   <p id="subtitulo">Cargando...</p>
 </div>
 
@@ -291,9 +291,9 @@ function pintar() {
   // COLOR
   html += `<div class="card"><div class="card-header">TU COLOR</div><div class="card-body">`;
   if (miDato.color) {
-    html += `<div class="aviso ok">Ya elegiste tu color: <strong>${miDato.color}</strong>. No se puede cambiar.</div>`;
+    html += `<div class="aviso ok">Ya elegiste tu color para esta temporada: <strong>${miDato.color}</strong>.</div>`;
   } else {
-    html += `<div class="aviso">Este color no sustituye tu camiseta — sigues llevando la de tu equipo. Es solo el color en el que se escribe tu nombre, para distinguirte de tus compañeros de equipo. Toca uno para ver cómo queda antes de confirmar.</div><div class="paleta">`;
+    html += `<div class="aviso">Este color no sustituye tu camiseta — sigues llevando la de tu equipo. Es solo el color en el que se escribe tu nombre, para distinguirte de tus compañeros de equipo. Toca uno para ver cómo queda antes de confirmar. Es para toda la temporada, no para siempre — se podrá volver a elegir cada año.</div><div class="paleta">`;
     COLORES.forEach(c => {
       const ocupadoPor = colorTomadoPor[c.nombre];
       const ocupado = !!ocupadoPor;
@@ -308,9 +308,9 @@ function pintar() {
   // EMOJI
   html += `<div class="card"><div class="card-header">TU EMOJI (sustituye al globo)</div><div class="card-body">`;
   if (miDato.emoji) {
-    html += `<div class="aviso ok">Ya elegiste tu emoji: <strong>${miDato.emoji}</strong>. No se puede cambiar.</div>`;
+    html += `<div class="aviso ok">Ya elegiste tu emoji para esta temporada: <strong>${miDato.emoji}</strong>.</div>`;
   } else {
-    html += `<div class="aviso">Si eliges un emoji, sustituye por completo al globo con camiseta. Es opcional — si no eliges nada, te quedas con el globo de tu equipo. Toca uno para verlo grande antes de confirmar.</div><div class="emojis">`;
+    html += `<div class="aviso">Si eliges un emoji, sustituye por completo al globo con camiseta. Es opcional — si no eliges nada, te quedas con el globo de tu equipo. Toca uno para verlo grande antes de confirmar. Es para toda la temporada, no para siempre — se podrá volver a elegir cada año.</div><div class="emojis">`;
     EMOJIS.forEach(e => {
       const ocupadoPor = emojiTomadoPor[e];
       const ocupado = !!ocupadoPor;
@@ -347,7 +347,7 @@ function cancelarPreview() {
 
 async function confirmarEleccion() {
   const tipo = previewTipo, valor = previewValor;
-  if (!confirm('¿Confirmas del todo? No podrás cambiarlo después.')) return;
+  if (!confirm('¿Confirmas del todo? Quedará fijo para el resto de esta temporada.')) return;
   previewTipo = null;
   previewValor = null;
   await guardar(tipo, valor);
