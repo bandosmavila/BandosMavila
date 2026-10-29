@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1a6b3c">
+<title>¿Te aburres? — Peña BandosMávila</title>
+<style>
+  :root { --verde:#1a6b3c; --fondo:#f4f1e8; --papel:#fff; --tinta:#1d1d1d; --gris:#6b6b6b; --borde:#ddd8cc; }
+  @media (prefers-color-scheme: dark) { :root { --fondo:#14181a; --papel:#1e2427; --tinta:#eceae3; --gris:#9aa3a6; --borde:#3a4448; } }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin:0; background:var(--fondo); color:var(--tinta); font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; }
+  header { background:var(--verde); color:#fff; padding:10px 14px; display:flex; align-items:center; gap:10px; }
+  header a { color:#fff; text-decoration:none; font-size:30px; line-height:1; padding:0 8px 4px 0; }
+  h1 { margin:0; font-family:'Bebas Neue','Inter',sans-serif; font-weight:400; letter-spacing:1.5px; font-size:28px; line-height:1; }
+  main { max-width:560px; margin:0 auto; padding:18px 14px 30px; }
+  p.intro { color:var(--gris); line-height:1.45; margin:0 2px 16px; }
+  .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+  .juego { display:block; text-decoration:none; text-align:center; background:var(--papel); border:1.5px solid var(--verde); border-radius:10px; padding:18px 10px; color:var(--verde); font-family:'Bebas Neue','Inter',sans-serif; letter-spacing:1px; }
+  .juego:active { background:var(--verde); color:#fff; }
+  .nombre { font-size:22px; }
+  .estado { font-family:'Inter',sans-serif; font-size:12px; font-weight:600; margin-top:4px; letter-spacing:normal; }
+  @media (prefers-color-scheme: dark) { .juego { color:#7fd1a1; border-color:#7fd1a1; } .juego:active { color:#fff; border-color:var(--verde); } }
+</style>
+</head>
+<body>
+<header><a href="../index.html" aria-label="Volver a la web de la peña">‹</a><h1>¿Te aburres?</h1></header>
+<main>
+  <p class="intro">Pasatiempos para jugar solo. Tu partida se guarda sola en este aparato.</p>
+  <div class="grid">
+    <a class="juego" href="sudoku.html"><div class="nombre">Sudoku</div><div class="estado">Normal y Anormal</div></a>
+  </div>
+</main>
+</body>
+</html>

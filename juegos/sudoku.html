@@ -1,0 +1,1055 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a6b3c">
+<title>Sudoku — Peña BandosMávila</title>
+<style>:root {
+  --verde: #1a6b3c;
+  --verde-claro: #2d9e5f;
+  --fondo: #f4f1e8;
+  --papel: #ffffff;
+  --tinta: #1d1d1d;
+  --gris: #6b6b6b;
+  --linea: #c9c3b3;
+  --linea-fuerte: #3b3b3b;
+  --sel: #bfe3cc;
+  --vecina: #e6efe9;
+  --igual: #cfe8d8;
+  --mia: #1b5fa8;
+  --rojo: #c0392b;
+  --rojo-fondo: #f7d9d5;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #14181a; --papel: #1e2427; --tinta: #eceae3; --gris: #9aa3a6;
+    --linea: #3a4448; --linea-fuerte: #aab3b6; --sel: #2b5a40; --vecina: #263034;
+    --igual: #2f4a3a; --mia: #7db6ee; --rojo: #ff8a7c; --rojo-fondo: #4a2824;
+  }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--fondo); color: var(--tinta);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-user-select: none; user-select: none; touch-action: manipulation;
+}
+[hidden] { display: none !important; }
+
+#cabecera {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--verde); color: #fff; padding: 8px 12px; padding-top: calc(8px + env(safe-area-inset-top));
+}
+#cabecera h1 {
+  margin: 0; font-family: 'Bebas Neue', 'Inter', sans-serif; font-weight: 400;
+  letter-spacing: 1.5px; font-size: 26px; line-height: 1;
+}
+#volver { color: #fff; text-decoration: none; font-size: 30px; line-height: 1; padding: 0 8px 4px 0; }
+#datos { margin-left: auto; display: flex; gap: 12px; align-items: baseline; font-size: 14px; }
+#nivel-actual { opacity: 0.9; font-weight: 600; }
+#reloj { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 18px; }
+
+main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
+
+/* Menú */
+#pantalla-menu { display: flex; flex-direction: column; gap: 12px; max-width: 460px; margin: 10px auto 0; }
+.intro { color: var(--gris); margin: 4px 2px 6px; line-height: 1.4; }
+.nivel {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left;
+  background: var(--papel); color: var(--tinta); border: 1.5px solid var(--verde); border-radius: 12px;
+  padding: 16px 18px; cursor: pointer; font: inherit;
+}
+.nivel:active { background: var(--verde); color: #fff; }
+.nivel-nombre { font-family: 'Bebas Neue', 'Inter', sans-serif; font-size: 28px; letter-spacing: 1px; color: var(--verde); }
+.nivel:active .nivel-nombre { color: #fff; }
+.nivel-desc { font-size: 14px; }
+.nivel-stats { font-size: 12px; color: var(--gris); min-height: 1em; }
+.nivel:active .nivel-stats { color: #e3f0e8; }
+.enlace {
+  background: none; border: none; color: var(--verde); font: inherit; font-size: 14px; font-weight: 600;
+  padding: 10px; cursor: pointer; text-decoration: underline;
+}
+@media (prefers-color-scheme: dark) { .enlace { color: #7fd1a1; } .nivel-nombre { color: #7fd1a1; } }
+
+/* Juego */
+#pantalla-juego { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+#tablero {
+  --lado: min(calc(100vw - 20px), 470px);
+  width: var(--lado); height: var(--lado);
+  display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(9, 1fr);
+  border: 2.5px solid var(--linea-fuerte); border-radius: 4px; background: var(--papel); overflow: hidden;
+}
+.c {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  border-right: 1px solid var(--linea); border-bottom: 1px solid var(--linea);
+  font-size: calc(var(--lado) / 15); font-weight: 600; cursor: pointer; background: var(--papel);
+  color: var(--mia);
+}
+.c[data-c="2"], .c[data-c="5"] { border-right: 2px solid var(--linea-fuerte); }
+.c[data-c="8"] { border-right: none; }
+.c[data-f="2"], .c[data-f="5"] { border-bottom: 2px solid var(--linea-fuerte); }
+.c[data-f="8"] { border-bottom: none; }
+.c.dada { color: var(--tinta); font-weight: 700; }
+.c.vecina { background: var(--vecina); }
+.c.igual { background: var(--igual); }
+.c.sel { background: var(--sel); box-shadow: inset 0 0 0 2px var(--verde); }
+.c.conflicto { color: var(--rojo); background: var(--rojo-fondo); }
+.c.mala { color: var(--rojo); background: var(--rojo-fondo); }
+.c .notas {
+  position: absolute; inset: 2px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+  font-size: calc(var(--lado) / 31); font-weight: 500; color: var(--gris); line-height: 1;
+}
+.c .notas i { font-style: normal; display: flex; align-items: center; justify-content: center; }
+
+#mando { width: min(calc(100vw - 20px), 470px); display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+#herramientas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+#herramientas button {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px;
+  background: var(--papel); color: var(--tinta); border: 1.5px solid var(--linea); border-radius: 10px;
+  font: inherit; font-size: 12px; cursor: pointer;
+}
+#herramientas .ico { font-size: 20px; line-height: 1.1; }
+#herramientas button:active { background: var(--vecina); }
+#herramientas button[aria-pressed="true"] { background: var(--verde); border-color: var(--verde); color: #fff; }
+#herramientas button:disabled { opacity: 0.4; }
+#teclado { display: grid; grid-template-columns: repeat(9, 1fr); gap: 5px; }
+#teclado button {
+  position: relative; aspect-ratio: 3 / 4; padding: 0; background: var(--papel); color: var(--mia);
+  border: 1.5px solid var(--linea); border-radius: 9px; font: inherit; font-size: 24px; font-weight: 600; cursor: pointer;
+}
+#teclado button small { position: absolute; right: 4px; bottom: 2px; font-size: 10px; color: var(--gris); font-weight: 500; }
+#teclado button:active { background: var(--sel); }
+#teclado button.hecho { opacity: 0.25; }
+#btn-nueva { align-self: center; }
+
+/* Avisos y diálogos */
+#aviso {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px);
+  background: #222; color: #fff; padding: 10px 16px; border-radius: 20px; font-size: 14px; max-width: 90vw;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 30; text-align: center;
+}
+#aviso.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+#capa { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: flex; align-items: center; justify-content: center; z-index: 20; padding: 18px; }
+#capa-caja {
+  background: var(--papel); color: var(--tinta); border-radius: 14px; padding: 22px 20px 16px; width: min(92vw, 380px);
+  text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+}
+#capa-caja h2 { margin: 0 0 8px; font-family: 'Bebas Neue', 'Inter', sans-serif; font-weight: 400; font-size: 32px; letter-spacing: 1px; color: var(--verde); }
+@media (prefers-color-scheme: dark) { #capa-caja h2 { color: #7fd1a1; } }
+#capa-caja p { margin: 6px 0; line-height: 1.45; }
+#capa-caja .datos { font-size: 15px; color: var(--gris); }
+#capa-caja .botones { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+#capa-caja .botones button {
+  padding: 12px; border-radius: 10px; border: 1.5px solid var(--verde); background: var(--papel); color: var(--verde);
+  font: inherit; font-weight: 600; font-size: 15px; cursor: pointer;
+}
+#capa-caja .botones button.principal { background: var(--verde); color: #fff; }
+@media (prefers-color-scheme: dark) { #capa-caja .botones button { color: #7fd1a1; border-color: #7fd1a1; } #capa-caja .botones button.principal { color: #fff; border-color: var(--verde); } }
+.girando { display: inline-block; width: 26px; height: 26px; border: 3px solid var(--linea); border-top-color: var(--verde); border-radius: 50%; animation: gira 0.8s linear infinite; margin: 6px 0 2px; }
+@keyframes gira { to { transform: rotate(360deg); } }
+
+/* Móvil apaisado / pantallas bajas: tablero a la izquierda, mando a la derecha */
+@media (orientation: landscape) and (max-height: 620px) {
+  main { padding: 6px 10px; }
+  #cabecera { padding-top: calc(4px + env(safe-area-inset-top)); padding-bottom: 4px; }
+  #pantalla-juego { flex-direction: row; justify-content: center; align-items: center; gap: 16px; }
+  #tablero { --lado: min(calc(100svh - 70px), 470px); }
+  #mando { width: min(300px, 42vw); gap: 8px; }
+  #teclado { grid-template-columns: repeat(3, 1fr); }
+  #teclado button { aspect-ratio: auto; height: 42px; font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<header id="cabecera">
+  <a id="volver" href="aburres.html" aria-label="Volver a ¿Te aburres?">‹</a>
+  <h1>Sudoku</h1>
+  <div id="datos">
+    <span id="nivel-actual"></span>
+    <span id="reloj" aria-label="Tiempo de juego">00:00</span>
+  </div>
+</header>
+
+<main>
+  <section id="pantalla-menu" hidden>
+    <p class="intro">Elige nivel. La partida se guarda sola: puedes dejarla y seguir más tarde.</p>
+    <button class="nivel" data-nivel="normal">
+      <span class="nivel-nombre">Normal</span>
+      <span class="nivel-desc">Para un rato tranquilo</span>
+      <span class="nivel-stats" id="stats-normal"></span>
+    </button>
+    <button class="nivel" data-nivel="anormal">
+      <span class="nivel-nombre">Anormal</span>
+      <span class="nivel-desc">Pares, tríos… te va a costar</span>
+      <span class="nivel-stats" id="stats-anormal"></span>
+    </button>
+    <button id="btn-cancelar-menu" class="enlace" hidden>Volver a mi partida</button>
+  </section>
+
+  <section id="pantalla-juego" hidden>
+    <div id="tablero" role="grid" aria-label="Tablero de sudoku"></div>
+    <div id="mando">
+      <div id="herramientas">
+        <button id="btn-deshacer" aria-label="Deshacer"><span class="ico">↶</span><span>Deshacer</span></button>
+        <button id="btn-borrar" aria-label="Borrar casilla"><span class="ico">⌫</span><span>Borrar</span></button>
+        <button id="btn-notas" aria-pressed="false" aria-label="Modo notas"><span class="ico">✎</span><span>Notas</span></button>
+        <button id="btn-pista" aria-label="Pista"><span class="ico">💡</span><span>Pista</span></button>
+      </div>
+      <div id="teclado" role="group" aria-label="Dígitos"></div>
+      <button id="btn-nueva" class="enlace">Nueva partida</button>
+    </div>
+  </section>
+</main>
+
+<div id="aviso" role="status" aria-live="polite"></div>
+<div id="capa" hidden><div id="capa-caja"></div></div>
+<script>(() => {
+  // src/sudoku.js
+  var NIVELES = {
+    // Normal: se resuelve sin adivinar, con casillas únicas y, como mucho, candidatos bloqueados.
+    normal: { nombre: "Normal", rangoMin: 2, rangoMax: 3, pistasMin: 29, pistasMax: 34 },
+    // Anormal: hace falta algún par o trío (desnudo u oculto). Aun así no hay que adivinar.
+    anormal: { nombre: "Anormal", rangoMin: 4, rangoMax: 4, pistasMin: 0, pistasMax: 0 }
+  };
+  var fila = (i) => i / 9 | 0;
+  var columna = (i) => i % 9;
+  var caja = (i) => (fila(i) / 3 | 0) * 3 + (columna(i) / 3 | 0);
+  var UNIDADES = [];
+  for (let r = 0; r < 9; r++) UNIDADES.push(Array.from({ length: 9 }, (_, c) => r * 9 + c));
+  for (let c = 0; c < 9; c++) UNIDADES.push(Array.from({ length: 9 }, (_, r) => r * 9 + c));
+  for (let b = 0; b < 9; b++) {
+    const f0 = (b / 3 | 0) * 3, c0 = b % 3 * 3, u = [];
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) u.push((f0 + r) * 9 + c0 + c);
+    UNIDADES.push(u);
+  }
+  var FILAS = UNIDADES.slice(0, 9);
+  var COLUMNAS = UNIDADES.slice(9, 18);
+  var CAJAS = UNIDADES.slice(18, 27);
+  var UNIDADES_DE = Array.from({ length: 81 }, (_, i) => [FILAS[fila(i)], COLUMNAS[columna(i)], CAJAS[caja(i)]]);
+  var VECINAS = Array.from({ length: 81 }, (_, i) => {
+    const s = /* @__PURE__ */ new Set();
+    for (const u of UNIDADES_DE[i]) for (const c of u) if (c !== i) s.add(c);
+    return [...s];
+  });
+  var BIT = (d) => 1 << d - 1;
+  var CUENTA = new Uint8Array(512);
+  for (let m = 1; m < 512; m++) CUENTA[m] = CUENTA[m >> 1] + (m & 1);
+  var TODOS = 511;
+  function barajar(arr, azar) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(azar() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  function aArray(cuad) {
+    if (typeof cuad === "string") return Array.from(cuad, (ch) => ch.charCodeAt(0) - 48);
+    return Array.from(cuad);
+  }
+  function aCadena(cuad) {
+    return Array.from(cuad, (d) => String.fromCharCode(48 + d)).join("");
+  }
+  function contarSoluciones(cuad, limite = 2, azar = null) {
+    const v = aArray(cuad);
+    const f = new Array(9).fill(0), c = new Array(9).fill(0), b = new Array(9).fill(0);
+    let vacias = 0;
+    for (let i = 0; i < 81; i++) {
+      if (v[i]) {
+        const m = BIT(v[i]);
+        if (f[fila(i)] & m || c[columna(i)] & m || b[caja(i)] & m) return { cuenta: 0, solucion: null };
+        f[fila(i)] |= m;
+        c[columna(i)] |= m;
+        b[caja(i)] |= m;
+      } else vacias++;
+    }
+    let cuenta = 0, primera = null;
+    function rec(restantes) {
+      if (restantes === 0) {
+        cuenta++;
+        if (!primera) primera = v.slice();
+        return cuenta >= limite;
+      }
+      let mejor = -1, mejorMask = 0, mejorN = 10;
+      for (let i = 0; i < 81; i++) {
+        if (v[i]) continue;
+        const libres = TODOS & ~(f[fila(i)] | c[columna(i)] | b[caja(i)]);
+        const n = CUENTA[libres];
+        if (n < mejorN) {
+          mejorN = n;
+          mejor = i;
+          mejorMask = libres;
+          if (n <= 1) break;
+        }
+      }
+      if (mejorN === 0) return false;
+      const digs = [];
+      for (let d = 1; d <= 9; d++) if (mejorMask & BIT(d)) digs.push(d);
+      if (azar) barajar(digs, azar);
+      for (const d of digs) {
+        const m = BIT(d);
+        v[mejor] = d;
+        f[fila(mejor)] |= m;
+        c[columna(mejor)] |= m;
+        b[caja(mejor)] |= m;
+        const fin = rec(restantes - 1);
+        v[mejor] = 0;
+        f[fila(mejor)] &= ~m;
+        c[columna(mejor)] &= ~m;
+        b[caja(mejor)] &= ~m;
+        if (fin) return true;
+      }
+      return false;
+    }
+    rec(vacias);
+    return { cuenta, solucion: primera };
+  }
+  function generarSolucion(azar = Math.random) {
+    return contarSoluciones(new Array(81).fill(0), 1, azar).solucion;
+  }
+  function conflictos(cuad) {
+    const v = aArray(cuad);
+    const malas = /* @__PURE__ */ new Set();
+    for (const u of UNIDADES) {
+      const vistos = /* @__PURE__ */ new Map();
+      for (const i of u) {
+        if (!v[i]) continue;
+        if (vistos.has(v[i])) {
+          malas.add(i);
+          malas.add(vistos.get(v[i]));
+        } else vistos.set(v[i], i);
+      }
+    }
+    return malas;
+  }
+  function resolverConTecnicas(cuad, { solucion = null } = {}) {
+    const val = aArray(cuad);
+    const sol = solucion ? aArray(solucion) : null;
+    const cand = new Array(81).fill(0);
+    let vacias = 0;
+    for (let i = 0; i < 81; i++) {
+      if (val[i]) continue;
+      vacias++;
+      let m = TODOS;
+      for (const p of VECINAS[i]) if (val[p]) m &= ~BIT(val[p]);
+      cand[i] = m;
+    }
+    const usadas = /* @__PURE__ */ new Set();
+    function colocar(i, d) {
+      if (sol && sol[i] !== d) throw new Error(`Técnica incorrecta: pone ${d} en ${i}, debía ser ${sol[i]}`);
+      val[i] = d;
+      cand[i] = 0;
+      vacias--;
+      const m = ~BIT(d);
+      for (const p of VECINAS[i]) cand[p] &= m;
+    }
+    function quitar(i, mascara) {
+      const antes = cand[i], nuevo = antes & ~mascara;
+      if (nuevo === antes) return false;
+      if (sol && (nuevo & BIT(sol[i])) === 0 && antes & BIT(sol[i])) {
+        throw new Error(`Técnica incorrecta: elimina ${sol[i]} de la casilla ${i}`);
+      }
+      cand[i] = nuevo;
+      return true;
+    }
+    function casillaUnica() {
+      let hecho = false;
+      for (let i = 0; i < 81; i++) {
+        if (!val[i] && CUENTA[cand[i]] === 1) {
+          colocar(i, Math.log2(cand[i]) + 1);
+          hecho = true;
+        }
+      }
+      return hecho;
+    }
+    function casillaOculta() {
+      let hecho = false;
+      for (const u of UNIDADES) {
+        for (let d = 1; d <= 9; d++) {
+          const m = BIT(d);
+          let donde = -1, n = 0;
+          for (const i of u) {
+            if (!val[i] && cand[i] & m) {
+              n++;
+              donde = i;
+            }
+          }
+          if (n === 1) {
+            colocar(donde, d);
+            hecho = true;
+          }
+        }
+      }
+      return hecho;
+    }
+    function bloqueados() {
+      let hecho = false;
+      for (const cajaU of CAJAS) {
+        for (let d = 1; d <= 9; d++) {
+          const m = BIT(d);
+          const lugares = cajaU.filter((i) => !val[i] && cand[i] & m);
+          if (lugares.length < 2) continue;
+          for (const linea of [fila, columna]) {
+            if (lugares.every((i) => linea(i) === linea(lugares[0]))) {
+              const U = linea === fila ? FILAS[fila(lugares[0])] : COLUMNAS[columna(lugares[0])];
+              for (const j of U) {
+                if (caja(j) !== caja(lugares[0]) && !val[j] && quitar(j, m)) hecho = true;
+              }
+            }
+          }
+        }
+      }
+      for (const linea of [...FILAS, ...COLUMNAS]) {
+        for (let d = 1; d <= 9; d++) {
+          const m = BIT(d);
+          const lugares = linea.filter((i) => !val[i] && cand[i] & m);
+          if (lugares.length < 2) continue;
+          if (lugares.every((i) => caja(i) === caja(lugares[0]))) {
+            for (const j of CAJAS[caja(lugares[0])]) {
+              if (!linea.includes(j) && !val[j] && quitar(j, m)) hecho = true;
+            }
+          }
+        }
+      }
+      return hecho;
+    }
+    function combinaciones(n, k, fn) {
+      const idx = [];
+      (function rec(desde) {
+        if (idx.length === k) {
+          fn(idx.slice());
+          return;
+        }
+        for (let x = desde; x < n; x++) {
+          idx.push(x);
+          rec(x + 1);
+          idx.pop();
+        }
+      })(0);
+    }
+    function subconjuntos() {
+      let hecho = false;
+      for (const u of UNIDADES) {
+        const vacio = u.filter((i) => !val[i]);
+        for (const k of [2, 3]) {
+          const cands = vacio.filter((i) => CUENTA[cand[i]] <= k);
+          combinaciones(cands.length, k, (ix) => {
+            const celdas2 = ix.map((x) => cands[x]);
+            const union = celdas2.reduce((a, i) => a | cand[i], 0);
+            if (CUENTA[union] !== k) return;
+            for (const j of vacio) if (!celdas2.includes(j) && quitar(j, union)) hecho = true;
+          });
+          const digs = [];
+          const donde = {};
+          for (let d = 1; d <= 9; d++) {
+            const lugares = vacio.filter((i) => cand[i] & BIT(d));
+            if (lugares.length >= 2 && lugares.length <= k) {
+              digs.push(d);
+              donde[d] = lugares;
+            }
+          }
+          combinaciones(digs.length, k, (ix) => {
+            const ds = ix.map((x) => digs[x]);
+            const celdas2 = [...new Set(ds.flatMap((d) => donde[d]))];
+            if (celdas2.length !== k) return;
+            const mascara = ds.reduce((a, d) => a | BIT(d), 0);
+            for (const j of celdas2) if (quitar(j, ~mascara & TODOS)) hecho = true;
+          });
+        }
+      }
+      return hecho;
+    }
+    const pasos = [
+      [1, casillaUnica],
+      [2, casillaOculta],
+      [3, bloqueados],
+      [4, subconjuntos]
+    ];
+    let rango = 0;
+    while (vacias > 0) {
+      let avanzo = false;
+      for (const [r, tecnica] of pasos) {
+        if (tecnica()) {
+          rango = Math.max(rango, r);
+          usadas.add(r);
+          avanzo = true;
+          break;
+        }
+      }
+      if (!avanzo) break;
+      for (let i = 0; i < 81; i++) if (!val[i] && cand[i] === 0) throw new Error("Contradicción en la resolución");
+    }
+    return { resuelto: vacias === 0, rango, usadas: [...usadas].sort(), cuadricula: aCadena(val) };
+  }
+  function generar(nivel, azar = Math.random, maxIntentos = 400) {
+    const cfg = NIVELES[nivel];
+    if (!cfg) throw new Error(`Nivel desconocido: ${nivel}`);
+    let respaldo = null;
+    for (let intento = 1; intento <= maxIntentos; intento++) {
+      const sol = generarSolucion(azar);
+      const objetivo = cfg.pistasMax ? cfg.pistasMin + Math.floor(azar() * (cfg.pistasMax - cfg.pistasMin + 1)) : 0;
+      const cuad = sol.slice();
+      let pistas = 81;
+      for (const i of barajar(Array.from({ length: 81 }, (_, x) => x), azar)) {
+        if (pistas <= objetivo) break;
+        const d = cuad[i];
+        cuad[i] = 0;
+        if (contarSoluciones(cuad, 2).cuenta === 1) pistas--;
+        else cuad[i] = d;
+      }
+      const puzle = aCadena(cuad), solucion = aCadena(sol);
+      let g;
+      try {
+        g = resolverConTecnicas(puzle, { solucion });
+      } catch (e2) {
+        continue;
+      }
+      const resultado = { puzle, solucion, nivel, pistas, rango: g.rango, intentos: intento };
+      if (g.resuelto && g.rango >= cfg.rangoMin && g.rango <= cfg.rangoMax) return resultado;
+      if (!respaldo && g.resuelto) respaldo = resultado;
+    }
+    return respaldo || generar(nivel, azar, maxIntentos);
+  }
+
+  // src/partida.js
+  var MAX_DESHACER = 100;
+  var VERSION = 1;
+  function nuevaPartida(nivel, azar = Math.random) {
+    const g = generar(nivel, azar);
+    return {
+      ver: VERSION,
+      nivel,
+      puzle: g.puzle,
+      solucion: g.solucion,
+      v: aArray(g.puzle),
+      notas: new Array(81).fill(0),
+      pistas: 0,
+      ms: 0,
+      deshacer: [],
+      revision: false,
+      terminada: false
+    };
+  }
+  var esDada = (e2, i) => e2.puzle[i] !== "0";
+  function foto(e2) {
+    e2.deshacer.push({ v: aCadena(e2.v), n: e2.notas.slice() });
+    if (e2.deshacer.length > MAX_DESHACER) e2.deshacer.shift();
+  }
+  function limpiarNotasVecinas(e2, i, d) {
+    const m = ~(1 << d - 1);
+    for (const p of VECINAS[i]) e2.notas[p] &= m;
+  }
+  function poner(e2, i, d) {
+    if (e2.terminada || esDada(e2, i) || e2.v[i] === d) return false;
+    foto(e2);
+    e2.v[i] = d;
+    e2.notas[i] = 0;
+    e2.revision = false;
+    limpiarNotasVecinas(e2, i, d);
+    return true;
+  }
+  function borrar(e2, i) {
+    if (e2.terminada || esDada(e2, i) || !e2.v[i] && !e2.notas[i]) return false;
+    foto(e2);
+    e2.v[i] = 0;
+    e2.notas[i] = 0;
+    e2.revision = false;
+    return true;
+  }
+  function alternarNota(e2, i, d) {
+    if (e2.terminada || esDada(e2, i) || e2.v[i]) return false;
+    foto(e2);
+    e2.notas[i] ^= 1 << d - 1;
+    return true;
+  }
+  function deshacer(e2) {
+    if (e2.terminada) return false;
+    const f = e2.deshacer.pop();
+    if (!f) return false;
+    e2.v = aArray(f.v);
+    e2.notas = f.n;
+    e2.revision = false;
+    return true;
+  }
+  function usarPista(e2, i) {
+    if (e2.terminada || esDada(e2, i)) return false;
+    const d = Number(e2.solucion[i]);
+    if (e2.v[i] === d) return false;
+    foto(e2);
+    e2.v[i] = d;
+    e2.notas[i] = 0;
+    e2.revision = false;
+    limpiarNotasVecinas(e2, i, d);
+    e2.pistas++;
+    return true;
+  }
+  var estaCompleta = (e2) => e2.v.every((x) => x !== 0);
+  var esCorrecta = (e2) => aCadena(e2.v) === e2.solucion;
+  function casillasMalas(e2) {
+    const r = [];
+    for (let i = 0; i < 81; i++) if (!esDada(e2, i) && e2.v[i] && String(e2.v[i]) !== e2.solucion[i]) r.push(i);
+    return r;
+  }
+  function revisar(e2) {
+    if (!estaCompleta(e2)) return "incompleta";
+    if (esCorrecta(e2)) {
+      e2.terminada = true;
+      e2.revision = false;
+      return "ganada";
+    }
+    e2.revision = true;
+    return "errores";
+  }
+  function cuentaDigitos(e2) {
+    const c = new Array(10).fill(0);
+    for (const d of e2.v) if (d) c[d]++;
+    return c;
+  }
+  function progreso(e2) {
+    let hechas = 0, total = 0;
+    for (let i = 0; i < 81; i++) {
+      if (esDada(e2, i)) continue;
+      total++;
+      if (e2.v[i]) hechas++;
+    }
+    return total ? hechas / total : 1;
+  }
+  var codNotas = (n) => n.map((x) => x.toString(36).padStart(2, "0")).join("");
+  function decNotas(s) {
+    if (typeof s !== "string" || s.length !== 162) return null;
+    const r = [];
+    for (let k = 0; k < 81; k++) {
+      const x = parseInt(s.slice(k * 2, k * 2 + 2), 36);
+      if (!Number.isInteger(x) || x < 0 || x > 511) return null;
+      r.push(x);
+    }
+    return r;
+  }
+  function serializar(e2) {
+    return JSON.stringify({
+      ver: VERSION,
+      nivel: e2.nivel,
+      puzle: e2.puzle,
+      solucion: e2.solucion,
+      v: aCadena(e2.v),
+      notas: codNotas(e2.notas),
+      pistas: e2.pistas,
+      ms: Math.round(e2.ms),
+      deshacer: e2.deshacer.map((f) => [f.v, codNotas(f.n)])
+    });
+  }
+  var CADENA81 = /^[0-9]{81}$/;
+  function deserializar(texto) {
+    try {
+      const o = JSON.parse(texto);
+      if (!o || o.ver !== VERSION || !["normal", "anormal"].includes(o.nivel)) return null;
+      if (![o.puzle, o.solucion, o.v].every((s) => typeof s === "string" && CADENA81.test(s))) return null;
+      if (conflictos(o.solucion).size || o.solucion.includes("0")) return null;
+      for (let i = 0; i < 81; i++) {
+        if (o.puzle[i] !== "0" && o.puzle[i] !== o.solucion[i]) return null;
+        if (o.puzle[i] !== "0" && o.v[i] !== o.puzle[i]) return null;
+      }
+      const notas = decNotas(o.notas);
+      if (!notas) return null;
+      if (!Number.isFinite(o.ms) || o.ms < 0 || !Number.isInteger(o.pistas) || o.pistas < 0) return null;
+      const hist = [];
+      for (const f of Array.isArray(o.deshacer) ? o.deshacer.slice(-MAX_DESHACER) : []) {
+        const n = Array.isArray(f) ? decNotas(f[1]) : null;
+        if (!n || typeof f[0] !== "string" || !CADENA81.test(f[0])) return null;
+        hist.push({ v: f[0], n });
+      }
+      const e2 = {
+        ver: VERSION,
+        nivel: o.nivel,
+        puzle: o.puzle,
+        solucion: o.solucion,
+        v: aArray(o.v),
+        notas,
+        pistas: o.pistas,
+        ms: o.ms,
+        deshacer: hist,
+        revision: false,
+        terminada: false
+      };
+      return estaCompleta(e2) && esCorrecta(e2) ? null : e2;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ui/app.js
+  var CLAVE_PARTIDA = "bandosmavila_sudoku_partida";
+  var CLAVE_STATS = "bandosmavila_sudoku_stats";
+  var NOMBRE_NIVEL = { normal: "Normal", anormal: "Anormal" };
+  var $ = (id) => document.getElementById(id);
+  var e = null;
+  var sel = -1;
+  var modoNotas = false;
+  var ultimo = 0;
+  var ocupado = false;
+  var celdas = [];
+  function leer(clave) {
+    try {
+      return localStorage.getItem(clave);
+    } catch (_) {
+      return null;
+    }
+  }
+  function escribir(clave, valor) {
+    try {
+      localStorage.setItem(clave, valor);
+    } catch (_) {
+    }
+  }
+  function borrarClave(clave) {
+    try {
+      localStorage.removeItem(clave);
+    } catch (_) {
+    }
+  }
+  function guardar() {
+    if (e && !e.terminada) escribir(CLAVE_PARTIDA, serializar(e));
+  }
+  function leerStats() {
+    try {
+      const o = JSON.parse(leer(CLAVE_STATS) || "{}");
+      const r = {};
+      for (const n of ["normal", "anormal"]) {
+        const s = o[n] || {};
+        r[n] = { ganadas: Number.isInteger(s.ganadas) ? s.ganadas : 0, mejor: Number.isFinite(s.mejor) ? s.mejor : null };
+      }
+      return r;
+    } catch (_) {
+      return { normal: { ganadas: 0, mejor: null }, anormal: { ganadas: 0, mejor: null } };
+    }
+  }
+  function formatoTiempo(ms) {
+    const s = Math.floor(ms / 1e3), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60;
+    const dos = (x) => String(x).padStart(2, "0");
+    return h ? `${h}:${dos(m)}:${dos(r)}` : `${dos(m)}:${dos(r)}`;
+  }
+  var temporizadorAviso = 0;
+  function aviso(texto) {
+    const a = $("aviso");
+    a.textContent = texto;
+    a.classList.add("visible");
+    clearTimeout(temporizadorAviso);
+    temporizadorAviso = setTimeout(() => a.classList.remove("visible"), 2200);
+  }
+  function dialogo({ titulo, texto, datos, botones }) {
+    const caja2 = $("capa-caja");
+    caja2.innerHTML = "";
+    if (titulo) {
+      const h = document.createElement("h2");
+      h.textContent = titulo;
+      caja2.appendChild(h);
+    }
+    if (texto) {
+      const p = document.createElement("p");
+      p.textContent = texto;
+      caja2.appendChild(p);
+    }
+    for (const linea of datos || []) {
+      const p = document.createElement("p");
+      p.className = "datos";
+      p.textContent = linea;
+      caja2.appendChild(p);
+    }
+    if (botones && botones.length) {
+      const b = document.createElement("div");
+      b.className = "botones";
+      for (const { texto: t, principal, fn } of botones) {
+        const bt = document.createElement("button");
+        bt.textContent = t;
+        if (principal) bt.className = "principal";
+        bt.addEventListener("click", () => {
+          cerrarDialogo();
+          if (fn) fn();
+        });
+        b.appendChild(bt);
+      }
+      caja2.appendChild(b);
+    }
+    $("capa").hidden = false;
+  }
+  function cerrarDialogo() {
+    $("capa").hidden = true;
+  }
+  function construirTablero() {
+    const t = $("tablero");
+    for (let i = 0; i < 81; i++) {
+      const c = document.createElement("div");
+      c.className = "c";
+      c.setAttribute("role", "gridcell");
+      c.dataset.i = i;
+      c.dataset.f = fila(i);
+      c.dataset.c = columna(i);
+      t.appendChild(c);
+      celdas.push(c);
+    }
+    t.addEventListener("click", (ev) => {
+      const c = ev.target.closest(".c");
+      if (c) seleccionar(Number(c.dataset.i));
+    });
+    const k = $("teclado");
+    for (let d = 1; d <= 9; d++) {
+      const b = document.createElement("button");
+      b.dataset.d = d;
+      b.innerHTML = `${d}<small></small>`;
+      b.setAttribute("aria-label", `Poner ${d}`);
+      b.addEventListener("click", () => pulsarDigito(d));
+      k.appendChild(b);
+    }
+  }
+  function pintar() {
+    if (!e) return;
+    const malos = conflictos(e.v);
+    const marcadas = e.revision ? new Set(casillasMalas(e)) : null;
+    const dSel = sel >= 0 ? e.v[sel] : 0;
+    const vecinas = sel >= 0 ? new Set(VECINAS[sel]) : null;
+    for (let i = 0; i < 81; i++) {
+      const c = celdas[i], d = e.v[i], n = e.notas[i];
+      const clave = `${d}|${n}`;
+      if (c._k !== clave) {
+        c._k = clave;
+        if (d) c.textContent = d;
+        else if (n) {
+          let h = '<div class="notas">';
+          for (let x = 1; x <= 9; x++) h += `<i>${n & 1 << x - 1 ? x : ""}</i>`;
+          c.innerHTML = h + "</div>";
+        } else c.textContent = "";
+        c.setAttribute("aria-label", `Fila ${fila(i) + 1}, columna ${columna(i) + 1}, ${d ? d : "vacía"}`);
+      }
+      let cl = "c";
+      if (esDada(e, i)) cl += " dada";
+      if (vecinas && vecinas.has(i)) cl += " vecina";
+      if (dSel && d === dSel && i !== sel) cl += " igual";
+      if (i === sel) cl += " sel";
+      if (malos.has(i)) cl += " conflicto";
+      if (marcadas && marcadas.has(i)) cl += " mala";
+      if (c.className !== cl) c.className = cl;
+    }
+    const cuenta = cuentaDigitos(e);
+    for (const b of $("teclado").children) {
+      const d = Number(b.dataset.d), quedan = 9 - cuenta[d];
+      b.classList.toggle("hecho", quedan <= 0);
+      b.firstElementChild.textContent = quedan > 0 ? String(quedan) : "";
+    }
+    $("btn-deshacer").disabled = e.deshacer.length === 0;
+    $("btn-notas").setAttribute("aria-pressed", String(modoNotas));
+    $("nivel-actual").textContent = NOMBRE_NIVEL[e.nivel];
+    $("reloj").textContent = formatoTiempo(e.ms);
+  }
+  function seleccionar(i) {
+    sel = i;
+    pintar();
+  }
+  function despuesDeCambio() {
+    guardar();
+    pintar();
+    const r = revisar(e);
+    if (r === "ganada") ganar();
+    else if (r === "errores") {
+      pintar();
+      aviso("Hay casillas mal: están en rojo");
+      guardar();
+    }
+  }
+  function pulsarDigito(d) {
+    if (!e || e.terminada) return;
+    if (sel < 0) {
+      aviso("Toca primero una casilla");
+      return;
+    }
+    if (esDada(e, sel)) {
+      aviso("Esa casilla es una pista del puzle");
+      return;
+    }
+    if (modoNotas) {
+      if (e.v[sel]) {
+        aviso("Borra el dígito para anotar");
+        return;
+      }
+      alternarNota(e, sel, d);
+      guardar();
+      pintar();
+      return;
+    }
+    if (e.v[sel] === d) borrar(e, sel);
+    else poner(e, sel, d);
+    despuesDeCambio();
+  }
+  function pulsarBorrar() {
+    if (!e || e.terminada || sel < 0) return;
+    if (borrar(e, sel)) {
+      guardar();
+      pintar();
+    }
+  }
+  function pulsarDeshacer() {
+    if (!e || e.terminada) return;
+    if (deshacer(e)) {
+      guardar();
+      pintar();
+    }
+  }
+  function pulsarPista() {
+    if (!e || e.terminada) return;
+    if (sel < 0) {
+      aviso("Toca primero la casilla que quieres que te resuelva");
+      return;
+    }
+    if (esDada(e, sel)) {
+      aviso("Esa casilla ya es una pista del puzle");
+      return;
+    }
+    if (usarPista(e, sel)) despuesDeCambio();
+    else aviso("Esa casilla ya está bien");
+  }
+  function alternarModoNotas() {
+    modoNotas = !modoNotas;
+    pintar();
+  }
+  function ganar() {
+    tic();
+    clearTimeout(temporizadorAviso);
+    $("aviso").classList.remove("visible");
+    const stats = leerStats();
+    const s = stats[e.nivel];
+    s.ganadas++;
+    let record = false;
+    if (e.pistas === 0 && (s.mejor === null || e.ms < s.mejor)) {
+      s.mejor = Math.round(e.ms);
+      record = true;
+    }
+    escribir(CLAVE_STATS, JSON.stringify(stats));
+    borrarClave(CLAVE_PARTIDA);
+    const datos = [`Nivel ${NOMBRE_NIVEL[e.nivel]} · ${formatoTiempo(e.ms)}`];
+    datos.push(e.pistas ? `Pistas usadas: ${e.pistas}` : "Sin pistas");
+    if (record) datos.push("¡Nuevo mejor tiempo en este aparato!");
+    else if (s.mejor !== null) datos.push(`Tu mejor tiempo: ${formatoTiempo(s.mejor)}`);
+    dialogo({
+      titulo: "¡Resuelto!",
+      datos,
+      botones: [
+        { texto: "Nueva partida", principal: true, fn: () => mostrarMenu(false) },
+        { texto: "Ver el tablero", fn: () => {
+        } }
+      ]
+    });
+  }
+  function activo() {
+    return e && !e.terminada && !document.hidden && !$("pantalla-juego").hidden && !ocupado && $("capa").hidden;
+  }
+  function tic() {
+    const ahora = performance.now();
+    if (activo() && ultimo) e.ms += ahora - ultimo;
+    ultimo = ahora;
+    if (e) $("reloj").textContent = formatoTiempo(e.ms);
+  }
+  setInterval(() => {
+    tic();
+  }, 500);
+  document.addEventListener("visibilitychange", () => {
+    tic();
+    if (document.hidden) guardar();
+  });
+  window.addEventListener("pagehide", () => {
+    tic();
+    guardar();
+  });
+  function mostrarMenu(puedeVolver) {
+    const stats = leerStats();
+    for (const n of ["normal", "anormal"]) {
+      const s = stats[n];
+      $(`stats-${n}`).textContent = s.ganadas ? `Resueltos: ${s.ganadas}${s.mejor !== null ? ` · Mejor tiempo: ${formatoTiempo(s.mejor)}` : ""}` : "Aún no has resuelto ninguno";
+    }
+    $("btn-cancelar-menu").hidden = !puedeVolver;
+    $("pantalla-juego").hidden = true;
+    $("pantalla-menu").hidden = false;
+    $("nivel-actual").textContent = "";
+    $("reloj").textContent = "00:00";
+  }
+  function mostrarJuego() {
+    $("pantalla-menu").hidden = true;
+    $("pantalla-juego").hidden = false;
+    ultimo = performance.now();
+    pintar();
+  }
+  function empezar(nivel) {
+    if (ocupado) return;
+    ocupado = true;
+    dialogo({ titulo: "Preparando…", texto: `Buscando un sudoku ${NOMBRE_NIVEL[nivel]}.` });
+    $("capa-caja").insertAdjacentHTML("beforeend", '<div class="girando"></div>');
+    setTimeout(() => {
+      try {
+        e = nuevaPartida(nivel);
+        sel = -1;
+        modoNotas = false;
+        guardar();
+        mostrarJuego();
+      } finally {
+        ocupado = false;
+        cerrarDialogo();
+      }
+    }, 40);
+  }
+  function pedirNueva() {
+    if (e && !e.terminada && progreso(e) > 0) {
+      dialogo({
+        titulo: "Partida empezada",
+        texto: `Llevas un ${Math.round(progreso(e) * 100)} % de esta partida. Si empiezas otra, se pierde.`,
+        botones: [
+          { texto: "Seguir con esta", principal: true },
+          { texto: "Empezar otra", fn: () => mostrarMenu(true) }
+        ]
+      });
+    } else mostrarMenu(!!(e && !e.terminada));
+  }
+  document.addEventListener("keydown", (ev) => {
+    if (!e || $("pantalla-juego").hidden || !$("capa").hidden) return;
+    const k = ev.key;
+    if (k >= "1" && k <= "9") {
+      pulsarDigito(Number(k));
+      ev.preventDefault();
+    } else if (k === "Backspace" || k === "Delete" || k === "0") {
+      pulsarBorrar();
+      ev.preventDefault();
+    } else if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === "z") {
+      pulsarDeshacer();
+      ev.preventDefault();
+    } else if (k === "n" || k === "N") {
+      alternarModoNotas();
+    } else if (k.startsWith("Arrow")) {
+      let i = sel < 0 ? 40 : sel;
+      if (k === "ArrowUp" && fila(i) > 0) i -= 9;
+      if (k === "ArrowDown" && fila(i) < 8) i += 9;
+      if (k === "ArrowLeft" && columna(i) > 0) i -= 1;
+      if (k === "ArrowRight" && columna(i) < 8) i += 1;
+      seleccionar(i);
+      ev.preventDefault();
+    }
+  });
+  construirTablero();
+  $("btn-deshacer").addEventListener("click", pulsarDeshacer);
+  $("btn-borrar").addEventListener("click", pulsarBorrar);
+  $("btn-notas").addEventListener("click", alternarModoNotas);
+  $("btn-pista").addEventListener("click", pulsarPista);
+  $("btn-nueva").addEventListener("click", pedirNueva);
+  $("btn-cancelar-menu").addEventListener("click", mostrarJuego);
+  for (const b of document.querySelectorAll(".nivel")) b.addEventListener("click", () => empezar(b.dataset.nivel));
+  var guardada = leer(CLAVE_PARTIDA) ? deserializar(leer(CLAVE_PARTIDA)) : null;
+  if (guardada) {
+    e = guardada;
+    mostrarJuego();
+    aviso("Sigues donde lo dejaste");
+  } else {
+    if (leer(CLAVE_PARTIDA)) borrarClave(CLAVE_PARTIDA);
+    mostrarMenu(false);
+  }
+  window.__sudoku = { estado: () => e, seleccionar, pulsarDigito };
+})();
+</script>
+</body>
+</html>
