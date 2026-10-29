@@ -1,0 +1,840 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a6b3c">
+<title>Sumas — Peña BandosMávila</title>
+<style>:root {
+  --verde: #1a6b3c;
+  --verde-claro: #2d9e5f;
+  --fondo: #f4f1e8;
+  --papel: #ffffff;
+  --tinta: #1d1d1d;
+  --gris: #6b6b6b;
+  --linea: #c9c3b3;
+  --linea-fuerte: #3b3b3b;
+  --sel: #bfe3cc;
+  --vecina: #e6efe9;
+  --igual: #cfe8d8;
+  --mia: #1b5fa8;
+  --rojo: #c0392b;
+  --rojo-fondo: #f7d9d5;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #14181a; --papel: #1e2427; --tinta: #eceae3; --gris: #9aa3a6;
+    --linea: #3a4448; --linea-fuerte: #aab3b6; --sel: #2b5a40; --vecina: #263034;
+    --igual: #2f4a3a; --mia: #7db6ee; --rojo: #ff8a7c; --rojo-fondo: #4a2824;
+  }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--fondo); color: var(--tinta);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-user-select: none; user-select: none; touch-action: manipulation;
+}
+[hidden] { display: none !important; }
+
+#cabecera {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--verde); color: #fff; padding: 8px 12px; padding-top: calc(8px + env(safe-area-inset-top));
+}
+#cabecera h1 {
+  margin: 0; font-family: 'Bebas Neue', 'Inter', sans-serif; font-weight: 400;
+  letter-spacing: 1.5px; font-size: 26px; line-height: 1;
+}
+#volver { color: #fff; text-decoration: none; font-size: 30px; line-height: 1; padding: 0 8px 4px 0; }
+#datos { margin-left: auto; display: flex; gap: 12px; align-items: baseline; font-size: 14px; }
+#nivel-actual { opacity: 0.9; font-weight: 600; }
+#reloj { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 18px; }
+
+main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
+
+/* Menú */
+#pantalla-menu { display: flex; flex-direction: column; gap: 12px; max-width: 460px; margin: 10px auto 0; }
+.intro { color: var(--gris); margin: 4px 2px 6px; line-height: 1.4; }
+.nivel {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left;
+  background: var(--papel); color: var(--tinta); border: 1.5px solid var(--verde); border-radius: 12px;
+  padding: 16px 18px; cursor: pointer; font: inherit;
+}
+.nivel:active { background: var(--verde); color: #fff; }
+.nivel-nombre { font-family: 'Bebas Neue', 'Inter', sans-serif; font-size: 28px; letter-spacing: 1px; color: var(--verde); }
+.nivel:active .nivel-nombre { color: #fff; }
+.nivel-desc { font-size: 14px; }
+.nivel-stats { font-size: 12px; color: var(--gris); min-height: 1em; }
+.nivel:active .nivel-stats { color: #e3f0e8; }
+.enlace {
+  background: none; border: none; color: var(--verde); font: inherit; font-size: 14px; font-weight: 600;
+  padding: 10px; cursor: pointer; text-decoration: underline;
+}
+@media (prefers-color-scheme: dark) { .enlace { color: #7fd1a1; } .nivel-nombre { color: #7fd1a1; } }
+
+/* Juego */
+#pantalla-juego { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+#zona-tablero { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+#tablero {
+  --lado: min(calc(100vw - 20px), 470px);
+  width: var(--lado); height: var(--lado);
+  display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(9, 1fr);
+  background: var(--papel); border: 2px solid var(--linea-fuerte); border-radius: 6px; overflow: hidden;
+}
+#tablero > div {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  border-right: 1px solid var(--linea); border-bottom: 1px solid var(--linea); cursor: pointer;
+}
+#tablero > div:nth-child(9n) { border-right: none; }
+#tablero > div:nth-child(n+73) { border-bottom: none; }
+#tablero > .esq { background: var(--fondo); cursor: default; }
+#tablero > .obj { background: var(--vecina); cursor: default; flex-direction: column; gap: 0; line-height: 1; }
+#tablero > .obj.col { border-bottom: 2px solid var(--linea-fuerte); }
+#tablero > .obj.fila { border-right: 2px solid var(--linea-fuerte); }
+.obj .meta { font-size: calc(var(--lado) / 21); font-weight: 700; color: var(--tinta); }
+.obj .llevo { font-size: calc(var(--lado) / 36); font-weight: 600; color: var(--gris); margin-top: 2px; }
+.obj.ok { background: var(--sel); }
+.obj.ok .meta { color: var(--verde); }
+.obj.mal { background: var(--rojo-fondo); }
+.obj.mal .meta, .obj.mal .llevo { color: var(--rojo); }
+.num {
+  display: flex; align-items: center; justify-content: center; width: 80%; height: 80%; border-radius: 50%;
+  font-size: calc(var(--lado) / 19); font-weight: 600; color: var(--tinta); border: 2px solid transparent;
+}
+.c.dejar .num { border-color: var(--verde-claro); background: var(--igual); }
+.c.quitar .num { opacity: 0.22; text-decoration: line-through; }
+.c.fija::after { content: ""; position: absolute; right: 3px; top: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--verde); }
+#leyenda { margin: 0; font-size: 12px; color: var(--gris); text-align: center; }
+
+#mando { width: min(calc(100vw - 20px), 470px); display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+#herramientas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+#herramientas button {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 2px;
+  background: var(--papel); color: var(--tinta); border: 1.5px solid var(--linea); border-radius: 10px;
+  font: inherit; font-size: 12px; cursor: pointer;
+}
+#herramientas .ico { font-size: 22px; line-height: 1.1; }
+#herramientas button:active { background: var(--vecina); }
+#herramientas button[aria-pressed="true"] { background: var(--verde); border-color: var(--verde); color: #fff; }
+#herramientas button:disabled { opacity: 0.4; }
+#btn-nueva { align-self: center; }
+
+/* Avisos y diálogos */
+#aviso {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px);
+  background: #222; color: #fff; padding: 10px 16px; border-radius: 20px; font-size: 14px; max-width: 90vw;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 30; text-align: center;
+}
+#aviso.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+#capa { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: flex; align-items: center; justify-content: center; z-index: 20; padding: 18px; }
+#capa-caja {
+  background: var(--papel); color: var(--tinta); border-radius: 14px; padding: 22px 20px 16px; width: min(92vw, 380px);
+  text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+}
+#capa-caja h2 { margin: 0 0 8px; font-family: 'Bebas Neue', 'Inter', sans-serif; font-weight: 400; font-size: 32px; letter-spacing: 1px; color: var(--verde); }
+@media (prefers-color-scheme: dark) { #capa-caja h2 { color: #7fd1a1; } }
+#capa-caja p { margin: 6px 0; line-height: 1.45; }
+#capa-caja .datos { font-size: 15px; color: var(--gris); }
+#capa-caja .botones { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+#capa-caja .botones button {
+  padding: 12px; border-radius: 10px; border: 1.5px solid var(--verde); background: var(--papel); color: var(--verde);
+  font: inherit; font-weight: 600; font-size: 15px; cursor: pointer;
+}
+#capa-caja .botones button.principal { background: var(--verde); color: #fff; }
+@media (prefers-color-scheme: dark) { #capa-caja .botones button { color: #7fd1a1; border-color: #7fd1a1; } #capa-caja .botones button.principal { color: #fff; border-color: var(--verde); } }
+.girando { display: inline-block; width: 26px; height: 26px; border: 3px solid var(--linea); border-top-color: var(--verde); border-radius: 50%; animation: gira 0.8s linear infinite; margin: 6px 0 2px; }
+@keyframes gira { to { transform: rotate(360deg); } }
+
+/* Móvil apaisado / pantallas bajas: tablero a la izquierda, mando a la derecha */
+@media (orientation: landscape) and (max-height: 620px) {
+  main { padding: 6px 10px; }
+  #cabecera { padding-top: calc(4px + env(safe-area-inset-top)); padding-bottom: 4px; }
+  #pantalla-juego { flex-direction: row; justify-content: center; align-items: center; gap: 16px; }
+  #tablero { --lado: min(calc(100svh - 82px), 470px); }
+  #mando { width: min(260px, 38vw); gap: 8px; }
+  #herramientas { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<header id="cabecera">
+  <a id="volver" href="aburres.html" aria-label="Volver a ¿Te aburres?">‹</a>
+  <h1>Sumas</h1>
+  <div id="datos">
+    <span id="nivel-actual"></span>
+    <span id="reloj" aria-label="Tiempo de juego">00:00</span>
+  </div>
+</header>
+
+<main>
+  <section id="pantalla-menu" hidden>
+    <p class="intro">Tacha números hasta que cada fila y cada columna sumen lo que indica su cifra grande. La partida se guarda sola: puedes dejarla y seguir más tarde.</p>
+    <button class="nivel" data-nivel="normal">
+      <span class="nivel-nombre">Normal</span>
+      <span class="nivel-desc">Para un rato tranquilo</span>
+      <span class="nivel-stats" id="stats-normal"></span>
+    </button>
+    <button class="nivel" data-nivel="anormal">
+      <span class="nivel-nombre">Anormal</span>
+      <span class="nivel-desc">Hay que pensar cada línea entera</span>
+      <span class="nivel-stats" id="stats-anormal"></span>
+    </button>
+    <button id="btn-cancelar-menu" class="enlace" hidden>Volver a mi partida</button>
+  </section>
+
+  <section id="pantalla-juego" hidden>
+    <div id="zona-tablero">
+      <div id="tablero" role="grid" aria-label="Tablero de sumas"></div>
+      <p id="leyenda">Cifra grande: lo que debe sumar. Cifra pequeña: lo que llevas.</p>
+    </div>
+    <div id="mando">
+      <div id="herramientas">
+        <button id="btn-deshacer" aria-label="Deshacer"><span class="ico">↶</span><span>Deshacer</span></button>
+        <button id="btn-quitar" aria-pressed="true" aria-label="Modo tachar"><span class="ico">✕</span><span>Tachar</span></button>
+        <button id="btn-dejar" aria-pressed="false" aria-label="Modo dejar"><span class="ico">◯</span><span>Dejar</span></button>
+        <button id="btn-pista" aria-label="Pista"><span class="ico">💡</span><span>Pista</span></button>
+      </div>
+      <button id="btn-nueva" class="enlace">Nueva partida</button>
+    </div>
+  </section>
+</main>
+
+<div id="aviso" role="status" aria-live="polite"></div>
+<div id="capa" hidden><div id="capa-caja"></div></div>
+<script>(() => {
+  // sumas/src/sumas.js
+  var N = 8;
+  var CASILLAS = N * N;
+  var NIVELES = {
+    // Normal: pocos números por tachar; se resuelve con dos reglas sencillas por línea
+    // ("este no cabe" y "sin este no llego").
+    normal: { nombre: "Normal", max: 9, pMin: 0.7, pMax: 0.8, rango: 1 },
+    // Anormal: la mitad se queda; hay que razonar con todas las combinaciones de una línea.
+    anormal: { nombre: "Anormal", max: 12, pMin: 0.45, pMax: 0.55, rango: 2 }
+  };
+  var fila = (i) => i / N | 0;
+  var columna = (i) => i % N;
+  function sumasDe(numeros, quedan) {
+    const filas = new Array(N).fill(0), cols = new Array(N).fill(0);
+    for (let i = 0; i < CASILLAS; i++) {
+      if (quedan[i] === "1" || quedan[i] === 1 || quedan[i] === true) {
+        filas[fila(i)] += numeros[i];
+        cols[columna(i)] += numeros[i];
+      }
+    }
+    return { filas, cols };
+  }
+  function contarSoluciones(numeros, filas, cols, limite = 2) {
+    const cand = [];
+    for (let r = 0; r < N; r++) {
+      const lista = [];
+      for (let m = 0; m < 1 << N; m++) {
+        let s = 0;
+        for (let c = 0; c < N; c++) if (m >> c & 1) s += numeros[r * N + c];
+        if (s === filas[r]) lista.push(m);
+      }
+      cand.push(lista);
+    }
+    const orden = [...Array(N).keys()].sort((a, b) => cand[a].length - cand[b].length);
+    const resto = cols.slice();
+    const libre = new Array(N).fill(0);
+    for (let i = 0; i < CASILLAS; i++) libre[columna(i)] += numeros[i];
+    const elegida = new Array(N).fill(0);
+    let cuenta = 0, primera = null;
+    function rec(k) {
+      if (k === N) {
+        for (let c = 0; c < N; c++) if (resto[c] !== 0) return;
+        cuenta++;
+        if (!primera) primera = elegida.slice();
+        return;
+      }
+      const r = orden[k];
+      for (const m of cand[r]) {
+        let ok = true;
+        for (let c = 0; c < N; c++) {
+          const v = numeros[r * N + c];
+          if (m >> c & 1) resto[c] -= v;
+          libre[c] -= v;
+        }
+        for (let c = 0; c < N; c++) if (resto[c] < 0 || resto[c] > libre[c]) {
+          ok = false;
+          break;
+        }
+        if (ok) {
+          elegida[r] = m;
+          rec(k + 1);
+        }
+        for (let c = 0; c < N; c++) {
+          const v = numeros[r * N + c];
+          if (m >> c & 1) resto[c] += v;
+          libre[c] += v;
+        }
+        if (cuenta >= limite) return;
+      }
+    }
+    rec(0);
+    let solucion = null;
+    if (primera) {
+      solucion = "";
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) solucion += primera[r] >> c & 1 ? "1" : "0";
+    }
+    return { cuenta, solucion };
+  }
+  function resolverConTecnicas(numeros, filas, cols, { solucion = null } = {}) {
+    const est = new Array(CASILLAS).fill(0);
+    const lineas = [];
+    for (let r = 0; r < N; r++) lineas.push({ T: filas[r], cel: Array.from({ length: N }, (_, c) => r * N + c) });
+    for (let c = 0; c < N; c++) lineas.push({ T: cols[c], cel: Array.from({ length: N }, (_, r) => r * N + c) });
+    function fijar(i, v) {
+      if (solucion && solucion[i] === "1" !== (v === 1)) throw new Error(`Regla incorrecta en la casilla ${i}`);
+      est[i] = v;
+    }
+    function regla1() {
+      let hecho = false;
+      for (const L of lineas) {
+        let K = 0, sU = 0;
+        const U = [];
+        for (const i of L.cel) {
+          if (est[i] === 1) K += numeros[i];
+          else if (est[i] === 0) {
+            U.push(i);
+            sU += numeros[i];
+          }
+        }
+        const falta = L.T - K;
+        for (const i of U) {
+          const v = numeros[i];
+          if (v > falta) {
+            fijar(i, 2);
+            hecho = true;
+          } else if (sU - v < falta) {
+            fijar(i, 1);
+            hecho = true;
+          }
+        }
+      }
+      return hecho;
+    }
+    function regla2() {
+      let hecho = false;
+      for (const L of lineas) {
+        let K = 0;
+        const U = [];
+        for (const i of L.cel) {
+          if (est[i] === 1) K += numeros[i];
+          else if (est[i] === 0) U.push(i);
+        }
+        if (!U.length) continue;
+        const falta = L.T - K;
+        let siempre = (1 << U.length) - 1, nunca = siempre, hay = false;
+        for (let m = 0; m < 1 << U.length; m++) {
+          let s = 0;
+          for (let k = 0; k < U.length; k++) if (m >> k & 1) s += numeros[U[k]];
+          if (s === falta) {
+            hay = true;
+            siempre &= m;
+            nunca &= ~m;
+          }
+        }
+        if (!hay) throw new Error("Contradicción en la resolución");
+        for (let k = 0; k < U.length; k++) {
+          if (siempre >> k & 1) {
+            fijar(U[k], 1);
+            hecho = true;
+          } else if (nunca >> k & 1) {
+            fijar(U[k], 2);
+            hecho = true;
+          }
+        }
+      }
+      return hecho;
+    }
+    let rango = 0;
+    for (; ; ) {
+      if (regla1()) {
+        rango = Math.max(rango, 1);
+        continue;
+      }
+      if (regla2()) {
+        rango = Math.max(rango, 2);
+        continue;
+      }
+      break;
+    }
+    return { resuelto: est.every((x) => x !== 0), rango };
+  }
+  function generar(nivel, azar = Math.random, maxIntentos = 600) {
+    const cfg = NIVELES[nivel];
+    if (!cfg) throw new Error(`Nivel desconocido: ${nivel}`);
+    let respaldo = null;
+    for (let intento = 1; intento <= maxIntentos; intento++) {
+      const numeros = Array.from({ length: CASILLAS }, () => 1 + Math.floor(azar() * cfg.max));
+      const p = cfg.pMin + azar() * (cfg.pMax - cfg.pMin);
+      let quedan = "";
+      for (let i = 0; i < CASILLAS; i++) quedan += azar() < p ? "1" : "0";
+      const { filas, cols } = sumasDe(numeros, quedan);
+      if (filas.some((s) => s === 0) || cols.some((s) => s === 0)) continue;
+      const r = contarSoluciones(numeros, filas, cols, 2);
+      if (r.cuenta !== 1) continue;
+      let g;
+      try {
+        g = resolverConTecnicas(numeros, filas, cols, { solucion: r.solucion });
+      } catch (_) {
+        continue;
+      }
+      const puzle = { numeros, filas, cols, solucion: r.solucion, nivel, rango: g.rango, intentos: intento };
+      if (g.resuelto && g.rango === cfg.rango) return puzle;
+      if (!respaldo && g.resuelto) respaldo = puzle;
+    }
+    return respaldo || generar(nivel, azar, maxIntentos);
+  }
+
+  // sumas/src/partida.js
+  var MAX_DESHACER = 100;
+  var VERSION = 1;
+  var NORMAL = 0;
+  var DEJAR = 1;
+  var QUITAR = 2;
+  function nuevaPartida(nivel, azar = Math.random) {
+    const g = generar(nivel, azar);
+    return {
+      ver: VERSION,
+      nivel,
+      numeros: g.numeros,
+      filas: g.filas,
+      cols: g.cols,
+      solucion: g.solucion,
+      est: new Array(CASILLAS).fill(NORMAL),
+      fijas: [],
+      pistas: 0,
+      ms: 0,
+      deshacer: [],
+      terminada: false
+    };
+  }
+  var esFija = (e2, i) => e2.fijas.includes(i);
+  function foto(e2) {
+    e2.deshacer.push(e2.est.join(""));
+    if (e2.deshacer.length > MAX_DESHACER) e2.deshacer.shift();
+  }
+  function marcar(e2, i, marca) {
+    if (e2.terminada || esFija(e2, i)) return false;
+    foto(e2);
+    e2.est[i] = e2.est[i] === marca ? NORMAL : marca;
+    return true;
+  }
+  function deshacer(e2) {
+    if (e2.terminada) return false;
+    const f = e2.deshacer.pop();
+    if (f === void 0) return false;
+    const nuevo = Array.from(f, Number);
+    for (const i of e2.fijas) nuevo[i] = e2.est[i];
+    e2.est = nuevo;
+    return true;
+  }
+  function sumasActuales(e2) {
+    return sumasDe(e2.numeros, e2.est.map((m) => m === QUITAR ? "0" : "1"));
+  }
+  function diferencias(e2) {
+    const a = sumasActuales(e2);
+    return {
+      filas: a.filas.map((s, r) => s - e2.filas[r]),
+      cols: a.cols.map((s, c) => s - e2.cols[c])
+    };
+  }
+  function estaResuelta(e2) {
+    const d = diferencias(e2);
+    return d.filas.every((x) => x === 0) && d.cols.every((x) => x === 0);
+  }
+  function usarPista(e2, azar = Math.random) {
+    if (e2.terminada) return false;
+    const mal = [], faltan = [];
+    for (let i2 = 0; i2 < CASILLAS; i2++) {
+      if (esFija(e2, i2)) continue;
+      const debeQuedar = e2.solucion[i2] === "1";
+      if (e2.est[i2] === QUITAR && debeQuedar) mal.push(i2);
+      else if (e2.est[i2] !== QUITAR && !debeQuedar) faltan.push(i2);
+    }
+    const lista = mal.length ? mal : faltan;
+    if (!lista.length) return false;
+    const i = lista[Math.floor(azar() * lista.length)];
+    foto(e2);
+    e2.est[i] = e2.solucion[i] === "1" ? DEJAR : QUITAR;
+    e2.fijas.push(i);
+    e2.pistas++;
+    return true;
+  }
+  function progreso(e2) {
+    let hechas = 0;
+    for (const m of e2.est) if (m !== NORMAL) hechas++;
+    return hechas / CASILLAS;
+  }
+  function serializar(e2) {
+    return JSON.stringify({
+      ver: VERSION,
+      nivel: e2.nivel,
+      numeros: e2.numeros,
+      filas: e2.filas,
+      cols: e2.cols,
+      solucion: e2.solucion,
+      est: e2.est.join(""),
+      fijas: e2.fijas,
+      pistas: e2.pistas,
+      ms: Math.round(e2.ms),
+      deshacer: e2.deshacer
+    });
+  }
+  var MARCAS = /^[0-2]{64}$/;
+  var esEnteroEn = (x, lo, hi) => Number.isInteger(x) && x >= lo && x <= hi;
+  function deserializar(texto) {
+    try {
+      const o = JSON.parse(texto);
+      if (!o || o.ver !== VERSION || !NIVELES[o.nivel]) return null;
+      const max = NIVELES[o.nivel].max;
+      if (!Array.isArray(o.numeros) || o.numeros.length !== CASILLAS || !o.numeros.every((x) => esEnteroEn(x, 1, max))) return null;
+      if (typeof o.solucion !== "string" || !/^[01]{64}$/.test(o.solucion)) return null;
+      const t = sumasDe(o.numeros, o.solucion);
+      if (!Array.isArray(o.filas) || !Array.isArray(o.cols)) return null;
+      if (o.filas.length !== N || o.cols.length !== N) return null;
+      if (t.filas.some((x, k) => x !== o.filas[k]) || t.cols.some((x, k) => x !== o.cols[k])) return null;
+      if (typeof o.est !== "string" || !MARCAS.test(o.est)) return null;
+      if (!Array.isArray(o.fijas) || !o.fijas.every((x) => esEnteroEn(x, 0, CASILLAS - 1))) return null;
+      if (!Number.isFinite(o.ms) || o.ms < 0 || !esEnteroEn(o.pistas, 0, CASILLAS)) return null;
+      const hist = (Array.isArray(o.deshacer) ? o.deshacer : []).slice(-MAX_DESHACER);
+      if (!hist.every((f) => typeof f === "string" && MARCAS.test(f))) return null;
+      const e2 = {
+        ver: VERSION,
+        nivel: o.nivel,
+        numeros: o.numeros.slice(),
+        filas: o.filas.slice(),
+        cols: o.cols.slice(),
+        solucion: o.solucion,
+        est: Array.from(o.est, Number),
+        fijas: [...new Set(o.fijas)],
+        pistas: o.pistas,
+        ms: o.ms,
+        deshacer: hist,
+        terminada: false
+      };
+      return estaResuelta(e2) ? null : e2;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // sumas/ui/app.js
+  var CLAVE_PARTIDA = "bandosmavila_sumas_partida";
+  var CLAVE_STATS = "bandosmavila_sumas_stats";
+  var NOMBRE_NIVEL = { normal: "Normal", anormal: "Anormal" };
+  var $ = (id) => document.getElementById(id);
+  var e = null;
+  var modo = QUITAR;
+  var ultimo = 0;
+  var ocupado = false;
+  var celdas = [];
+  var objFila = [];
+  var objCol = [];
+  function leer(clave) {
+    try {
+      return localStorage.getItem(clave);
+    } catch (_) {
+      return null;
+    }
+  }
+  function escribir(clave, valor) {
+    try {
+      localStorage.setItem(clave, valor);
+    } catch (_) {
+    }
+  }
+  function borrarClave(clave) {
+    try {
+      localStorage.removeItem(clave);
+    } catch (_) {
+    }
+  }
+  function guardar() {
+    if (e && !e.terminada) escribir(CLAVE_PARTIDA, serializar(e));
+  }
+  function leerStats() {
+    try {
+      const o = JSON.parse(leer(CLAVE_STATS) || "{}");
+      const r = {};
+      for (const n of ["normal", "anormal"]) {
+        const s = o[n] || {};
+        r[n] = { ganadas: Number.isInteger(s.ganadas) ? s.ganadas : 0, mejor: Number.isFinite(s.mejor) ? s.mejor : null };
+      }
+      return r;
+    } catch (_) {
+      return { normal: { ganadas: 0, mejor: null }, anormal: { ganadas: 0, mejor: null } };
+    }
+  }
+  function formatoTiempo(ms) {
+    const s = Math.floor(ms / 1e3), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60;
+    const dos = (x) => String(x).padStart(2, "0");
+    return h ? `${h}:${dos(m)}:${dos(r)}` : `${dos(m)}:${dos(r)}`;
+  }
+  var temporizadorAviso = 0;
+  function aviso(texto) {
+    const a = $("aviso");
+    a.textContent = texto;
+    a.classList.add("visible");
+    clearTimeout(temporizadorAviso);
+    temporizadorAviso = setTimeout(() => a.classList.remove("visible"), 2200);
+  }
+  function dialogo({ titulo, texto, datos, botones }) {
+    const caja = $("capa-caja");
+    caja.innerHTML = "";
+    if (titulo) {
+      const h = document.createElement("h2");
+      h.textContent = titulo;
+      caja.appendChild(h);
+    }
+    if (texto) {
+      const p = document.createElement("p");
+      p.textContent = texto;
+      caja.appendChild(p);
+    }
+    for (const linea of datos || []) {
+      const p = document.createElement("p");
+      p.className = "datos";
+      p.textContent = linea;
+      caja.appendChild(p);
+    }
+    if (botones && botones.length) {
+      const b = document.createElement("div");
+      b.className = "botones";
+      for (const { texto: t, principal, fn } of botones) {
+        const bt = document.createElement("button");
+        bt.textContent = t;
+        if (principal) bt.className = "principal";
+        bt.addEventListener("click", () => {
+          cerrarDialogo();
+          if (fn) fn();
+        });
+        b.appendChild(bt);
+      }
+      caja.appendChild(b);
+    }
+    $("capa").hidden = false;
+  }
+  function cerrarDialogo() {
+    $("capa").hidden = true;
+  }
+  function construirTablero() {
+    const t = $("tablero");
+    for (let r = 0; r <= N; r++) {
+      for (let c = 0; c <= N; c++) {
+        const d = document.createElement("div");
+        if (r === 0 && c === 0) d.className = "esq";
+        else if (r === 0) {
+          d.className = "obj col";
+          d.innerHTML = '<span class="meta"></span><span class="llevo"></span>';
+          objCol[c - 1] = d;
+        } else if (c === 0) {
+          d.className = "obj fila";
+          d.innerHTML = '<span class="meta"></span><span class="llevo"></span>';
+          objFila[r - 1] = d;
+        } else {
+          const i = (r - 1) * N + (c - 1);
+          d.className = "c";
+          d.dataset.i = i;
+          d.setAttribute("role", "gridcell");
+          d.innerHTML = '<span class="num"></span>';
+          celdas[i] = d;
+        }
+        t.appendChild(d);
+      }
+    }
+    t.addEventListener("click", (ev) => {
+      const c = ev.target.closest(".c");
+      if (c) tocar(Number(c.dataset.i));
+    });
+  }
+  function pintarObjetivo(el, meta, llevo, dif) {
+    const clave = `${meta}|${llevo}|${Math.sign(dif)}`;
+    if (el._k === clave) return;
+    el._k = clave;
+    el.firstElementChild.textContent = meta;
+    el.lastElementChild.textContent = llevo;
+    el.classList.toggle("ok", dif === 0);
+    el.classList.toggle("mal", dif < 0);
+  }
+  function pintar() {
+    if (!e) return;
+    for (let i = 0; i < CASILLAS; i++) {
+      const c = celdas[i], m = e.est[i], fija = e.fijas.includes(i);
+      const clave = `${e.numeros[i]}|${m}|${fija}`;
+      if (c._k === clave) continue;
+      c._k = clave;
+      c.firstElementChild.textContent = e.numeros[i];
+      c.className = "c" + (m === DEJAR ? " dejar" : m === QUITAR ? " quitar" : "") + (fija ? " fija" : "");
+      c.setAttribute("aria-label", `Fila ${fila(i) + 1}, columna ${columna(i) + 1}, ${e.numeros[i]}, ${m === QUITAR ? "tachado" : m === DEJAR ? "marcado para dejar" : "sin marcar"}`);
+    }
+    const a = sumasActuales(e), d = diferencias(e);
+    for (let k = 0; k < N; k++) {
+      pintarObjetivo(objFila[k], e.filas[k], a.filas[k], d.filas[k]);
+      pintarObjetivo(objCol[k], e.cols[k], a.cols[k], d.cols[k]);
+    }
+    $("btn-deshacer").disabled = e.deshacer.length === 0;
+    $("btn-quitar").setAttribute("aria-pressed", String(modo === QUITAR));
+    $("btn-dejar").setAttribute("aria-pressed", String(modo === DEJAR));
+    $("nivel-actual").textContent = NOMBRE_NIVEL[e.nivel];
+    $("reloj").textContent = formatoTiempo(e.ms);
+  }
+  function tocar(i) {
+    if (!e || e.terminada) return;
+    if (e.fijas.includes(i)) {
+      aviso("Esa casilla es una pista: no se cambia");
+      return;
+    }
+    if (marcar(e, i, modo)) despuesDeCambio();
+  }
+  function despuesDeCambio() {
+    guardar();
+    pintar();
+    if (estaResuelta(e)) ganar();
+  }
+  function pulsarDeshacer() {
+    if (!e || e.terminada) return;
+    if (deshacer(e)) {
+      guardar();
+      pintar();
+    }
+  }
+  function pulsarPista() {
+    if (!e || e.terminada) return;
+    if (usarPista(e)) despuesDeCambio();
+    else aviso("No hay nada que corregir");
+  }
+  function cambiarModo(m) {
+    modo = m;
+    pintar();
+  }
+  function ganar() {
+    tic();
+    e.terminada = true;
+    clearTimeout(temporizadorAviso);
+    $("aviso").classList.remove("visible");
+    const stats = leerStats();
+    const s = stats[e.nivel];
+    s.ganadas++;
+    let record = false;
+    if (e.pistas === 0 && (s.mejor === null || e.ms < s.mejor)) {
+      s.mejor = Math.round(e.ms);
+      record = true;
+    }
+    escribir(CLAVE_STATS, JSON.stringify(stats));
+    borrarClave(CLAVE_PARTIDA);
+    const datos = [`Nivel ${NOMBRE_NIVEL[e.nivel]} · ${formatoTiempo(e.ms)}`];
+    datos.push(e.pistas ? `Pistas usadas: ${e.pistas}` : "Sin pistas");
+    if (record) datos.push("¡Nuevo mejor tiempo en este aparato!");
+    else if (s.mejor !== null) datos.push(`Tu mejor tiempo: ${formatoTiempo(s.mejor)}`);
+    dialogo({
+      titulo: "¡Cuadrado!",
+      datos,
+      botones: [
+        { texto: "Nueva partida", principal: true, fn: () => mostrarMenu(false) },
+        { texto: "Ver el tablero", fn: () => {
+        } }
+      ]
+    });
+  }
+  function activo() {
+    return e && !e.terminada && !document.hidden && !$("pantalla-juego").hidden && !ocupado && $("capa").hidden;
+  }
+  function tic() {
+    const ahora = performance.now();
+    if (activo() && ultimo) e.ms += ahora - ultimo;
+    ultimo = ahora;
+    if (e) $("reloj").textContent = formatoTiempo(e.ms);
+  }
+  setInterval(tic, 500);
+  document.addEventListener("visibilitychange", () => {
+    tic();
+    if (document.hidden) guardar();
+  });
+  window.addEventListener("pagehide", () => {
+    tic();
+    guardar();
+  });
+  function mostrarMenu(puedeVolver) {
+    const stats = leerStats();
+    for (const n of ["normal", "anormal"]) {
+      const s = stats[n];
+      $(`stats-${n}`).textContent = s.ganadas ? `Resueltos: ${s.ganadas}${s.mejor !== null ? ` · Mejor tiempo: ${formatoTiempo(s.mejor)}` : ""}` : "Aún no has resuelto ninguno";
+    }
+    $("btn-cancelar-menu").hidden = !puedeVolver;
+    $("pantalla-juego").hidden = true;
+    $("pantalla-menu").hidden = false;
+    $("nivel-actual").textContent = "";
+    $("reloj").textContent = "00:00";
+  }
+  function mostrarJuego() {
+    $("pantalla-menu").hidden = true;
+    $("pantalla-juego").hidden = false;
+    ultimo = performance.now();
+    pintar();
+  }
+  function empezar(nivel) {
+    if (ocupado) return;
+    ocupado = true;
+    dialogo({ titulo: "Preparando…", texto: `Buscando unas sumas ${NOMBRE_NIVEL[nivel]}.` });
+    $("capa-caja").insertAdjacentHTML("beforeend", '<div class="girando"></div>');
+    setTimeout(() => {
+      try {
+        e = nuevaPartida(nivel);
+        modo = QUITAR;
+        for (const c of celdas) c._k = null;
+        guardar();
+        mostrarJuego();
+      } finally {
+        ocupado = false;
+        cerrarDialogo();
+      }
+    }, 40);
+  }
+  function pedirNueva() {
+    if (e && !e.terminada && progreso(e) > 0) {
+      dialogo({
+        titulo: "Partida empezada",
+        texto: `Llevas marcado un ${Math.round(progreso(e) * 100)} % de esta partida. Si empiezas otra, se pierde.`,
+        botones: [
+          { texto: "Seguir con esta", principal: true },
+          { texto: "Empezar otra", fn: () => mostrarMenu(true) }
+        ]
+      });
+    } else mostrarMenu(!!(e && !e.terminada));
+  }
+  document.addEventListener("keydown", (ev) => {
+    if (!e || $("pantalla-juego").hidden || !$("capa").hidden) return;
+    const k = ev.key.toLowerCase();
+    if ((ev.ctrlKey || ev.metaKey) && k === "z") {
+      pulsarDeshacer();
+      ev.preventDefault();
+    } else if (k === "x" || k === "t") cambiarModo(QUITAR);
+    else if (k === "d") cambiarModo(DEJAR);
+  });
+  construirTablero();
+  $("btn-deshacer").addEventListener("click", pulsarDeshacer);
+  $("btn-quitar").addEventListener("click", () => cambiarModo(QUITAR));
+  $("btn-dejar").addEventListener("click", () => cambiarModo(DEJAR));
+  $("btn-pista").addEventListener("click", pulsarPista);
+  $("btn-nueva").addEventListener("click", pedirNueva);
+  $("btn-cancelar-menu").addEventListener("click", mostrarJuego);
+  for (const b of document.querySelectorAll(".nivel")) b.addEventListener("click", () => empezar(b.dataset.nivel));
+  var guardada = leer(CLAVE_PARTIDA) ? deserializar(leer(CLAVE_PARTIDA)) : null;
+  if (guardada) {
+    e = guardada;
+    mostrarJuego();
+    aviso("Sigues donde lo dejaste");
+  } else {
+    if (leer(CLAVE_PARTIDA)) borrarClave(CLAVE_PARTIDA);
+    mostrarMenu(false);
+  }
+  window.__sumas = { estado: () => e, tocar, cambiarModo };
+})();
+</script>
+</body>
+</html>
