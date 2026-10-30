@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a6b3c">
+<title>Las 8 diferencias — Peña BandosMávila</title>
+<style>:root {
+  --verde: #1a6b3c;
+  --verde-claro: #2d9e5f;
+  --fondo: #f4f1e8;
+  --papel: #ffffff;
+  --tinta: #1d1d1d;
+  --gris: #6b6b6b;
+  --linea: #c9c3b3;
+  --linea-fuerte: #3b3b3b;
+  --sel: #bfe3cc;
+  --vecina: #e6efe9;
+  --igual: #cfe8d8;
+  --mia: #1b5fa8;
+  --rojo: #c0392b;
+  --rojo-fondo: #f7d9d5;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #14181a; --papel: #1e2427; --tinta: #eceae3; --gris: #9aa3a6;
+    --linea: #3a4448; --linea-fuerte: #aab3b6; --sel: #2b5a40; --vecina: #263034;
+    --igual: #2f4a3a; --mia: #7db6ee; --rojo: #ff8a7c; --rojo-fondo: #4a2824;
+  }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--fondo); color: var(--tinta);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-user-select: none; user-select: none; touch-action: manipulation;
+}
+[hidden] { display: none !important; }
+
+#cabecera {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--verde); color: #fff; padding: 8px 12px; padding-top: calc(8px + env(safe-area-inset-top));
+}
+#cabecera h1 {
+  margin: 0; font-family: 'Bebas Neue', 'Inter', sans-serif; font-weight: 400;
+  letter-spacing: 1.5px; font-size: 26px; line-height: 1;
+}
+#volver { color: #fff; text-decoration: none; font-size: 30px; line-height: 1; padding: 0 8px 4px 0; }
+#datos { margin-left: auto; display: flex; gap: 12px; align-items: baseline; font-size: 14px; }
+#nivel-actual { opacity: 0.9; font-weight: 600; }
+#reloj { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 18px; }
+
+main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
+
+/* Menú */
+#pantalla-menu { display: flex; flex-direction: column; gap: 12px; max-width: 460px; margin: 10px auto 0; }
+.intro { color: var(--gris); margin: 4px 2px 6px; line-height: 1.4; }
+.nivel {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left;
+  background: var(--papel); color: var(--tinta); border: 1.5px solid var(--verde); border-radius: 12px;
+  padding: 16px 18px; cursor: pointer; font: inherit;
+}
+.nivel:active { background: var(--verde); color: #fff; }
+.nivel-nombre { font-family: 'Bebas Neue', 'Inter', sans-serif; font-size: 28px; letter-spacing: 1px; color: var(--verde); }
+.nivel:active .nivel-nombre { color: #fff; }
+.nivel-desc { font-size: 14px; }
+.nivel-stats { font-size: 12px; color: var(--gris); min-height: 1em; }
+.nivel:active .nivel-stats { color: #e3f0e8; }
+.enlace {
+  background: none; border: none; color: var(--verde); font: inherit; font-size: 14px; font-weight: 600;
+  padding: 10px; cursor: pointer; text-decoration: underline;
+}
+@media (prefers-color-scheme: dark) { .enlace { color: #7fd1a1; } .nivel-nombre { color: #7fd1a1; } }
+
+/* Cartas de la baraja española (mismo estilo que Pocha/Tute/Remigio), con tamaño según --w. */
+.carta {
+  --w: 58px;
+  position: relative; width: var(--w); height: calc(var(--w) * 1.42); padding: calc(var(--w) * 0.14);
+  background: #fffdf6; border-radius: calc(var(--w) * 0.09); border: 2px solid #17304a;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35); user-select: none; flex: none; box-sizing: border-box;
+}
+.carta.palo-oros { --palo-color: #b8860b; } .carta.palo-copas { --palo-color: #c0392b; }
+.carta.palo-espadas { --palo-color: #2c5aa0; } .carta.palo-bastos { --palo-color: #2e7d32; }
+.carta-marco { width: 100%; height: 100%; border: 1.3px solid #17304a; border-radius: 3px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; }
+.carta-marco img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.carta-banda {
+  position: absolute; top: calc(var(--w) * 0.14); left: 0; width: calc(var(--w) * 0.14);
+  display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--palo-color); line-height: 1;
+}
+.carta-banda b { font-size: calc(var(--w) * 0.17); font-family: Georgia, serif; }
+.carta-banda svg { width: calc(var(--w) * 0.14); height: calc(var(--w) * 0.14); }
+.carta.reverso { padding: 0; overflow: hidden; }
+.carta.reverso img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+/* Juego */
+#pantalla-juego { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+#titulo-escena { font-family: 'Bebas Neue', 'Inter', sans-serif; font-size: 22px; letter-spacing: 1px; color: var(--verde); margin: 0; }
+#laminas { display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; }
+.lamina { position: relative; width: min(100%, 460px); aspect-ratio: 4 / 3; background: #fff; border: 3px solid #111; border-radius: 4px; touch-action: manipulation; cursor: crosshair; }
+.lamina svg { display: block; width: 100%; height: 100%; }
+.lamina .num { position: absolute; left: 6px; bottom: 4px; width: 22px; height: 22px; border-radius: 50%; background: #111; color: #fff; font: 700 14px/22px 'Inter', sans-serif; text-align: center; pointer-events: none; }
+.marca { fill: none; stroke: #d33; stroke-width: 4; }
+.cruz { stroke: #d33; stroke-width: 5; stroke-linecap: round; animation: desvanece 0.8s forwards; }
+.pista-aro { fill: none; stroke: #f5b800; stroke-width: 5; animation: latido 0.7s ease-in-out infinite; }
+@keyframes desvanece { to { opacity: 0; } }
+@keyframes latido { 50% { opacity: 0.35; } }
+#info-juego { min-height: 1.4em; font-size: 15px; color: var(--gris); text-align: center; }
+#pie-juego { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+
+/* Avisos y diálogos */
+#aviso {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px);
+  background: #222; color: #fff; padding: 10px 16px; border-radius: 20px; font-size: 14px; max-width: 90vw;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 30; text-align: center;
+}
+#aviso.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+#capa { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: flex; align-items: center; justify-content: center; z-index: 20; padding: 18px; }
+#capa-caja {
+  background: var(--papel); color: var(--tinta); border-radius: 14px; padding: 22px 20px 16px; width: min(92vw, 380px);
+  text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+}
+#capa-caja h2 { margin: 0 0 8px; font-family: 'Bebas Neue', 'Inter', sans-serif; font-weight: 400; font-size: 32px; letter-spacing: 1px; color: var(--verde); }
+@media (prefers-color-scheme: dark) { #capa-caja h2 { color: #7fd1a1; } }
+#capa-caja p { margin: 6px 0; line-height: 1.45; }
+#capa-caja .datos { font-size: 15px; color: var(--gris); }
+#capa-caja .botones { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+#capa-caja .botones button {
+  padding: 12px; border-radius: 10px; border: 1.5px solid var(--verde); background: var(--papel); color: var(--verde);
+  font: inherit; font-weight: 600; font-size: 15px; cursor: pointer;
+}
+#capa-caja .botones button.principal { background: var(--verde); color: #fff; }
+@media (prefers-color-scheme: dark) { #capa-caja .botones button { color: #7fd1a1; border-color: #7fd1a1; } #capa-caja .botones button.principal { color: #fff; border-color: var(--verde); } }
+.girando { display: inline-block; width: 26px; height: 26px; border: 3px solid var(--linea); border-top-color: var(--verde); border-radius: 50%; animation: gira 0.8s linear infinite; margin: 6px 0 2px; }
+@keyframes gira { to { transform: rotate(360deg); } }
+
+/* Móvil apaisado */
+@media (orientation: landscape) and (max-height: 620px) {
+  main { padding: 4px 10px; }
+  #cabecera { padding-top: calc(4px + env(safe-area-inset-top)); padding-bottom: 4px; }
+  #titulo-escena { display: none; }
+  #laminas { flex-direction: row; justify-content: center; gap: 10px; }
+  .lamina { width: min(calc(50% - 5px), calc((100svh - 130px) * 4 / 3)); }
+}
+@media (prefers-color-scheme: dark) { .lamina { border-color: #eee; } }
+</style>
+</head>
+<body>
+<header id="cabecera">
+  <a id="volver" href="aburres.html" aria-label="Volver a ¿Te aburres?">‹</a>
+  <h1>Las 8 diferencias</h1>
+  <div id="datos"><span id="nivel-actual"></span><span id="contador"></span></div>
+</header>
+
+<main>
+  <section id="pantalla-juego">
+    <h2 id="titulo-escena"></h2>
+    <div id="laminas">
+      <div class="lamina" id="lamina1"><span class="num">1</span></div>
+      <div class="lamina" id="lamina2"><span class="num">2</span></div>
+    </div>
+    <div id="info-juego"></div>
+    <div id="pie-juego">
+      <button id="btn-pista" class="enlace">Pista</button>
+      <button class="enlace ayuda">Cómo se juega</button>
+      <button id="btn-nueva" class="enlace">Empezar de nuevo</button>
+    </div>
+  </section>
+</main>
+
+<div id="aviso" role="status" aria-live="polite"></div>
+<div id="capa" hidden><div id="capa-caja"></div></div>
+<script>(()=>{var c="#111",X=a=>`<g fill="#fff" stroke="${c}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${a}</g>`;function Y(a){let t=`
+    <path d="M30 78 q-14 0 -14 -13 q0 -13 15 -13 q3 -14 20 -12 q9 -10 24 -2 q16 -4 21 10 q14 2 12 17 q-1 13 -14 13 Z"/>
+    ${a.has("nube")?'<path d="M96 52 q10 -12 22 -4 q10 2 8 12"/>':""}`,e='<circle cx="338" cy="46" r="20"/>'+[0,45,90,135,180,225,270,315].map(Q=>{let g=Q*Math.PI/180;return`<line x1="${(338+28*Math.cos(g)).toFixed(1)}" y1="${(46+28*Math.sin(g)).toFixed(1)}" x2="${(338+38*Math.cos(g)).toFixed(1)}" y2="${(46+38*Math.sin(g)).toFixed(1)}"/>`}).join(""),l=a.has("gaviota")?"":'<path d="M140 92 q12 -16 24 0 q12 -16 24 0" fill="none"/>',s=`
+    <path d="M318 196 L328 112 L360 112 L370 196 Z"/>
+    <path d="M323.5 156 L365 156 L367 174 L321.5 174 Z" fill="${c}"/>
+    <path d="M324 112 L344 84 L364 112 Z" fill="${c}"/>
+    <rect x="336" y="94" width="16" height="18" fill="#fff"/>
+    ${a.has("faro")?"":'<rect x="339" y="128" width="10" height="16"/>'}`,o=`
+    <line x1="0" y1="196" x2="400" y2="196"/>
+    <path d="M20 222 q10 -9 20 0 q10 9 20 0 M250 262 q10 -9 20 0 q10 9 20 0 M90 270 q10 -9 20 0 q10 9 20 0 M330 238 q10 -9 20 0 q10 9 20 0" fill="none"/>
+    <path d="M0 290 q10 -9 20 0 q10 9 20 0 q10 -9 20 0 q10 9 20 0 q10 -9 20 0 q10 9 20 0 q10 -9 20 0 q10 9 20 0 q10 -9 20 0 q10 9 20 0 q10 -9 20 0 q10 9 20 0 q10 -9 20 0 q10 9 20 0 q10 -9 20 0 q10 9 20 0 q10 -9 20 0 q10 9 20 0 q10 -9 20 0 q10 9 20 0" fill="none"/>`,i=a.has("boya")?"":`<g><path d="M40 232 a14 12 0 0 1 28 0 Z"/><path d="M45 232 a9 8 0 0 1 18 0 Z" fill="${c}"/><line x1="54" y1="220" x2="54" y2="206"/><circle cx="54" cy="204" r="3"/></g>`,p=a.has("remo")?"":`<line x1="150" y1="226" x2="96" y2="268"/><path d="M88 262 l16 14 l-4 6 l-16 -14 Z" fill="${c}"/>`,d='<path d="M96 214 L286 214 Q282 256 244 262 L146 262 Q106 256 96 214 Z"/><path d="M104 232 L280 232" /><path d="M106 242 L277 242" stroke-width="6"/>',u=`<path d="M170 178 q4 -14 24 -14 q22 0 26 14 L224 214 L166 214 Z" fill="${c}"/>`,M='<path d="M214 182 L246 170 L252 178 L222 196" />',S=`<circle cx="192" cy="140" r="24"/>
+    <circle cx="184" cy="136" r="3" fill="${c}"/><circle cx="201" cy="136" r="3" fill="${c}"/>
+    <path d="M192 140 l-3 8 l7 0" fill="none"/>
+    ${a.has("bigote")?"":`<path d="M180 154 q6 -8 12 -2 q6 -6 12 2 q-12 6 -24 0 Z" fill="${c}"/>`}`,E=`<path d="M166 124 q26 -14 52 0 q-26 6 -52 0 Z" fill="${c}"/><path d="M178 122 q14 -26 28 0 Z"/>
+    ${a.has("pluma")?"":`<path d="M204 114 q16 -18 26 -4 q-12 12 -26 4 Z" fill="${c}"/>`}`,D=`<line x1="246" y1="172" x2="312" y2="104"/><line x1="312" y1="104" x2="312" y2="196" stroke-width="1.5"/>
+    <circle cx="258" cy="162" r="5"/>`,H=`<path d="M300 196 L324 196 L324 224 L342 232 L342 244 L298 244 Z"/>
+    <path d="M304 204 L320 204" /><path d="M304 212 L320 212" />${a.has("bota")?'<path d="M304 220 L320 220" />':""}`;return X(t+e+l+s+o+i+p+d+u+M+S+E+D+H)}var h=[{id:"pesca",titulo:"La pesca del día",dibujar:Y,claves:["gaviota","pluma","bigote","remo","boya","faro","nube","bota"],diferencias:[{clave:"gaviota",x:164,y:86,r:34},{clave:"pluma",x:216,y:108,r:20},{clave:"bigote",x:192,y:152,r:20},{clave:"remo",x:120,y:248,r:30},{clave:"boya",x:54,y:222,r:24},{clave:"faro",x:344,y:136,r:18},{clave:"nube",x:110,y:54,r:22},{clave:"bota",x:312,y:220,r:22}]}],A=(a,t)=>a.dibujar(new Set(t?a.claves:[]));var $=1,f=a=>h.find(t=>t.id===a)||null;function C(a=h[0].id){let t=f(a);return t?{ver:$,escena:a,halladas:[],fallos:0,pistas:0,total:t.diferencias.length,ganada:!1}:null}function k(a,t,e,l=1){let s=f(a.escena).diferencias;for(let o=0;o<s.length;o++){let i=s[o];if(Math.hypot(t-i.x,e-i.y)<=i.r*l)return a.halladas.includes(o)?"ya":(a.halladas.push(o),a.ganada=a.halladas.length===a.total,o)}return a.fallos++,-1}function w(a){let e=f(a.escena).diferencias.findIndex((l,s)=>!a.halladas.includes(s));return e<0?null:(a.pistas++,e)}function _(a){return JSON.stringify({ver:$,escena:a.escena,halladas:a.halladas,fallos:a.fallos,pistas:a.pistas})}function Z(a){try{let t=JSON.parse(a);if(!t||t.ver!==$)return null;let e=C(t.escena);return!e||!Array.isArray(t.halladas)||!t.halladas.every(l=>Number.isInteger(l)&&l>=0&&l<e.total)||new Set(t.halladas).size!==t.halladas.length||!Number.isInteger(t.fallos)||t.fallos<0||!Number.isInteger(t.pistas)||t.pistas<0?null:(e.halladas=t.halladas,e.fallos=t.fallos,e.pistas=t.pistas,e.ganada=e.halladas.length===e.total,e.ganada?null:e)}catch{return null}}var m="bandosmavila_diferencias_partida",T="bandosmavila_diferencias_stats",F="http://www.w3.org/2000/svg",r=a=>document.getElementById(a),n=null,P=0;function N(a){try{return localStorage.getItem(a)}catch{return null}}function O(a,t){try{localStorage.setItem(a,t)}catch{}}function J(a){try{localStorage.removeItem(a)}catch{}}function x(){n&&!n.ganada&&O(m,_(n))}function G(){let a={ganadas:0,sinFallos:0};try{let t=JSON.parse(N(T)||"{}");for(let e of Object.keys(a))Number.isInteger(t[e])&&t[e]>=0&&(a[e]=t[e])}catch{}return a}var I=0;function K(a){let t=r("aviso");t.textContent=a,t.classList.add("visible"),clearTimeout(I),I=setTimeout(()=>t.classList.remove("visible"),2e3)}function z({titulo:a,texto:t,datos:e,botones:l}){let s=r("capa-caja");if(s.innerHTML="",a){let o=document.createElement("h2");o.textContent=a,s.appendChild(o)}if(t){let o=document.createElement("p");o.textContent=t,s.appendChild(o)}for(let o of e||[]){let i=document.createElement("p");i.className="datos",i.textContent=o,s.appendChild(i)}if(l&&l.length){let o=document.createElement("div");o.className="botones";for(let{texto:i,principal:p,fn:d}of l){let u=document.createElement("button");u.textContent=i,p&&(u.className="principal"),u.addEventListener("click",()=>{r("capa").hidden=!0,d&&d()}),o.appendChild(u)}s.appendChild(o)}r("capa").hidden=!1}function L(a){return a.querySelector("svg")}function y(a,t){let e=document.createElementNS(F,a);for(let[l,s]of Object.entries(t))e.setAttribute(l,s);return e}function B(){let a=f(n.escena);r("titulo-escena").textContent=a.titulo,[["lamina1",!0],["lamina2",!1]].forEach(([t,e])=>{let l=r(t),s=L(l);s&&s.remove();let o=document.createElementNS(F,"svg");o.setAttribute("viewBox","0 0 400 300"),o.setAttribute("role","img"),o.setAttribute("aria-label",`Dibujo ${e?1:2}: ${a.titulo}`),o.innerHTML=A(a,e)+'<g class="marcas"></g>',l.insertBefore(o,l.firstChild)});for(let t of n.halladas)V(t);j()}function V(a){let t=f(n.escena).diferencias[a];for(let e of["lamina1","lamina2"])L(r(e)).querySelector(".marcas").appendChild(y("circle",{class:"marca",cx:t.x,cy:t.y,r:t.r}))}function j(){r("contador").textContent=`${n.halladas.length}/${n.total}`,r("nivel-actual").textContent="",r("info-juego").textContent=n.fallos?`Faltan ${n.total-n.halladas.length} · Fallos: ${n.fallos}`:`Faltan ${n.total-n.halladas.length}`}function q(){clearTimeout(P);for(let a of document.querySelectorAll(".pista-aro"))a.remove()}function R(a){if(!n||n.ganada)return;let t=a.currentTarget,e=L(t),l=e.getBoundingClientRect(),s=(a.clientX-l.left)/l.width*400,o=(a.clientY-l.top)/l.height*300;q();let i=k(n,s,o);if(i!=="ya"){if(i===-1){let p=e.querySelector(".marcas"),d=y("g",{class:"cruz"});for(let[u,M,S,E]of[[-8,-8,8,8],[-8,8,8,-8]])d.appendChild(y("line",{x1:s+u,y1:o+M,x2:s+S,y2:o+E,class:"cruz"}));p.appendChild(d),setTimeout(()=>d.remove(),900),x(),j();return}V(i),x(),j(),n.ganada&&U()}}r("lamina1").addEventListener("click",R);r("lamina2").addEventListener("click",R);r("btn-pista").addEventListener("click",()=>{if(!n||n.ganada)return;q();let a=w(n);if(a===null)return;x();let t=f(n.escena).diferencias[a];L(r("lamina1")).querySelector(".marcas").appendChild(y("circle",{class:"pista-aro",cx:t.x,cy:t.y,r:t.r+6})),P=setTimeout(q,3e3)});function U(){let a=G();a.ganadas++,n.fallos===0&&n.pistas===0&&a.sinFallos++,O(T,JSON.stringify(a)),J(m),z({titulo:"¡Las 8 encontradas!",datos:[n.fallos?`Fallos: ${n.fallos}`:"Sin fallos",n.pistas?`Pistas: ${n.pistas}`:"Sin pistas",`Escenas resueltas: ${a.ganadas}`],botones:[{texto:"Jugarla otra vez",principal:!0,fn:b},{texto:"Ver los dibujos",fn:()=>{}}]})}function b(){q(),n=C(h[0].id),x(),B()}r("btn-nueva").addEventListener("click",()=>{n&&!n.ganada&&(n.halladas.length||n.fallos)?z({titulo:"Partida empezada",texto:"Si empiezas de nuevo, se pierden las que ya has encontrado.",botones:[{texto:"Seguir con esta",principal:!0},{texto:"Empezar de nuevo",fn:b}]}):b()});function W(){z({titulo:"Cómo se juega",texto:"En el dibujo 1 hay 8 diferencias respecto al dibujo 2.",datos:["Cuando veas una, tócala en cualquiera de los dos dibujos. Se marcará en los dos.","Si tocas donde no hay diferencia, se cuenta un fallo."],botones:[{texto:"Entendido",principal:!0}]})}for(let a of document.querySelectorAll(".ayuda"))a.addEventListener("click",W);var v=null;try{v=Z(N(m)||"")}catch{v=null}v?(n=v,B(),K("Sigues donde lo dejaste")):(N(m)&&J(m),b());window.__dif={estado:()=>n};})();
+</script>
+</body>
+</html>

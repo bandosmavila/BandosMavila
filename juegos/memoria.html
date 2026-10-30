@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a6b3c">
+<title>Parejas — Peña BandosMávila</title>
+<style>:root {
+  --verde: #1a6b3c;
+  --verde-claro: #2d9e5f;
+  --fondo: #f4f1e8;
+  --papel: #ffffff;
+  --tinta: #1d1d1d;
+  --gris: #6b6b6b;
+  --linea: #c9c3b3;
+  --linea-fuerte: #3b3b3b;
+  --sel: #bfe3cc;
+  --vecina: #e6efe9;
+  --igual: #cfe8d8;
+  --mia: #1b5fa8;
+  --rojo: #c0392b;
+  --rojo-fondo: #f7d9d5;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #14181a; --papel: #1e2427; --tinta: #eceae3; --gris: #9aa3a6;
+    --linea: #3a4448; --linea-fuerte: #aab3b6; --sel: #2b5a40; --vecina: #263034;
+    --igual: #2f4a3a; --mia: #7db6ee; --rojo: #ff8a7c; --rojo-fondo: #4a2824;
+  }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--fondo); color: var(--tinta);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-user-select: none; user-select: none; touch-action: manipulation;
+}
+[hidden] { display: none !important; }
+
+#cabecera {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--verde); color: #fff; padding: 8px 12px; padding-top: calc(8px + env(safe-area-inset-top));
+}
+#cabecera h1 {
+  margin: 0; font-family: 'Bebas Neue', 'Inter', sans-serif; font-weight: 400;
+  letter-spacing: 1.5px; font-size: 26px; line-height: 1;
+}
+#volver { color: #fff; text-decoration: none; font-size: 30px; line-height: 1; padding: 0 8px 4px 0; }
+#datos { margin-left: auto; display: flex; gap: 12px; align-items: baseline; font-size: 14px; }
+#nivel-actual { opacity: 0.9; font-weight: 600; }
+#reloj { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 18px; }
+
+main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
+
+/* Menú */
+#pantalla-menu { display: flex; flex-direction: column; gap: 12px; max-width: 460px; margin: 10px auto 0; }
+.intro { color: var(--gris); margin: 4px 2px 6px; line-height: 1.4; }
+.nivel {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left;
+  background: var(--papel); color: var(--tinta); border: 1.5px solid var(--verde); border-radius: 12px;
+  padding: 16px 18px; cursor: pointer; font: inherit;
+}
+.nivel:active { background: var(--verde); color: #fff; }
+.nivel-nombre { font-family: 'Bebas Neue', 'Inter', sans-serif; font-size: 28px; letter-spacing: 1px; color: var(--verde); }
+.nivel:active .nivel-nombre { color: #fff; }
+.nivel-desc { font-size: 14px; }
+.nivel-stats { font-size: 12px; color: var(--gris); min-height: 1em; }
+.nivel:active .nivel-stats { color: #e3f0e8; }
+.enlace {
+  background: none; border: none; color: var(--verde); font: inherit; font-size: 14px; font-weight: 600;
+  padding: 10px; cursor: pointer; text-decoration: underline;
+}
+@media (prefers-color-scheme: dark) { .enlace { color: #7fd1a1; } .nivel-nombre { color: #7fd1a1; } }
+
+/* Cartas de la baraja española (mismo estilo que Pocha/Tute/Remigio), con tamaño según --w. */
+.carta {
+  --w: 58px;
+  position: relative; width: var(--w); height: calc(var(--w) * 1.42); padding: calc(var(--w) * 0.14);
+  background: #fffdf6; border-radius: calc(var(--w) * 0.09); border: 2px solid #17304a;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35); user-select: none; flex: none; box-sizing: border-box;
+}
+.carta.palo-oros { --palo-color: #b8860b; } .carta.palo-copas { --palo-color: #c0392b; }
+.carta.palo-espadas { --palo-color: #2c5aa0; } .carta.palo-bastos { --palo-color: #2e7d32; }
+.carta-marco { width: 100%; height: 100%; border: 1.3px solid #17304a; border-radius: 3px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; }
+.carta-marco img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.carta-banda {
+  position: absolute; top: calc(var(--w) * 0.14); left: 0; width: calc(var(--w) * 0.14);
+  display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--palo-color); line-height: 1;
+}
+.carta-banda b { font-size: calc(var(--w) * 0.17); font-family: Georgia, serif; }
+.carta-banda svg { width: calc(var(--w) * 0.14); height: calc(var(--w) * 0.14); }
+.carta.reverso { padding: 0; overflow: hidden; }
+.carta.reverso img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+/* Juego */
+#pantalla-juego { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+#tablero {
+  display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 7px; padding: 10px;
+  width: min(100%, 460px, calc((100svh - 190px) * var(--cols) / var(--filas)));
+  background: #0e3d24; border-radius: 14px; border: 2px solid #072917;
+}
+.ficha { position: relative; aspect-ratio: 1 / 1; padding: 0; border: 0; background: none; cursor: pointer; perspective: 600px; font: inherit; container-type: size; -webkit-tap-highlight-color: transparent; }
+.ficha .cara { position: absolute; inset: 0; border-radius: 10px; display: flex; align-items: center; justify-content: center; backface-visibility: hidden; transition: transform 0.28s; }
+.ficha .dorso { background: repeating-linear-gradient(45deg, #1f5fa3, #1f5fa3 6px, #2b73bd 6px, #2b73bd 12px); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
+.ficha .frente { background: #fffdf6; border: 2px solid #17304a; transform: rotateY(180deg); font-size: 56cqmin; line-height: 1; }
+.ficha.abierta .dorso { transform: rotateY(180deg); }
+.ficha.abierta .frente { transform: rotateY(0); }
+.ficha.hallada .frente { background: #d6f0de; border-color: #2d9e5f; }
+.ficha.hallada { cursor: default; }
+.ficha:disabled { opacity: 1; }
+.ficha.fallo .frente { background: #fde4e1; border-color: #c0392b; }
+#info-juego { min-height: 1.4em; font-size: 15px; color: var(--gris); text-align: center; }
+#pie-juego { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+#niveles { display: flex; flex-direction: column; gap: 12px; }
+#niveles .nivel { width: 100%; }
+
+/* Avisos y diálogos */
+#aviso {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px);
+  background: #222; color: #fff; padding: 10px 16px; border-radius: 20px; font-size: 14px; max-width: 90vw;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 30; text-align: center;
+}
+#aviso.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+#capa { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: flex; align-items: center; justify-content: center; z-index: 20; padding: 18px; }
+#capa-caja {
+  background: var(--papel); color: var(--tinta); border-radius: 14px; padding: 22px 20px 16px; width: min(92vw, 380px);
+  text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+}
+#capa-caja h2 { margin: 0 0 8px; font-family: 'Bebas Neue', 'Inter', sans-serif; font-weight: 400; font-size: 32px; letter-spacing: 1px; color: var(--verde); }
+@media (prefers-color-scheme: dark) { #capa-caja h2 { color: #7fd1a1; } }
+#capa-caja p { margin: 6px 0; line-height: 1.45; }
+#capa-caja .datos { font-size: 15px; color: var(--gris); }
+#capa-caja .botones { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+#capa-caja .botones button {
+  padding: 12px; border-radius: 10px; border: 1.5px solid var(--verde); background: var(--papel); color: var(--verde);
+  font: inherit; font-weight: 600; font-size: 15px; cursor: pointer;
+}
+#capa-caja .botones button.principal { background: var(--verde); color: #fff; }
+@media (prefers-color-scheme: dark) { #capa-caja .botones button { color: #7fd1a1; border-color: #7fd1a1; } #capa-caja .botones button.principal { color: #fff; border-color: var(--verde); } }
+.girando { display: inline-block; width: 26px; height: 26px; border: 3px solid var(--linea); border-top-color: var(--verde); border-radius: 50%; animation: gira 0.8s linear infinite; margin: 6px 0 2px; }
+@keyframes gira { to { transform: rotate(360deg); } }
+
+/* Móvil apaisado */
+@media (orientation: landscape) and (max-height: 620px) {
+  main { padding: 4px 10px; }
+  #cabecera { padding-top: calc(4px + env(safe-area-inset-top)); padding-bottom: 4px; }
+  #tablero { width: min(100%, calc((100svh - 150px) * var(--cols) / var(--filas))); gap: 5px; padding: 7px; }
+}
+</style>
+</head>
+<body>
+<header id="cabecera">
+  <a id="volver" href="aburres.html" aria-label="Volver a ¿Te aburres?">‹</a>
+  <h1>Parejas</h1>
+  <div id="datos"><span id="nivel-actual"></span><span id="contador"></span></div>
+</header>
+
+<main>
+  <section id="pantalla-menu" hidden>
+    <p class="intro">Encuentra todas las parejas con los menos intentos que puedas. La partida se guarda sola.</p>
+    <div id="niveles">
+      <button class="nivel" data-nivel="normal"><span class="nivel-nombre">Normal</span><span class="nivel-desc">8 parejas · tablero de 4 × 4</span><span class="nivel-stats" id="stats-normal"></span></button>
+      <button class="nivel" data-nivel="anormal"><span class="nivel-nombre">Anormal</span><span class="nivel-desc">18 parejas · tablero de 6 × 6</span><span class="nivel-stats" id="stats-anormal"></span></button>
+    </div>
+    <button class="enlace ayuda">Cómo se juega</button>
+    <button id="btn-cancelar-menu" class="enlace" hidden>Volver a mi partida</button>
+  </section>
+
+  <section id="pantalla-juego" hidden>
+    <div id="tablero" role="group" aria-label="Cartas"></div>
+    <div id="info-juego"></div>
+    <div id="pie-juego">
+      <button class="enlace ayuda">Cómo se juega</button>
+      <button id="btn-nueva" class="enlace">Otra partida</button>
+    </div>
+  </section>
+</main>
+
+<div id="aviso" role="status" aria-live="polite"></div>
+<div id="capa" hidden><div id="capa-caja"></div></div>
+<script>(()=>{function j(e,t=Math.random){let a=e.slice();for(let n=a.length-1;n>0;n--){let s=Math.floor(t()*(n+1));[a[n],a[s]]=[a[s],a[n]]}return a}var m=["🐶","🐱","🐭","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔","🐧","🐢","🐙","🦋","🐞","🐘","🦉","🐬","🐝"],i={normal:{nombre:"Normal",parejas:8,cols:4,desc:"8 parejas · tablero de 4 × 4"},anormal:{nombre:"Anormal",parejas:18,cols:6,desc:"18 parejas · tablero de 6 × 6"}},h=1,A=e=>i[e].parejas*2/i[e].cols;function q(e){let t=e.orden.length,a=new Array(t).fill(!1),n=null,s=0,r=null;for(let c of e.acc){if(!Number.isInteger(c)||c<0||c>=t||a[c]||c===n)return!1;if(n===null){n=c,r=null;continue}s++;let f=e.orden[n]===e.orden[c];f&&(a[n]=!0,a[c]=!0),r={a:n,b:c,ok:f},n=null}return e.encontradas=a,e.pendiente=n,e.intentos=s,e.ultimo=r,e.restantes=a.filter(c=>!c).length/2,e.ganada=e.restantes===0,!0}function x(e,t,a=[]){let n={ver:h,nivel:t,orden:e,acc:a.slice()};return q(n)?n:null}function N(e,t=Math.random){let{parejas:a}=i[e],n=j(m.map((r,c)=>c),t).slice(0,a),s=j(n.concat(n),t);return x(s,e)}function O(e,t){let a=x(e.orden,e.nivel,e.acc.concat(t));return a?(Object.assign(e,a),!0):!1}function I(e){return JSON.stringify({ver:h,nivel:e.nivel,orden:e.orden,acc:e.acc})}function _(e){try{let t=JSON.parse(e);if(!t||t.ver!==h||!i[t.nivel]||!Array.isArray(t.orden)||!Array.isArray(t.acc))return null;let{parejas:a}=i[t.nivel];if(t.orden.length!==a*2)return null;let n=new Map;for(let r of t.orden){if(!Number.isInteger(r)||r<0||r>=m.length)return null;n.set(r,(n.get(r)||0)+1)}if(n.size!==a||[...n.values()].some(r=>r!==2))return null;let s=x(t.orden,t.nivel,t.acc);return s&&!s.ganada?s:null}catch{return null}}var u="bandosmavila_parejas_partida",M="bandosmavila_parejas_stats",l=e=>document.getElementById(e),o=null,d=!1,S=0;function y(e){try{return localStorage.getItem(e)}catch{return null}}function $(e,t){try{localStorage.setItem(e,t)}catch{}}function k(e){try{localStorage.removeItem(e)}catch{}}function P(){o&&!o.ganada&&$(u,I(o))}function V(){let e={normal:{jugadas:0,mejor:0},anormal:{jugadas:0,mejor:0}};try{let t=JSON.parse(y(M)||"{}");for(let a of Object.keys(e))t[a]&&(Number.isInteger(t[a].jugadas)&&t[a].jugadas>=0&&(e[a].jugadas=t[a].jugadas),Number.isInteger(t[a].mejor)&&t[a].mejor>0&&(e[a].mejor=t[a].mejor))}catch{}return e}var T=0;function w(e){let t=l("aviso");t.textContent=e,t.classList.add("visible"),clearTimeout(T),T=setTimeout(()=>t.classList.remove("visible"),2e3)}function C({titulo:e,texto:t,datos:a,botones:n}){let s=l("capa-caja");if(s.innerHTML="",e){let r=document.createElement("h2");r.textContent=e,s.appendChild(r)}if(t){let r=document.createElement("p");r.textContent=t,s.appendChild(r)}for(let r of a||[]){let c=document.createElement("p");c.className="datos",c.textContent=r,s.appendChild(c)}if(n&&n.length){let r=document.createElement("div");r.className="botones";for(let{texto:c,principal:f,fn:L}of n){let p=document.createElement("button");p.textContent=c,f&&(p.className="principal"),p.addEventListener("click",()=>{l("capa").hidden=!0,L&&L()}),r.appendChild(p)}s.appendChild(r)}l("capa").hidden=!1}function B(){let e=l("tablero");e.innerHTML="",e.style.setProperty("--cols",i[o.nivel].cols),e.style.setProperty("--filas",A(o.nivel)),o.orden.forEach((t,a)=>{let n=document.createElement("button");n.className="ficha",n.dataset.i=a,n.innerHTML=`<span class="cara dorso"></span><span class="cara frente">${m[t]}</span>`,n.setAttribute("aria-label",`Carta ${a+1}`),e.appendChild(n)})}function g(){let e=l("tablero").children;o.orden.forEach((t,a)=>{let n=e[a],s=o.ultimo&&!o.ultimo.ok&&(a===o.ultimo.a||a===o.ultimo.b)&&d;n.classList.toggle("hallada",o.encontradas[a]),n.classList.toggle("abierta",o.encontradas[a]||a===o.pendiente||s),n.classList.toggle("fallo",!!s)}),l("contador").textContent=`${o.intentos} intentos`,l("nivel-actual").textContent=i[o.nivel].nombre,l("info-juego").textContent=`Quedan ${o.restantes} parejas`}function z(){clearTimeout(S),d=!1,g()}l("tablero").addEventListener("click",e=>{let t=e.target.closest(".ficha");if(!t||!o||o.ganada)return;if(d){z();return}let a=Number(t.dataset.i);if(O(o,a)){if(P(),o.pendiente===null&&o.ultimo&&!o.ultimo.ok){d=!0,g(),S=setTimeout(z,1100);return}g(),o.ganada&&R()}});function R(){let e=V(),t=e[o.nivel],a=!t.mejor||o.intentos<t.mejor;t.jugadas++,a&&(t.mejor=o.intentos),$(M,JSON.stringify(e)),k(u);let n=o.nivel;C({titulo:"¡Todas las parejas!",datos:[`Intentos: ${o.intentos}`,a?"Tu mejor marca en este nivel":`Tu mejor marca: ${t.mejor}`],botones:[{texto:"Otra partida",principal:!0,fn:()=>J(n)},{texto:"Cambiar de nivel",fn:()=>v(!1)},{texto:"Ver el tablero",fn:()=>{}}]})}function v(e){let t=V();for(let a of Object.keys(i)){let n=t[a];l(`stats-${a}`).textContent=n.jugadas?`Jugadas ${n.jugadas} · Mejor marca ${n.mejor} intentos`:"Aún sin jugar"}l("btn-cancelar-menu").hidden=!e,l("pantalla-juego").hidden=!0,l("pantalla-menu").hidden=!1,l("nivel-actual").textContent="",l("contador").textContent=""}function E(){l("pantalla-menu").hidden=!0,l("pantalla-juego").hidden=!1,B(),g()}function J(e){clearTimeout(S),d=!1,o=N(e),P(),E()}function H(){o&&!o.ganada&&o.acc.length>0?C({titulo:"Partida empezada",texto:"Si empiezas otra, se pierde esta.",botones:[{texto:"Seguir con esta",principal:!0},{texto:"Empezar otra",fn:()=>v(!0)}]}):v(!!(o&&!o.ganada))}function D(){C({titulo:"Cómo se juega",texto:"Las cartas están boca abajo y por parejas.",datos:["Levanta dos cartas. Si son iguales, se quedan descubiertas. Si no, se vuelven a tapar.","Se acaba cuando has descubierto todas las parejas. Se cuentan los intentos (cada vez que levantas dos cartas)."],botones:[{texto:"Entendido",principal:!0}]})}for(let e of document.querySelectorAll(".nivel"))e.addEventListener("click",()=>J(e.dataset.nivel));l("btn-nueva").addEventListener("click",H);l("btn-cancelar-menu").addEventListener("click",E);for(let e of document.querySelectorAll(".ayuda"))e.addEventListener("click",D);var b=null;try{b=_(y(u)||"")}catch{b=null}b?(o=b,E(),w("Sigues donde lo dejaste")):(y(u)&&k(u),v(!1));window.__parejas={estado:()=>o};})();
+</script>
+</body>
+</html>
