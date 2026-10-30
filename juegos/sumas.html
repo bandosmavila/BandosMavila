@@ -155,6 +155,18 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
   #mando { width: min(260px, 38vw); gap: 8px; }
   #herramientas { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Fallos */
+#vidas { letter-spacing: 2px; font-size: 15px; white-space: nowrap; }
+#vidas .perdida { opacity: 0.3; }
+.c.fallo .num { animation: fallo 0.5s; }
+@keyframes fallo {
+  0%, 100% { transform: translateX(0); background: transparent; }
+  20% { transform: translateX(-4px); background: var(--rojo-fondo); border-color: var(--rojo); }
+  40% { transform: translateX(4px); background: var(--rojo-fondo); border-color: var(--rojo); }
+  60% { transform: translateX(-3px); background: var(--rojo-fondo); border-color: var(--rojo); }
+  80% { transform: translateX(3px); }
+}
 </style>
 </head>
 <body>
@@ -163,13 +175,14 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
   <h1>Sumas</h1>
   <div id="datos">
     <span id="nivel-actual"></span>
+    <span id="vidas" aria-label="Fallos"></span>
     <span id="reloj" aria-label="Tiempo de juego">00:00</span>
   </div>
 </header>
 
 <main>
   <section id="pantalla-menu" hidden>
-    <p class="intro">Tacha números hasta que cada fila y cada columna sumen lo que indica su cifra grande. La partida se guarda sola: puedes dejarla y seguir más tarde.</p>
+    <p class="intro">Tacha números hasta que cada fila y cada columna sumen lo que indica su cifra grande. Si marcas mal, es un fallo: con tres pierdes. La partida se guarda sola: puedes dejarla y seguir más tarde.</p>
     <button class="nivel" data-nivel="normal">
       <span class="nivel-nombre">Normal</span>
       <span class="nivel-desc">Para un rato tranquilo</span>
@@ -209,9 +222,9 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
   var NIVELES = {
     // Normal: pocos números por tachar; se resuelve con dos reglas sencillas por línea
     // ("este no cabe" y "sin este no llego").
-    normal: { nombre: "Normal", max: 9, pMin: 0.7, pMax: 0.8, rango: 1 },
-    // Anormal: la mitad se queda; hay que razonar con todas las combinaciones de una línea.
-    anormal: { nombre: "Anormal", max: 12, pMin: 0.45, pMax: 0.55, rango: 2 }
+    normal: { nombre: "Normal", max: 9, pMin: 0.5, pMax: 0.6, rango: 1 },
+    // Anormal: se queda menos de la mitad; hay que razonar con todas las combinaciones de una línea.
+    anormal: { nombre: "Anormal", max: 12, pMin: 0.38, pMax: 0.46, rango: 2 }
   };
   var fila = (i) => i / N | 0;
   var columna = (i) => i % N;
@@ -364,6 +377,17 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
     }
     return { resuelto: est.every((x) => x !== 0), rango };
   }
+  function hayLineaCompleta(quedan) {
+    for (let k = 0; k < N; k++) {
+      let f = 0, c = 0;
+      for (let j = 0; j < N; j++) {
+        f += quedan[k * N + j] === "1" ? 1 : 0;
+        c += quedan[j * N + k] === "1" ? 1 : 0;
+      }
+      if (f === N || c === N) return true;
+    }
+    return false;
+  }
   function generar(nivel, azar = Math.random, maxIntentos = 600) {
     const cfg = NIVELES[nivel];
     if (!cfg) throw new Error(`Nivel desconocido: ${nivel}`);
@@ -375,6 +399,7 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
       for (let i = 0; i < CASILLAS; i++) quedan += azar() < p ? "1" : "0";
       const { filas, cols } = sumasDe(numeros, quedan);
       if (filas.some((s) => s === 0) || cols.some((s) => s === 0)) continue;
+      if (hayLineaCompleta(quedan)) continue;
       const r = contarSoluciones(numeros, filas, cols, 2);
       if (r.cuenta !== 1) continue;
       let g;
@@ -396,6 +421,7 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
   var NORMAL = 0;
   var DEJAR = 1;
   var QUITAR = 2;
+  var MAX_FALLOS = 3;
   function nuevaPartida(nivel, azar = Math.random) {
     const g = generar(nivel, azar);
     return {
@@ -410,8 +436,20 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
       pistas: 0,
       ms: 0,
       deshacer: [],
+      fallos: 0,
+      perdida: false,
       terminada: false
     };
+  }
+  function reiniciar(e2) {
+    e2.est = new Array(CASILLAS).fill(NORMAL);
+    e2.fijas = [];
+    e2.pistas = 0;
+    e2.ms = 0;
+    e2.deshacer = [];
+    e2.fallos = 0;
+    e2.perdida = false;
+    e2.terminada = false;
   }
   var esFija = (e2, i) => e2.fijas.includes(i);
   function foto(e2) {
@@ -420,9 +458,20 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
   }
   function marcar(e2, i, marca) {
     if (e2.terminada || esFija(e2, i)) return false;
+    if (e2.est[i] !== marca) {
+      const debeQuedar = e2.solucion[i] === "1";
+      if (marca === QUITAR && debeQuedar || marca === DEJAR && !debeQuedar) {
+        e2.fallos++;
+        if (e2.fallos >= MAX_FALLOS) {
+          e2.perdida = true;
+          e2.terminada = true;
+        }
+        return "fallo";
+      }
+    }
     foto(e2);
     e2.est[i] = e2.est[i] === marca ? NORMAL : marca;
-    return true;
+    return "ok";
   }
   function deshacer(e2) {
     if (e2.terminada) return false;
@@ -482,7 +531,8 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
       fijas: e2.fijas,
       pistas: e2.pistas,
       ms: Math.round(e2.ms),
-      deshacer: e2.deshacer
+      deshacer: e2.deshacer,
+      fallos: e2.fallos
     });
   }
   var MARCAS = /^[0-2]{64}$/;
@@ -501,6 +551,8 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
       if (typeof o.est !== "string" || !MARCAS.test(o.est)) return null;
       if (!Array.isArray(o.fijas) || !o.fijas.every((x) => esEnteroEn(x, 0, CASILLAS - 1))) return null;
       if (!Number.isFinite(o.ms) || o.ms < 0 || !esEnteroEn(o.pistas, 0, CASILLAS)) return null;
+      const fallos = o.fallos === void 0 ? 0 : o.fallos;
+      if (!esEnteroEn(fallos, 0, MAX_FALLOS - 1)) return null;
       const hist = (Array.isArray(o.deshacer) ? o.deshacer : []).slice(-MAX_DESHACER);
       if (!hist.every((f) => typeof f === "string" && MARCAS.test(f))) return null;
       const e2 = {
@@ -515,6 +567,8 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
         pistas: o.pistas,
         ms: o.ms,
         deshacer: hist,
+        fallos,
+        perdida: false,
         terminada: false
       };
       return estaResuelta(e2) ? null : e2;
@@ -682,6 +736,18 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
     $("btn-dejar").setAttribute("aria-pressed", String(modo === DEJAR));
     $("nivel-actual").textContent = NOMBRE_NIVEL[e.nivel];
     $("reloj").textContent = formatoTiempo(e.ms);
+    pintarVidas();
+  }
+  function pintarVidas() {
+    const v = $("vidas");
+    v.textContent = "";
+    for (let k = 0; k < MAX_FALLOS; k++) {
+      const s = document.createElement("span");
+      s.textContent = "♥";
+      if (k < e.fallos) s.className = "perdida";
+      v.appendChild(s);
+    }
+    v.setAttribute("aria-label", `Fallos: ${e.fallos} de ${MAX_FALLOS}`);
   }
   function tocar(i) {
     if (!e || e.terminada) return;
@@ -689,7 +755,46 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
       aviso("Esa casilla es una pista: no se cambia");
       return;
     }
-    if (marcar(e, i, modo)) despuesDeCambio();
+    const r = marcar(e, i, modo);
+    if (r === "ok") despuesDeCambio();
+    else if (r === "fallo") fallar(i);
+  }
+  function fallar(i) {
+    const c = celdas[i];
+    c.classList.remove("fallo");
+    void c.offsetWidth;
+    c.classList.add("fallo");
+    guardar();
+    pintar();
+    if (e.perdida) {
+      perder();
+      return;
+    }
+    const quedan = MAX_FALLOS - e.fallos;
+    aviso(modo === QUITAR ? "Ese número tiene que quedarse" : "Ese número sobra");
+    setTimeout(() => aviso(`Fallo. ${quedan === 1 ? "Te queda 1 vida" : `Te quedan ${quedan} vidas`}`), 1400);
+  }
+  function perder() {
+    tic();
+    clearTimeout(temporizadorAviso);
+    $("aviso").classList.remove("visible");
+    borrarClave(CLAVE_PARTIDA);
+    dialogo({
+      titulo: "Tres fallos",
+      texto: "Se acabó esta partida.",
+      datos: [`Nivel ${NOMBRE_NIVEL[e.nivel]} · ${formatoTiempo(e.ms)}`],
+      botones: [
+        { texto: "Repetir este tablero", principal: true, fn: repetir },
+        { texto: "Nueva partida", fn: () => mostrarMenu(false) }
+      ]
+    });
+  }
+  function repetir() {
+    reiniciar(e);
+    for (const c of celdas) c._k = null;
+    guardar();
+    ultimo = performance.now();
+    pintar();
   }
   function despuesDeCambio() {
     guardar();
@@ -769,6 +874,7 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
     $("pantalla-juego").hidden = true;
     $("pantalla-menu").hidden = false;
     $("nivel-actual").textContent = "";
+    $("vidas").textContent = "";
     $("reloj").textContent = "00:00";
   }
   function mostrarJuego() {
@@ -833,7 +939,7 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
     if (leer(CLAVE_PARTIDA)) borrarClave(CLAVE_PARTIDA);
     mostrarMenu(false);
   }
-  window.__sumas = { estado: () => e, tocar, cambiarModo };
+  window.__sumas = { estado: () => e, tocar, cambiarModo, repetir };
 })();
 </script>
 </body>
