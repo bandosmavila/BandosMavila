@@ -206,7 +206,7 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
 <div id="aviso" role="status" aria-live="polite"></div>
 <div id="capa" hidden><div id="capa-caja"></div></div>
 <script>(() => {
-  // src/sudoku.js
+  // sudoku/src/sudoku.js
   var NIVELES = {
     // Normal: se resuelve sin adivinar, con casillas únicas y, como mucho, candidatos bloqueados.
     normal: { nombre: "Normal", rangoMin: 2, rangoMax: 3, pistasMin: 29, pistasMax: 34 },
@@ -512,7 +512,7 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
     return respaldo || generar(nivel, azar, maxIntentos);
   }
 
-  // src/partida.js
+  // sudoku/src/partida.js
   var MAX_DESHACER = 100;
   var VERSION = 1;
   function nuevaPartida(nivel, azar = Math.random) {
@@ -678,7 +678,7 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
     }
   }
 
-  // ui/app.js
+  // sudoku/ui/app.js
   var CLAVE_PARTIDA = "bandosmavila_sudoku_partida";
   var CLAVE_STATS = "bandosmavila_sudoku_stats";
   var NOMBRE_NIVEL = { normal: "Normal", anormal: "Anormal" };
