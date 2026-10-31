@@ -49,6 +49,7 @@ body {
 #volver { color: #fff; text-decoration: none; font-size: 30px; line-height: 1; padding: 0 8px 4px 0; }
 #datos { margin-left: auto; display: flex; gap: 12px; align-items: baseline; font-size: 14px; }
 #nivel-actual { opacity: 0.9; font-weight: 600; }
+#vidas { font-size: 16px; letter-spacing: 2px; }
 #reloj { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 18px; }
 
 main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
@@ -168,13 +169,14 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
   <h1>Sudoku</h1>
   <div id="datos">
     <span id="nivel-actual"></span>
+    <span id="vidas" aria-label="Fallos"></span>
     <span id="reloj" aria-label="Tiempo de juego">00:00</span>
   </div>
 </header>
 
 <main>
   <section id="pantalla-menu" hidden>
-    <p class="intro">Elige nivel. La partida se guarda sola: puedes dejarla y seguir más tarde.</p>
+    <p class="intro">Elige nivel. Un número que no va en su casilla es un fallo: con tres fallos se acaba la partida. Se guarda sola: puedes dejarla y seguir más tarde.</p>
     <button class="nivel" data-nivel="normal">
       <span class="nivel-nombre">Normal</span>
       <span class="nivel-desc">Para un rato tranquilo</span>
@@ -514,6 +516,7 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
 
   // sudoku/src/partida.js
   var MAX_DESHACER = 100;
+  var MAX_FALLOS = 3;
   var VERSION = 1;
   function nuevaPartida(nivel, azar = Math.random) {
     const g = generar(nivel, azar);
@@ -528,8 +531,21 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
       ms: 0,
       deshacer: [],
       revision: false,
-      terminada: false
+      terminada: false,
+      fallos: 0,
+      perdida: false
     };
+  }
+  function reiniciar(e2) {
+    e2.v = aArray(e2.puzle);
+    e2.notas = new Array(81).fill(0);
+    e2.pistas = 0;
+    e2.ms = 0;
+    e2.deshacer = [];
+    e2.revision = false;
+    e2.terminada = false;
+    e2.fallos = 0;
+    e2.perdida = false;
   }
   var esDada = (e2, i) => e2.puzle[i] !== "0";
   function foto(e2) {
@@ -542,6 +558,14 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
   }
   function poner(e2, i, d) {
     if (e2.terminada || esDada(e2, i) || e2.v[i] === d) return false;
+    if (String(d) !== e2.solucion[i]) {
+      e2.fallos++;
+      if (e2.fallos >= MAX_FALLOS) {
+        e2.perdida = true;
+        e2.terminada = true;
+      }
+      return "fallo";
+    }
     foto(e2);
     e2.v[i] = d;
     e2.notas[i] = 0;
@@ -636,6 +660,7 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
       notas: codNotas(e2.notas),
       pistas: e2.pistas,
       ms: Math.round(e2.ms),
+      fallos: e2.fallos,
       deshacer: e2.deshacer.map((f) => [f.v, codNotas(f.n)])
     });
   }
@@ -653,6 +678,8 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
       const notas = decNotas(o.notas);
       if (!notas) return null;
       if (!Number.isFinite(o.ms) || o.ms < 0 || !Number.isInteger(o.pistas) || o.pistas < 0) return null;
+      const fallos = o.fallos === void 0 ? 0 : o.fallos;
+      if (!Number.isInteger(fallos) || fallos < 0 || fallos >= MAX_FALLOS) return null;
       const hist = [];
       for (const f of Array.isArray(o.deshacer) ? o.deshacer.slice(-MAX_DESHACER) : []) {
         const n = Array.isArray(f) ? decNotas(f[1]) : null;
@@ -670,7 +697,9 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
         ms: o.ms,
         deshacer: hist,
         revision: false,
-        terminada: false
+        terminada: false,
+        fallos,
+        perdida: false
       };
       return estaCompleta(e2) && esCorrecta(e2) ? null : e2;
     } catch (_) {
@@ -839,6 +868,7 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
     $("btn-deshacer").disabled = e.deshacer.length === 0;
     $("btn-notas").setAttribute("aria-pressed", String(modoNotas));
     $("nivel-actual").textContent = NOMBRE_NIVEL[e.nivel];
+    $("vidas").textContent = "♥".repeat(MAX_FALLOS - e.fallos) + "♡".repeat(e.fallos);
     $("reloj").textContent = formatoTiempo(e.ms);
   }
   function seleccionar(i) {
@@ -876,9 +906,51 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
       pintar();
       return;
     }
-    if (e.v[sel] === d) borrar(e, sel);
-    else poner(e, sel, d);
+    if (e.v[sel] === d) {
+      borrar(e, sel);
+      despuesDeCambio();
+      return;
+    }
+    const r = poner(e, sel, d);
+    if (r === "fallo") {
+      fallar(sel, d);
+      return;
+    }
     despuesDeCambio();
+  }
+  function fallar(i, d) {
+    guardar();
+    pintar();
+    const c = celdas[i];
+    c._k = "fallo";
+    c.textContent = d;
+    c.className = "c mala sel";
+    aviso(e.perdida ? "Tercer fallo" : `Ese número no va ahí · Fallos: ${e.fallos} de ${MAX_FALLOS}`);
+    setTimeout(() => {
+      c._k = null;
+      pintar();
+      if (e.perdida) perder();
+    }, 650);
+  }
+  function perder() {
+    tic();
+    borrarClave(CLAVE_PARTIDA);
+    dialogo({
+      titulo: "Tres fallos",
+      texto: "Se acabó esta partida. Puedes volver a intentar el mismo sudoku desde el principio o probar con otro.",
+      botones: [
+        { texto: "Repetir este sudoku", principal: true, fn: () => {
+          reiniciar(e);
+          sel = -1;
+          guardar();
+          ultimo = performance.now();
+          pintar();
+        } },
+        { texto: "Otro sudoku", fn: () => mostrarMenu(false) },
+        { texto: "Ver el tablero", fn: () => {
+        } }
+      ]
+    });
   }
   function pulsarBorrar() {
     if (!e || e.terminada || sel < 0) return;
@@ -927,6 +999,7 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
     borrarClave(CLAVE_PARTIDA);
     const datos = [`Nivel ${NOMBRE_NIVEL[e.nivel]} · ${formatoTiempo(e.ms)}`];
     datos.push(e.pistas ? `Pistas usadas: ${e.pistas}` : "Sin pistas");
+    datos.push(e.fallos ? `Fallos: ${e.fallos}` : "Sin fallos");
     if (record) datos.push("¡Nuevo mejor tiempo en este aparato!");
     else if (s.mejor !== null) datos.push(`Tu mejor tiempo: ${formatoTiempo(s.mejor)}`);
     dialogo({
@@ -969,6 +1042,7 @@ main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
     $("pantalla-juego").hidden = true;
     $("pantalla-menu").hidden = false;
     $("nivel-actual").textContent = "";
+    $("vidas").textContent = "";
     $("reloj").textContent = "00:00";
   }
   function mostrarJuego() {
