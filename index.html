@@ -2204,6 +2204,7 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     htmlPronos += '</tr></thead><tbody>';
 
     const aciertosJugador = jugadores.map(() => 0);
+    const plenoJugador = jugadores.map(() => false);
 
     filas.forEach((row, i) => {
       const resultado = row[4] || '';
@@ -2214,7 +2215,7 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
         let cls = '';
         if (resultado && prono) {
           cls = (prono === resultado || resultado.includes(prono) || prono.includes(resultado)) ? 'acertado' : 'fallado';
-          if (cls === 'acertado') aciertosJugador[ji]++;
+          if (cls === 'acertado') { if (i < 14) aciertosJugador[ji]++; else plenoJugador[ji] = true; }
         }
         htmlPronos += `<td class="${cls}">${prono.replace(/\s/g, '')}</td>`;
       });
@@ -2236,7 +2237,7 @@ function cargarJornada(jornadas, calendario, config, marcadores, calendarioCierr
     htmlPronos += '</tbody><tfoot><tr><td class="partido-col">Ac.</td>';
     jugadores.forEach((j, ji) => {
       if (jugadorEliminado[ji]) return;
-      htmlPronos += `<td>${aciertosJugador[ji]}</td>`;
+      htmlPronos += `<td>${aciertosJugador[ji]}${plenoJugador[ji] ? '+1' : ''}</td>`;
     });
     htmlPronos += '</tr></tfoot></table>';
     document.getElementById('jor-pronos').innerHTML = htmlPronos;
@@ -2364,6 +2365,7 @@ function mostrarJornadaCalendario() {
     htmlPronos += '</tr></thead><tbody>';
 
     const aciertosCal = calJugadores.map(() => 0);
+    const plenoCal = calJugadores.map(() => false);
 
     filas.forEach((row, i) => {
       const resultado = row[4] || '';
@@ -2374,7 +2376,7 @@ function mostrarJornadaCalendario() {
         let cls = '';
         if (resultado && prono) {
           cls = (prono === resultado || resultado.includes(prono) || prono.includes(resultado)) ? 'acertado' : 'fallado';
-          if (cls === 'acertado') aciertosCal[ji]++;
+          if (cls === 'acertado') { if (i < 14) aciertosCal[ji]++; else plenoCal[ji] = true; }
         }
         htmlPronos += `<td class="${cls}">${prono.replace(/\s/g, '')}</td>`;
       });
@@ -2383,7 +2385,7 @@ function mostrarJornadaCalendario() {
     htmlPronos += '</tbody><tfoot><tr><td class="partido-col">Ac.</td>';
     calJugadores.forEach((j, ji) => {
       if (eliminadosAntes.has(j.toUpperCase())) return;
-      htmlPronos += `<td>${aciertosCal[ji]}</td>`;
+      htmlPronos += `<td>${aciertosCal[ji]}${plenoCal[ji] ? '+1' : ''}</td>`;
     });
     htmlPronos += '</tr></tfoot></table>';
     html += `<div style="margin-top:12px; overflow-x:auto;">${htmlPronos}</div>`;
