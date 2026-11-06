@@ -926,6 +926,16 @@
           <div id="calendario-resultado" style="margin-top:14px;"></div>
         </div>
       </div>
+
+      <div class="card" id="card-archivo-temp">
+        <div class="card-header" style="cursor:pointer;" onclick="toggleArchivoTemp()">
+          Histórico por temporadas <span id="arch-toggle-icono">▼</span>
+        </div>
+        <div class="card-body" id="arch-wrap" style="display:none;">
+          <div style="font-size:12px; color:var(--gris); margin-bottom:10px;">Jornadas de temporadas anteriores y de la actual, ya cerradas. Desde 2026, incluido.</div>
+          <div id="arch-contenido"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2398,6 +2408,208 @@ function mostrarJornadaCalendario() {
 
   document.getElementById('calendario-resultado').innerHTML = html;
 }
+
+// ============================================================
+// HISTÓRICO POR TEMPORADAS (hoja de Google "BandosMavila-Archivo")
+// Se lee SOLO al abrir el desplegable (para no gastar lecturas de la API al arrancar).
+// ============================================================
+const ARCHIVO_ID = '1LMVux2VD4JSDmmQDg20u85z8tJmnWF1Dd8dodBgQIjU';
+let archDatos = null;
+let archCargando = false;
+
+function aEsc(v) {
+  return String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function aNombre(n) {
+  const t = String(n || '').toLowerCase();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+function toggleArchivoTemp() {
+  const wrap = document.getElementById('arch-wrap');
+  const icono = document.getElementById('arch-toggle-icono');
+  const abierto = wrap.style.display !== 'none';
+  wrap.style.display = abierto ? 'none' : 'block';
+  icono.textContent = abierto ? '▼' : '▲';
+  if (!abierto) cargarArchivoTemp();
+}
+
+async function cargarArchivoTemp() {
+  if (archDatos || archCargando) return;
+  archCargando = true;
+  const cont = document.getElementById('arch-contenido');
+  cont.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando el histórico...</div>';
+  try {
+    // Caché en este dispositivo: el archivo solo cambia al cerrarse una jornada, así que durante 1 hora no se vuelve a pedir
+    // (menos lecturas a la API el día de la Cena, cuando todos entran a la vez desde la misma wifi).
+    const CLAVE_CACHE = 'bm_archivo_temp_v1';
+    let guardado = null;
+    try { guardado = JSON.parse(localStorage.getItem(CLAVE_CACHE) || 'null'); } catch (e0) {}
+    if (guardado && guardado.hojas && (Date.now() - guardado.t) < 3600000) {
+      construirArchivoTemp(guardado.hojas);
+      return;
+    }
+    const rangos = ['Resultados', 'Pronósticos', 'Partidos'];
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${ARCHIVO_ID}/values:batchGet?${rangos.map(n => 'ranges=' + encodeURIComponent(n)).join('&')}&key=${API_KEY}`;
+    let data = null, ultimoError = null;
+    for (let intento = 0; intento < 3 && !data; intento++) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const d = await res.json();
+        if (!d.valueRanges) throw new Error('respuesta sin datos');
+        data = d;
+      } catch (e) {
+        ultimoError = e;
+        if (intento < 2) await new Promise(r => setTimeout(r, 1200 * (intento + 1)));
+      }
+    }
+    if (!data) {
+      // Sin respuesta de Google (p. ej. límite de lecturas): se usa la última copia guardada aunque sea antigua
+      if (guardado && guardado.hojas) { construirArchivoTemp(guardado.hojas); return; }
+      throw ultimoError;
+    }
+    const hojas = data.valueRanges.map(v => v.values || []);
+    try { localStorage.setItem(CLAVE_CACHE, JSON.stringify({ t: Date.now(), hojas })); } catch (e1) {}
+    construirArchivoTemp(hojas);
+  } catch (e) {
+    console.error('Histórico:', e);
+    cont.innerHTML = '<div class="loading">No se ha podido leer el histórico. <button class="calendario-btn" style="margin-top:8px;" onclick="cargarArchivoTemp()">Reintentar</button></div>';
+  } finally {
+    archCargando = false;
+  }
+}
+
+function construirArchivoTemp(hojas) {
+  const res = hojas[0].slice(1).filter(r => r[0]).map(r => ({
+    temp: String(r[0]).trim(), fecha: String(r[1] || '').trim(), liga: r[2] || '', jor: r[3] || '',
+    r: Array.from({length: 14}, (_, i) => String(r[4 + i] || '').trim()), pleno: String(r[18] || '').trim()
+  }));
+  const pro = hojas[1].slice(1).filter(r => r[0] && r[4]).map(r => ({
+    temp: String(r[0]).trim(), fecha: String(r[1] || '').trim(), jor: r[3] || '', jug: String(r[4]).trim().toUpperCase(),
+    s: Array.from({length: 14}, (_, i) => String(r[5 + i] || '').trim()), pleno: String(r[19] || '').trim(),
+    ac: parseInt(r[20]) || 0, pa: String(r[21]).trim() === '1'
+  }));
+  const par = hojas[2].slice(1).filter(r => r[0]).map(r => ({
+    temp: String(r[0]).trim(), fecha: String(r[1] || '').trim(), n: parseInt(r[2]) || 0, local: r[3] || '', visit: r[4] || ''
+  }));
+  const temps = [];
+  res.forEach(r => { if (temps.indexOf(r.temp) < 0) temps.push(r.temp); });
+  const jugadores = [];
+  pro.forEach(p => { if (jugadores.indexOf(p.jug) < 0) jugadores.push(p.jug); });
+  jugadores.sort();
+  archDatos = { res, pro, par, temps, jugadores };
+
+  if (!res.length) {
+    document.getElementById('arch-contenido').innerHTML = '<div class="loading">El histórico aún está vacío.</div>';
+    return;
+  }
+  const estilo = 'style="font-size:14px; padding:4px 6px; max-width:100%;"';
+  document.getElementById('arch-contenido').innerHTML = `
+    <div class="calendario-selector" style="gap:10px 16px;">
+      <label>Temporada: <select id="arch-temp" ${estilo} onchange="archCambioTemporada()">${temps.map(t => `<option value="${aEsc(t)}">${aEsc(t)}</option>`).join('')}</select></label>
+      <label>Jornada: <select id="arch-jor" ${estilo} onchange="mostrarArchivoTemp()"></select></label>
+      <label>Jugador: <select id="arch-jug" ${estilo} onchange="mostrarArchivoTemp()">
+        <option value="">Todos</option>${jugadores.map(j => `<option value="${aEsc(j)}">${aEsc(aNombre(j))}</option>`).join('')}
+      </select></label>
+    </div>
+    <div id="arch-resultado" style="margin-top:14px;"></div>`;
+  archCambioTemporada(true);
+}
+
+function archCambioTemporada(ultima) {
+  const temp = document.getElementById('arch-temp').value;
+  const sel = document.getElementById('arch-jor');
+  const lista = archDatos.res.map((r, i) => ({r, i})).filter(x => x.r.temp === temp);
+  sel.innerHTML = lista.map(x => `<option value="${x.i}">J${aEsc(x.r.jor)} · ${aEsc(x.r.fecha)}${x.r.liga ? ' · Liga ' + aEsc(x.r.liga) : ''}</option>`).join('');
+  if (lista.length) sel.value = String(lista[lista.length - 1].i);
+  mostrarArchivoTemp();
+}
+
+function archTextoAciertos(p) { return p.ac + (p.pa ? '+1' : ''); }
+
+function mostrarArchivoTemp() {
+  const out = document.getElementById('arch-resultado');
+  if (!archDatos || !out) return;
+  const idx = parseInt(document.getElementById('arch-jor').value);
+  const jugElegido = document.getElementById('arch-jug').value;
+  const rj = archDatos.res[idx];
+  if (!rj) { out.innerHTML = '<div class="loading">No hay jornadas en esa temporada.</div>'; return; }
+
+  const delDia = p => p.temp === rj.temp && p.fecha === rj.fecha;
+  let pronos = archDatos.pro.filter(delDia);
+  const partidos = archDatos.par.filter(delDia).sort((a, b) => a.n - b.n);
+
+  let html = `<div style="margin-bottom:10px; font-size:13px; color:var(--gris);">
+    Temporada ${aEsc(rj.temp)} · Jornada ${aEsc(rj.jor)} (Quiniela)${rj.liga ? ' · Liga 1ª: Jornada ' + aEsc(rj.liga) : ''} · ${aEsc(rj.fecha)}
+  </div>`;
+
+  // Resultado oficial
+  for (let i = 0; i < 15; i++) {
+    const p = partidos[i];
+    const val = i < 14 ? rj.r[i] : rj.pleno;
+    html += `<div class="partido-row">
+      <span class="partido-num">${i + 1}</span>
+      <span class="partido-equipos">${p ? aEsc(p.local) + ' — ' + aEsc(p.visit) : ''}</span>
+      ${i === 14 ? '<span class="partido-p15">P15</span>' : ''}
+      <span class="partido-resultado">${aEsc(val)}</span>
+    </div>`;
+  }
+
+  // Resumen de la jornada
+  if (!jugElegido && pronos.length) {
+    const orden = pronos.slice().sort((a, b) => (b.ac - a.ac) || ((b.pa ? 1 : 0) - (a.pa ? 1 : 0)) || a.jug.localeCompare(b.jug));
+    html += `<div class="info-cierre" style="margin-top:12px;">${orden.map(p => `<strong>${aEsc(aNombre(p.jug))}</strong> ${archTextoAciertos(p)}`).join(', ')}</div>`;
+  }
+
+  // Tabla de pronósticos
+  let visibles = pronos;
+  if (jugElegido) visibles = pronos.filter(p => p.jug === jugElegido);
+  if (jugElegido && !visibles.length) {
+    html += `<div class="loading" style="margin-top:10px;">${aEsc(aNombre(jugElegido))} no jugó esta jornada (ya estaba eliminado).</div>`;
+  } else if (!visibles.length) {
+    html += '<div class="loading" style="margin-top:10px;">No hay pronósticos guardados de esta jornada.</div>';
+  } else {
+    let t = '<table class="tabla-pronos"><thead><tr><th class="partido-col">Nº</th>';
+    visibles.forEach(p => { t += `<th>${aEsc(p.jug.substring(0, 4))}</th>`; });
+    t += '</tr></thead><tbody>';
+    for (let i = 0; i < 15; i++) {
+      t += `<tr><td class="partido-col">${i + 1}</td>`;
+      const oficial = i < 14 ? rj.r[i] : rj.pleno;
+      visibles.forEach(p => {
+        const prono = i < 14 ? p.s[i] : p.pleno;
+        let cls = '';
+        if (oficial && prono) {
+          const ok = i < 14 ? (prono === oficial || prono.indexOf(oficial) >= 0) : prono === oficial;
+          cls = ok ? 'acertado' : 'fallado';
+        }
+        t += `<td class="${cls}">${aEsc(prono.replace(/\s/g, ''))}</td>`;
+      });
+      t += '</tr>';
+    }
+    t += '</tbody><tfoot><tr><td class="partido-col">Ac.</td>';
+    visibles.forEach(p => { t += `<td>${archTextoAciertos(p)}</td>`; });
+    t += '</tr></tfoot></table>';
+    html += `<div style="margin-top:12px; overflow-x:auto;">${t}</div>`;
+  }
+
+  // Historial del jugador
+  if (jugElegido) {
+    const suyos = archDatos.pro.filter(p => p.jug === jugElegido);
+    const deTemp = suyos.filter(p => p.temp === rj.temp);
+    if (deTemp.length) {
+      const suma = deTemp.reduce((a, p) => a + p.ac, 0);
+      const plenos = deTemp.filter(p => p.pa).length;
+      let h = `<table class="tabla-pronos" style="min-width:0;"><thead><tr><th class="partido-col">Jornada</th><th>Fecha</th><th>Aciertos</th></tr></thead><tbody>`;
+      deTemp.forEach(p => { h += `<tr><td class="partido-col">${aEsc(p.jor)}</td><td>${aEsc(p.fecha)}</td><td>${archTextoAciertos(p)}</td></tr>`; });
+      h += `</tbody><tfoot><tr><td class="partido-col">Total</td><td>${deTemp.length} jornadas</td><td>${suma}${plenos ? '+' + plenos : ''}</td></tr></tfoot></table>`;
+      html += `<div style="margin-top:16px; font-size:13px; color:var(--gris);">${aEsc(aNombre(jugElegido))} en la temporada ${aEsc(rj.temp)}</div><div style="margin-top:6px; overflow-x:auto;">${h}</div>`;
+    }
+  }
+
+  out.innerHTML = html;
+}
+
 // ============================================================
 // CARGAR ECONOMICO
 // ============================================================
