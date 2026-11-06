@@ -2644,7 +2644,10 @@ function mostrarPremiosSemana() {
 
   const filas = operacionesGlobal.filter(r => parseInt(r[0]) === semana);
 
-  if (filas.length !== 5) {
+  // Semana extra de la Lotería de Navidad: un único registro de LOTERÍA (el sorteo del 22/12 que cuenta para el año que se cierra)
+  const esSemanaExtra = filas.length === 1 && String(filas[0][2] || '').trim().toUpperCase().replace('Í','I') === 'LOTERIA';
+
+  if (filas.length !== 5 && !esSemanaExtra) {
     document.getElementById('premios-semana-resultado').innerHTML =
       `<div style="color:var(--gris); text-align:center; padding:16px; font-size:14px;">
         La semana ${semana} todavía no se ha traspasado desde OP_Claude (o está incompleta).
@@ -2662,7 +2665,7 @@ function mostrarPremiosSemana() {
 
   const esFiesta = total >= 50;
   let html = `<div class="premios-total ${esFiesta ? 'premios-fiesta' : ''}">
-    <div style="font-size:12px; color:var(--gris); letter-spacing:1px;">SEMANA ${semana} · TOTAL PREMIOS</div>
+    <div style="font-size:12px; color:var(--gris); letter-spacing:1px;">${esSemanaExtra ? 'SEMANA EXTRA · LOTERÍA DE NAVIDAD' : 'SEMANA ' + semana + ' · TOTAL PREMIOS'}</div>
     <div style="font-family:'Bebas Neue',sans-serif; font-size:32px;">${total.toFixed(2)}€</div>
     ${esFiesta ? '<div class="premios-confeti"></div>' : ''}
   </div>`;
@@ -2689,13 +2692,15 @@ function cargarEconomico(resumen, operaciones, paganinis, config) {
   operacionesGlobal = operaciones;
   const conteoPorSemana = {};
   const bonolotoJugado = {};
+  const soloLoteria = {};
   operaciones.forEach(r => {
     const s = parseInt(r[0]);
     if (isNaN(s)) return;
     conteoPorSemana[s] = (conteoPorSemana[s] || 0) + 1;
+    if (String(r[2] || '').trim().toUpperCase().replace('Í','I') === 'LOTERIA') soloLoteria[s] = true;
     if (String(r[2]).toUpperCase() === 'BONOLOTO' && numOp(r[3]) > 0) bonolotoJugado[s] = true;
   });
-  const semanasCompletas = Object.keys(conteoPorSemana).map(Number).filter(s => conteoPorSemana[s] === 5 && bonolotoJugado[s]);
+  const semanasCompletas = Object.keys(conteoPorSemana).map(Number).filter(s => (conteoPorSemana[s] === 5 && bonolotoJugado[s]) || (conteoPorSemana[s] === 1 && soloLoteria[s]));
   ultimaSemanaGlobal = semanasCompletas.length ? Math.max(...semanasCompletas) : 1;
   const datos = {};
   resumen.forEach(row => {
