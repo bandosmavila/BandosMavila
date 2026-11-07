@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a6b3c">
+<title>Ingenio — Peña BandosMávila</title>
+<style>:root {
+  --verde: #1a6b3c;
+  --verde-claro: #2d9e5f;
+  --fondo: #f4f1e8;
+  --papel: #ffffff;
+  --tinta: #1d1d1d;
+  --gris: #6b6b6b;
+  --linea: #c9c3b3;
+  --linea-fuerte: #3b3b3b;
+  --sel: #bfe3cc;
+  --vecina: #e6efe9;
+  --igual: #cfe8d8;
+  --mia: #1b5fa8;
+  --rojo: #c0392b;
+  --rojo-fondo: #f7d9d5;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #14181a; --papel: #1e2427; --tinta: #eceae3; --gris: #9aa3a6;
+    --linea: #3a4448; --linea-fuerte: #aab3b6; --sel: #2b5a40; --vecina: #263034;
+    --igual: #2f4a3a; --mia: #7db6ee; --rojo: #ff8a7c; --rojo-fondo: #4a2824;
+  }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--fondo); color: var(--tinta);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-user-select: none; user-select: none; touch-action: manipulation;
+}
+[hidden] { display: none !important; }
+
+#cabecera {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--verde); color: #fff; padding: 8px 12px; padding-top: calc(8px + env(safe-area-inset-top));
+}
+#cabecera h1 {
+  margin: 0; font-family: 'Bebas Neue', 'Inter', sans-serif; font-weight: 400;
+  letter-spacing: 1.5px; font-size: 26px; line-height: 1;
+}
+#volver { color: #fff; text-decoration: none; font-size: 30px; line-height: 1; padding: 0 8px 4px 0; }
+#datos { margin-left: auto; display: flex; gap: 12px; align-items: baseline; font-size: 14px; }
+#nivel-actual { opacity: 0.9; font-weight: 600; }
+#reloj { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 18px; }
+
+main { max-width: 760px; margin: 0 auto; padding: 12px 10px 18px; }
+
+/* Menú */
+#pantalla-menu { display: flex; flex-direction: column; gap: 12px; max-width: 460px; margin: 10px auto 0; }
+.intro { color: var(--gris); margin: 4px 2px 6px; line-height: 1.4; }
+.nivel {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left;
+  background: var(--papel); color: var(--tinta); border: 1.5px solid var(--verde); border-radius: 12px;
+  padding: 16px 18px; cursor: pointer; font: inherit;
+}
+.nivel:active { background: var(--verde); color: #fff; }
+.nivel-nombre { font-family: 'Bebas Neue', 'Inter', sans-serif; font-size: 28px; letter-spacing: 1px; color: var(--verde); }
+.nivel:active .nivel-nombre { color: #fff; }
+.nivel-desc { font-size: 14px; }
+.nivel-stats { font-size: 12px; color: var(--gris); min-height: 1em; }
+.nivel:active .nivel-stats { color: #e3f0e8; }
+.enlace {
+  background: none; border: none; color: var(--verde); font: inherit; font-size: 14px; font-weight: 600;
+  padding: 10px; cursor: pointer; text-decoration: underline;
+}
+@media (prefers-color-scheme: dark) { .enlace { color: #7fd1a1; } .nivel-nombre { color: #7fd1a1; } }
+
+/* Avisos y diálogos */
+#aviso {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px);
+  background: #222; color: #fff; padding: 10px 16px; border-radius: 20px; font-size: 14px; max-width: 90vw;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 30; text-align: center;
+}
+#aviso.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+#capa { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: flex; align-items: center; justify-content: center; z-index: 20; padding: 18px; }
+#capa-caja {
+  background: var(--papel); color: var(--tinta); border-radius: 14px; padding: 22px 20px 16px; width: min(92vw, 380px);
+  text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+}
+#capa-caja h2 { margin: 0 0 8px; font-family: 'Bebas Neue', 'Inter', sans-serif; font-weight: 400; font-size: 32px; letter-spacing: 1px; color: var(--verde); }
+@media (prefers-color-scheme: dark) { #capa-caja h2 { color: #7fd1a1; } }
+#capa-caja p { margin: 6px 0; line-height: 1.45; }
+#capa-caja .datos { font-size: 15px; color: var(--gris); }
+#capa-caja .botones { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+#capa-caja .botones button {
+  padding: 12px; border-radius: 10px; border: 1.5px solid var(--verde); background: var(--papel); color: var(--verde);
+  font: inherit; font-weight: 600; font-size: 15px; cursor: pointer;
+}
+#capa-caja .botones button.principal { background: var(--verde); color: #fff; }
+@media (prefers-color-scheme: dark) { #capa-caja .botones button { color: #7fd1a1; border-color: #7fd1a1; } #capa-caja .botones button.principal { color: #fff; border-color: var(--verde); } }
+.girando { display: inline-block; width: 26px; height: 26px; border: 3px solid var(--linea); border-top-color: var(--verde); border-radius: 50%; animation: gira 0.8s linear infinite; margin: 6px 0 2px; }
+@keyframes gira { to { transform: rotate(360deg); } }
+
+
+/* Ingenio */
+#menu-tipos { display: flex; flex-direction: column; gap: 12px; }
+#pantalla-juego { display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 480px; margin: 0 auto; }
+#progreso { color: var(--gris); font-size: 14px; }
+#zona { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.enunciado { font-size: 18px; line-height: 1.45; text-align: center; margin: 4px 6px; -webkit-user-select: text; user-select: text; }
+.dibujo { font-size: 56px; line-height: 1.2; text-align: center; letter-spacing: 4px; }
+.sucesion { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.num { min-width: 52px; padding: 12px 8px; text-align: center; border: 2px solid var(--verde); border-radius: 10px; font-size: 24px; font-weight: 700; background: var(--papel); }
+.num.falta { border-style: dashed; color: var(--gris); }
+.respuesta { display: flex; gap: 8px; width: 100%; }
+.respuesta input { flex: 1; min-width: 0; font: inherit; font-size: 20px; padding: 12px; border-radius: 10px; border: 1.5px solid var(--linea-fuerte); background: var(--papel); color: var(--tinta); -webkit-user-select: text; user-select: text; text-align: center; }
+.respuesta input.mal { border-color: var(--rojo); background: var(--rojo-fondo); }
+.opciones { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.opcion, .boton {
+  padding: 13px 14px; border-radius: 10px; border: 1.5px solid var(--verde); background: var(--papel); color: var(--tinta);
+  font: inherit; font-size: 16px; cursor: pointer; text-align: left;
+}
+.boton { text-align: center; font-weight: 600; color: var(--verde); }
+.boton.principal { background: var(--verde); color: #fff; }
+.opcion:active, .boton:active { background: var(--vecina); }
+.opcion.bien { background: #d6f0de; border-color: #2d9e5f; color: #17331f; }
+.opcion.mal { background: var(--rojo-fondo); border-color: var(--rojo); }
+.opcion:disabled { opacity: 1; cursor: default; }
+.filas-botones { display: flex; gap: 8px; width: 100%; justify-content: center; flex-wrap: wrap; }
+.mensaje { min-height: 1.4em; text-align: center; color: var(--gris); font-size: 15px; margin: 0 6px; }
+.mensaje.bien { color: #1d7a45; font-weight: 600; } .mensaje.mal { color: var(--rojo); font-weight: 600; }
+@media (prefers-color-scheme: dark) { .boton { color: #7fd1a1; } .boton.principal { color: #fff; } .opcion.bien { color: #d9f3e3; background: #1f4a31; } .mensaje.bien { color: #7fd1a1; } }
+#cerillas { width: 100%; max-width: 440px; touch-action: manipulation; }
+#cerillas .palo { stroke: #c79a54; stroke-width: 5; stroke-linecap: round; }
+#cerillas .cabeza { fill: #c0392b; }
+#cerillas .hueco { stroke: var(--linea); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 3 6; }
+#cerillas .fija { stroke: var(--gris); stroke-width: 5; stroke-linecap: round; }
+#cerillas .tocar { stroke: transparent; stroke-width: 22; stroke-linecap: round; cursor: pointer; }
+#cerillas .mano .palo { stroke: #2d9e5f; } #cerillas .mano .cabeza { fill: #2d9e5f; }
+#cerillas .sitio:hover .hueco, #cerillas .libre .hueco { stroke: var(--verde); }
+@media (orientation: landscape) and (max-height: 620px) { main { padding: 4px 10px; } .dibujo { font-size: 40px; } }
+</style>
+</head>
+<body>
+<header id="cabecera">
+  <a id="volver" href="aburres.html" aria-label="Volver a ¿Te aburres?">‹</a>
+  <h1>Ingenio</h1>
+  <div id="datos"><span id="nivel-actual"></span><span id="contador"></span></div>
+</header>
+<main>
+  <section id="pantalla-menu" hidden>
+    <p class="intro">Acertijos de varios tipos para darle a la cabeza. Cada ronda mezcla unos cuantos; tu partida se guarda sola.</p>
+    <div id="menu-tipos"></div>
+  </section>
+  <section id="pantalla-juego" hidden>
+    <div id="progreso"></div>
+    <div id="zona"></div>
+    <div id="mensaje" class="mensaje" role="status"></div>
+    <div class="filas-botones" id="botones"></div>
+    <div class="filas-botones"><button class="enlace" id="btn-ayuda">Cómo se juega</button><button class="enlace" id="btn-menu">Otro tipo</button></div>
+  </section>
+</main>
+<div id="aviso" role="status" aria-live="polite"></div>
+<div id="capa" hidden><div id="capa-caja"></div></div>
+<script>(()=>{var U=[63,6,91,79,102,109,125,7,127,111],ce=[7,2,7,7],C=e=>{let a=U.indexOf(e);return a<0?null:a};function O(e){return e===3?"+":e===1?"-":null}function V(e){return C(e[0])!==null&&O(e[1])!==null&&C(e[2])!==null&&C(e[3])!==null}function x(e){if(!V(e))return!1;let a=C(e[0]),o=C(e[2]),n=C(e[3]);return(O(e[1])==="+"?a+o:a-o)===n}var ue=()=>ce.flatMap((e,a)=>Array.from({length:e},(o,n)=>[a,n])),S=(e,a,o)=>(e[a]>>o&1)===1;function D(e,a,o){let n=e.slice();return n[a[0]]&=~(1<<a[1]),n[o[0]]|=1<<o[1],n}var $=e=>e.join(",");function w(e){let a=ue(),o=[];for(let n of a)if(S(e,n[0],n[1]))for(let t of a)S(e,t[0],t[1])||o.push(D(e,n,t));return o}function de(e,a){let o=[e],n=new Set([$(e)]);if(x(e))return 0;for(let t=1;t<=a;t++){let l=[];for(let c of o)for(let d of w(c)){let s=$(d);if(!n.has(s)){if(n.add(s),x(d))return t;l.push(d)}}o=l}return 1/0}function P(e,a){let o=[{e,ruta:[]}],n=new Set([$(e)]);for(let t=1;t<=a;t++){let l=[];for(let{e:c,ruta:d}of o)for(let s of w(c)){let i=$(s);if(!n.has(i)){if(n.add(i),x(s))return[...d,s];l.push({e:s,ruta:[...d,s]})}}o=l}return null}function B(e,a=Math.random){let o=n=>Math.floor(a()*n);for(let n=0;n<5e3;n++){let t=o(10),l=o(10),c=a()<.5,d=c?t+l:t-l;if(d<0||d>9)continue;let s=[U[t],c?3:1,U[l],U[d]];for(let i=0;i<e;i++){let p=w(s);s=p[o(p.length)]}if(!(!V(s)||x(s))&&de(s,e)===e)return s}throw new Error("no se pudo generar")}var z=e=>{let a=n=>{let t=C(n);return t===null?"?":String(t)},o=O(e[1]);return`${a(e[0])} ${o===null?"?":o==="-"?"−":"+"} ${a(e[2])} = ${a(e[3])}`};var F=e=>String(e).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9ñ]/g,""),N=[{dibujo:"🌋 + 🦶",resp:["lavapies"],pista:"Un barrio de Madrid"},{dibujo:"🛑 + 💦",resp:["paraguas"],pista:"Lo abres cuando llueve"},{dibujo:"🔓 + 🥫",resp:["abrelatas"],pista:"Está en la cocina"},{dibujo:"🔄 + ☀️",resp:["girasol"],pista:"Una flor"},{dibujo:"👄 + 🛣️",resp:["bocacalle"],pista:"Donde empieza una calle"},{dibujo:"🛑 + 🍂",resp:["paracaidas"],pista:"Para tirarse de un avión"},{dibujo:"✂️ + 💅",resp:["cortaunas"],pista:"Se usa en las manos"},{dibujo:"🌋 + 🍽️",resp:["lavaplatos"],pista:"Un electrodoméstico"},{dibujo:"💇 + 🔴",resp:["pelirrojo"],pista:"Una persona"},{dibujo:"🌗 + 🌞",resp:["mediodia"],pista:"Una hora del día"},{dibujo:"⬆️ + 🗣️",resp:["altavoz"],pista:"Suena fuerte"},{dibujo:"🧵 + 🕷️",resp:["telarana"],pista:"Obra de un animal"},{dibujo:"🌞 + 🎲",resp:["soldado"],pista:"Va a la mili"},{dibujo:"🐟 + 🗡️",resp:["pezespada"],pista:"Se pesca en el mar"},{dibujo:"💯 + 🦶",resp:["ciempies"],pista:"Un bicho con muchas patas"},{dibujo:"🙂 + 🥬",resp:["caracol"],pista:"Va despacio y con casa"},{dibujo:"🛏️ + 🦁",resp:["camaleon"],pista:"Cambia de color"}],M=[{q:"Tengo ciudades pero no casas, montañas pero no árboles, agua pero no peces. ¿Qué soy?",o:["Un mapa","Un reloj","Un libro","Una ventana"],e:"Un mapa dibuja todo eso, pero no lo contiene de verdad."},{q:"Cuanto más seca, más moja. ¿Qué es?",o:["La toalla","La esponja","El jabón","La nube"],e:"La toalla se moja al secarnos."},{q:"Blanca por dentro, verde por fuera; si quieres que te lo diga, espera.",o:["La pera","La lechuga","El tomate","La naranja"],e:"Pera, que rima con «espera»."},{q:"Oro parece, plata no es. ¿Qué es?",o:["El plátano","La moneda","El espejo","El trigo"],e:"El plátano: parece oro, pero no es plata (plá-tano)."},{q:"Tengo agujas pero no coso; tengo números pero no sé contar. ¿Qué soy?",o:["Un reloj","Un pino","Un cuaderno","Un puercoespín"],e:"Un reloj."},{q:"Un pastor tiene 15 ovejas y se mueren todas menos 9. ¿Cuántas le quedan?",o:["9","6","15","0"],e:"Se mueren todas menos 9: quedan 9."},{q:"¿Qué pesa más, un kilo de paja o un kilo de plomo?",o:["Pesan lo mismo","El plomo","La paja","Depende del tamaño"],e:"Un kilo es un kilo."},{q:"Dos padres y dos hijos fueron de caza y cada uno mató una liebre, pero en total solo mataron 3. ¿Cómo es posible?",o:["Eran tres: abuelo, padre e hijo","Uno falló el tiro","Una liebre era de otro","Eran cuatro y uno no cazó"],e:"El abuelo, su hijo y su nieto: el del medio es padre e hijo a la vez."},{q:"Un tren eléctrico va hacia el norte con viento del oeste. ¿Hacia dónde va el humo?",o:["No hay humo","Hacia el este","Hacia el sur","Hacia el norte"],e:"El tren es eléctrico: no echa humo."},{q:"¿Cuántos meses del año tienen 28 días?",o:["Los 12","Solo febrero","Ninguno","Dos"],e:"Todos tienen al menos 28 días."},{q:"Un hombre señala un retrato y dice: «No tengo hermanos, pero el padre de ese hombre es el hijo de mi padre». ¿De quién es el retrato?",o:["De su hijo","De su padre","De él mismo","De su abuelo"],e:"El hijo de su padre es él mismo, así que es el padre del retratado: es su hijo."},{q:"Entras de noche a una habitación con una vela, una lámpara de aceite y una chimenea, y solo tienes una cerilla. ¿Qué enciendes primero?",o:["La cerilla","La vela","La lámpara","La chimenea"],e:"Sin encender la cerilla no enciendes nada."},{q:"Una madre tiene tres hijas y cada una tiene un hermano. ¿Cuántos hijos tiene en total?",o:["4","6","3","7"],e:"Las tres hijas comparten un único hermano: son 4."},{q:"Un gallo pone un huevo en lo alto de un tejado a dos aguas. ¿Hacia qué lado cae?",o:["Los gallos no ponen huevos","Hacia el lado del viento","Hacia la izquierda","No cae: se queda en la cumbre"],e:"Los gallos no ponen huevos."},{q:"Si me nombras, desaparezco. ¿Qué soy?",o:["El silencio","La niebla","El eco","La sombra"],e:"Al decir «silencio» se rompe el silencio."},{q:"Tengo cuello pero no cabeza, y brazos pero no manos. ¿Qué soy?",o:["Una camisa","Una botella","Una silla","Un abrigo sin botones"],e:"La camisa tiene cuello y mangas (brazos)."},{q:"¿Cuántas veces puedes restar 5 de 25?",o:["Una","Cinco","Veinte","Ninguna"],e:"Solo una vez: después ya no te queda 25, te queda 20."},{q:"Un avión se estrella justo en la frontera entre España y Portugal. ¿Dónde entierran a los supervivientes?",o:["No se entierra a los supervivientes","En España","En Portugal","En la frontera"],e:"A los supervivientes no se les entierra."},{q:"Tengo teclas pero no abro puertas. ¿Qué soy?",o:["Un piano","Un llavero","Un cerrajero","Una cerradura"],e:"Un piano (o un teclado)."},{q:"Cuanto más hay, menos se ve. ¿Qué es?",o:["La oscuridad","La niebla fina","El humo claro","El polvo"],e:"Cuanta más oscuridad, menos se ve."},{q:"Un ladrillo pesa un kilo más medio ladrillo. ¿Cuánto pesa el ladrillo?",o:["2 kilos","1,5 kilos","1 kilo","3 kilos"],e:"Con 2 kg: medio ladrillo pesa 1 y 1 + 1 = 2."},{q:"Si 3 gatos cazan 3 ratones en 3 minutos, ¿cuántos gatos cazan 100 ratones en 100 minutos?",o:["3 gatos","100 gatos","33 gatos","1 gato"],e:"Cada gato caza un ratón cada 3 minutos; en 100 minutos 3 gatos cazan 100."},{q:"Una botella y un tapón cuestan 1,10 € juntos, y la botella cuesta 1 € más que el tapón. ¿Cuánto cuesta el tapón?",o:["5 céntimos","10 céntimos","1 euro","15 céntimos"],e:"Tapón 0,05 y botella 1,05: suman 1,10 y se llevan 1 € de diferencia."},{q:"Los nenúfares de un lago se duplican cada día y tardan 48 días en cubrirlo entero. ¿Cuántos días tardan en cubrir la mitad?",o:["47 días","24 días","40 días","12 días"],e:"Un día antes de cubrirlo todo, ya cubrían la mitad."}];function G(e,a=Math.random){let o=(s,i)=>s+Math.floor(a()*(i-s+1)),n=s=>s[Math.floor(a()*s.length)],t=(s,i,p)=>({terms:s.slice(0,p),resp:s[p],regla:i}),l=[2,3,5,7,11,13,17,19,23,29,31,37];return n(e==="anormal"?[()=>{let s=o(1,4),i=o(2,6),p=[s,i];for(let f=2;f<8;f++)p.push(p[f-1]+p[f-2]);return t(p,"Cada número es la suma de los dos anteriores",7)},()=>{let s=o(2,9),i=o(2,5),p=o(20,40),f=o(2,6),b=[];for(let v=0;v<4;v++)b.push(s+i*v,p-f*v);return t(b,`Dos series entremezcladas: una suma ${i} y otra resta ${f}`,7)},()=>{let s=n([2,3]),i=n([-1,1,2]),p=o(1,4),f=[p];for(let b=1;b<6;b++)f.push(f[b-1]*s+i);return t(f,`Multiplica por ${s} y ${i>0?"suma":"resta"} ${Math.abs(i)}`,5)},()=>{let s=o(0,5),i=l.slice(s,s+7);return t(i,"Son los números primos",6)},()=>{let s=o(1,3),i=Array.from({length:6},(p,f)=>(f+s)**3);return t(i,"Son los cubos: 1, 8, 27, 64…",5)},()=>{let s=o(1,6),i=o(1,3),p=o(1,3),f=[s],b=i;for(let v=1;v<7;v++)f.push(f[v-1]+b),b+=p;return t(f,`Se suma ${i}, luego ${i+p}, luego ${i+2*p}…`,6)},()=>{let s=o(2,9),i=Array.from({length:6},(p,f)=>s*(f+1)*(f+2));return t(i,`Es ${s} × (1×2), ${s} × (2×3), ${s} × (3×4)…`,5)}]:[()=>{let s=n([2,3,4,5,6,7,9]),i=o(1,12),p=Array.from({length:6},(f,b)=>i+s*b);return t(p,`Suma ${s} cada vez`,5)},()=>{let s=n([2,3,4,5,6,7]),i=o(30,60),p=Array.from({length:6},(f,b)=>i-s*b);return t(p,`Resta ${s} cada vez`,5)},()=>{let s=n([2,3]),i=o(1,4),p=Array.from({length:6},(f,b)=>i*s**b);return t(p,`Multiplica por ${s} cada vez`,5)},()=>{let s=o(1,4),i=Array.from({length:7},(p,f)=>(f+s)**2);return t(i,"Son los cuadrados: 1, 4, 9, 16…",6)},()=>{let s=o(1,8),i=[s];for(let p=1;p<7;p++)i.push(i[p-1]+p);return t(i,"Se suma 1, luego 2, luego 3…",6)}])()}var T=(e,a=Math.random)=>{let o=Array.from({length:e},(n,t)=>t);for(let n=e-1;n>0;n--){let t=Math.floor(a()*(n+1));[o[n],o[t]]=[o[t],o[n]]}return o};var A="bandosmavila_ingenio_partida",X="bandosmavila_ingenio_stats",K=[{id:"cerillas",nombre:"Cerillas",desc:"Mueve cerillas para que la cuenta cuadre",niveles:!0,n:5},{id:"jeroglificos",nombre:"Jeroglíficos",desc:"Suma los dibujos y saca la palabra",n:8},{id:"acertijos",nombre:"Acertijos",desc:"Lógica y trampas de palabras",n:8},{id:"sucesiones",nombre:"Sucesiones",desc:"¿Qué número sigue?",niveles:!0,n:10}],m=e=>document.getElementById(e),L=e=>K.find(a=>a.id===e),u=null,r=null;function W(e){try{return localStorage.getItem(e)}catch{return null}}function Z(e,a){try{localStorage.setItem(e,a)}catch{}}function Q(e){try{localStorage.removeItem(e)}catch{}}function ee(){try{return JSON.parse(W(X)||"{}")||{}}catch{return{}}}var oe=(e,a)=>e+(a?"_"+a:"");function I(){u&&Z(A,JSON.stringify({ver:1,...u}))}var Y=0;function pe(e){let a=m("aviso");a.textContent=e,a.classList.add("visible"),clearTimeout(Y),Y=setTimeout(()=>a.classList.remove("visible"),2e3)}function ae({titulo:e,texto:a,datos:o,botones:n}){let t=m("capa-caja");if(t.innerHTML="",e){let c=document.createElement("h2");c.textContent=e,t.appendChild(c)}if(a){let c=document.createElement("p");c.textContent=a,t.appendChild(c)}for(let c of o||[]){let d=document.createElement("p");d.className="datos",d.textContent=c,t.appendChild(d)}let l=document.createElement("div");l.className="botones";for(let{texto:c,principal:d,fn:s}of n){let i=document.createElement("button");i.textContent=c,d&&(i.className="principal"),i.addEventListener("click",()=>{m("capa").hidden=!0,s&&s()}),l.appendChild(i)}t.appendChild(l),m("capa").hidden=!1}var h=(e,a,o)=>{let n=document.createElement(e);return a&&(n.className=a),o!==void 0&&(n.textContent=o),n},me="http://www.w3.org/2000/svg",E=(e,a)=>{let o=document.createElementNS(me,e);for(let[n,t]of Object.entries(a||{}))o.setAttribute(n,t);return o};function J(){m("pantalla-juego").hidden=!0,m("pantalla-menu").hidden=!1,m("nivel-actual").textContent="",m("contador").textContent="";let e=m("menu-tipos");e.innerHTML="";let a=ee();for(let o of K){let n=h("div","nivel");n.style.cursor="default",n.appendChild(h("span","nivel-nombre",o.nombre)),n.appendChild(h("span","nivel-desc",o.desc));let t=h("div","filas-botones");t.style.justifyContent="flex-start",t.style.marginTop="6px";for(let l of o.niveles?["normal","anormal"]:[null]){let c=h("button","boton",l?l==="normal"?"Normal":"Anormal":"Jugar");c.addEventListener("click",()=>R(o.id,l)),t.appendChild(c);let d=a[oe(o.id,l)];if(d){let s=h("span","nivel-stats",`mejor ${d.mejor}/${o.n*2} · ${d.rondas} ronda${d.rondas===1?"":"s"}`);s.style.alignSelf="center",t.appendChild(s)}}n.appendChild(t),e.appendChild(n)}}function R(e,a){let o=L(e),n=[];if(e==="cerillas")n=Array.from({length:o.n},()=>B(a==="anormal"?2:1));else if(e==="jeroglificos")n=T(N.length).slice(0,o.n);else if(e==="acertijos")n=T(M.length).slice(0,o.n).map(t=>({k:t,ord:T(4)}));else{let t=new Set;for(;n.length<o.n;){let l=G(a),c=l.terms.join(",");t.has(c)||(t.add(c),n.push(l))}}u={tipo:e,nivel:a||null,items:n,i:0,puntos:0},I(),ne()}function fe(){try{let e=JSON.parse(W(A)||"null"),a=e&&L(e.tipo);return!(!a||e.ver!==1||!Array.isArray(e.items)||e.items.length!==a.n||!Number.isInteger(e.i)||e.i<0||e.i>=a.n||!Number.isInteger(e.puntos)||(u={tipo:e.tipo,nivel:e.nivel||null,items:e.items,i:e.i,puntos:e.puntos},a.id==="cerillas"&&!e.items.every(o=>Array.isArray(o)&&o.length===4))||a.id==="jeroglificos"&&!e.items.every(o=>N[o])||a.id==="acertijos"&&!e.items.every(o=>o&&M[o.k]&&Array.isArray(o.ord)&&o.ord.length===4)||a.id==="sucesiones"&&!e.items.every(o=>o&&Array.isArray(o.terms)&&Number.isInteger(o.resp)))}catch{return!1}}function ne(){m("pantalla-menu").hidden=!0,m("pantalla-juego").hidden=!1;let e=L(u.tipo);m("nivel-actual").textContent=e.nombre+(u.nivel?" · "+(u.nivel==="normal"?"Normal":"Anormal"):""),se()}function te(){return`${u.puntos} pts`}function se(){let e=L(u.tipo);m("progreso").textContent=`${u.i+1} / ${e.n}`,m("contador").textContent=te(),m("zona").innerHTML="",m("botones").innerHTML="",g(""),r={intentos:0,pista:!1,hecho:!1},{cerillas:ye,jeroglificos:he,acertijos:ge,sucesiones:ve}[u.tipo]()}function g(e,a){let o=m("mensaje");o.textContent=e,o.className="mensaje"+(a?" "+a:"")}function y(e,a,o){let n=h("button","boton"+(o?" principal":""),e);return n.addEventListener("click",a),m("botones").appendChild(n),n}function j(e,a,o){r.hecho=!0,u.puntos+=e,m("contador").textContent=te(),g(a,o),m("botones").innerHTML="";let n=u.i===u.items.length-1;y(n?"Ver resultado":"Siguiente",be,!0),n?Q(A):(u.i++,I(),u.i--)}function be(){if(u.i<u.items.length-1){u.i++,I(),se();return}let e=L(u.tipo),a=e.n*2,o=oe(u.tipo,u.nivel),n=ee(),t=n[o]||{mejor:0,rondas:0},l=u.puntos>t.mejor;n[o]={mejor:Math.max(t.mejor,u.puntos),rondas:t.rondas+1},Z(X,JSON.stringify(n)),Q(A);let c=u;u=null,ae({titulo:`${c.puntos} de ${a}`,texto:l&&t.rondas>0?"¡Nuevo récord!":c.puntos>=a*.75?"¡Muy bien!":"Ronda terminada.",datos:["2 puntos si lo sacas a la primera, 1 si necesitas más intentos o una pista."],botones:[{texto:"Otra ronda",principal:!0,fn:()=>R(c.tipo,c.nivel)},{texto:"Volver al menú",fn:J}]})}function re(e,a){let o=h("div","respuesta"),n=h("input");n.type="text",n.autocomplete="off",n.autocapitalize="off",n.spellcheck=!1,e==="num"&&(n.inputMode="numeric",n.pattern="-?[0-9]*");let t=h("button","boton principal","Comprobar"),l=()=>{!r.hecho&&n.value.trim()&&a(n.value)};return t.addEventListener("click",l),n.addEventListener("keydown",c=>{c.key==="Enter"&&l()}),n.addEventListener("input",()=>n.classList.remove("mal")),o.appendChild(n),o.appendChild(t),m("zona").appendChild(o),n}function he(){let e=N[u.items[u.i]];m("zona").appendChild(h("div","dibujo",e.dibujo));let a=e.resp[0];m("zona").appendChild(h("div","mensaje","¿Qué palabra sale al juntarlos?"));let o=re("txt",n=>{r.intentos++,e.resp.includes(F(n))?(j(r.intentos===1&&!r.pista?2:1,"¡Eso es! "+a[0].toUpperCase()+a.slice(1)+".","bien"),o.disabled=!0):(o.classList.add("mal"),g("No es esa. Prueba otra vez.","mal"))});y("Pista",()=>{r.pista=!0,g(`${e.pista}. Empieza por «${a[0].toUpperCase()}» y tiene ${a.length} letras.`)}),y("No lo sé",()=>{o.disabled=!0,j(0,"Era «"+a+"».","")}),setTimeout(()=>{try{o.focus({preventScroll:!0})}catch{}},50)}function ve(){let e=u.items[u.i],a=h("div","sucesion");for(let n of e.terms)a.appendChild(h("div","num",String(n)));a.appendChild(h("div","num falta","?")),m("zona").appendChild(a),m("zona").appendChild(h("div","mensaje","¿Qué número va en el hueco?"));let o=re("num",n=>{r.intentos++,Number(n.trim())===e.resp&&/^-?\d+$/.test(n.trim())?(j(r.intentos===1&&!r.pista?2:1,`¡Sí, el ${e.resp}! ${e.regla}.`,"bien"),o.disabled=!0):(o.classList.add("mal"),g("Ese no es. Mira cómo cambian de uno a otro.","mal"))});y("Pista",()=>{r.pista=!0;let n=e.terms.slice(1).map((t,l)=>t-e.terms[l]);g("Mira las diferencias entre números seguidos: "+n.join(", "))}),y("No lo sé",()=>{o.disabled=!0,j(0,`Era el ${e.resp}. ${e.regla}.`,"")}),setTimeout(()=>{try{o.focus({preventScroll:!0})}catch{}},50)}function ge(){let e=u.items[u.i],a=M[e.k];m("zona").appendChild(h("div","enunciado",a.q));let o=h("div","opciones");m("zona").appendChild(o);let n=e.ord.map(c=>{let d=h("button","opcion",a.o[c]);return d.addEventListener("click",()=>l(c,d)),o.appendChild(d),{idx:c,b:d}});function t(){for(let{idx:c,b:d}of n)d.disabled=!0,c===0&&d.classList.add("bien")}function l(c,d){r.hecho||(r.intentos++,c===0?(t(),j(r.intentos===1?2:1,a.e,"bien")):r.intentos>=2?(d.classList.add("mal"),t(),j(0,"Era «"+a.o[0]+"». "+a.e,"")):(d.classList.add("mal"),d.disabled=!0,g("No es esa. Te queda otra oportunidad.","mal")))}y("No lo sé",()=>{t(),j(0,"Era «"+a.o[0]+"». "+a.e,"")})}var H=[[6,0,30,0],[36,6,36,30],[36,42,36,66],[6,72,30,72],[0,42,0,66],[0,6,0,30],[6,36,30,36]],je=[[6,36,30,36],[18,24,18,48]],k=[8,56,104,200];function ye(){let e=u.nivel==="anormal"?2:1,a=u.items[u.i];r.ini=a,r.estado=a.slice(),r.mano=null,r.movs=0,r.reinicios=0,r.n=e;let o=E("svg",{id:"cerillas",viewBox:"0 0 250 100",role:"img"});m("zona").appendChild(o),o.addEventListener("click",n=>{let t=n.target.closest("g[data-s]");t&&ie([Number(t.dataset.s),Number(t.dataset.b)])}),y("Empezar de nuevo",()=>{r.hecho||(r.estado=r.ini.slice(),r.mano=null,r.movs=0,r.reinicios++,q(),_())}),y("No lo sé",()=>{if(r.hecho)return;let n=P(r.ini,r.n);r.estado=n?n[n.length-1]:r.estado,r.mano=null,q(),j(0,"Así se hacía: "+z(r.estado).replace(/ /g," ")+".","")}),q(),_()}function _(){let e=r.n-r.movs;g(r.mano?"Ahora toca un hueco para ponerla.":`Mueve ${e} cerilla${e===1?"":"s"}: toca una y luego el hueco donde la quieras poner.`)}function q(){let e=m("cerillas");e.innerHTML="",e.setAttribute("aria-label","Cuenta con cerillas: "+z(r.estado));let a=(o,n,t,l)=>{n.forEach((c,d)=>{let[s,i,p,f]=c,b=E("g",{"data-s":o,"data-b":d,class:"sitio"}),v=S(r.estado,o,d),le=r.mano&&r.mano[0]===o&&r.mano[1]===d;v?(le&&b.setAttribute("class","sitio mano"),b.appendChild(E("line",{class:"palo",x1:s+t,y1:i+l,x2:p+t,y2:f+l})),b.appendChild(E("circle",{class:"cabeza",cx:s+t,cy:i+l,r:4.4}))):(r.mano&&b.setAttribute("class","sitio libre"),b.appendChild(E("line",{class:"hueco",x1:s+t,y1:i+l,x2:p+t,y2:f+l}))),b.appendChild(E("line",{class:"tocar",x1:s+t,y1:i+l,x2:p+t,y2:f+l})),e.appendChild(b)})};a(0,H,k[0],14),a(1,je,k[1],14),a(2,H,k[2],14),a(3,H,k[3],14);for(let o of[44,60])e.appendChild(E("line",{class:"fija",x1:158,y1:o,x2:182,y2:o}))}function ie(e){if(r.hecho)return;let a=S(r.estado,e[0],e[1]);if(r.mano)if(r.mano[0]===e[0]&&r.mano[1]===e[1])r.mano=null;else if(a)r.mano=e;else{if(r.estado=D(r.estado,r.mano,e),r.mano=null,r.movs++,q(),x(r.estado)){j(r.reinicios===0?2:1,"¡Cuadra! "+z(r.estado)+".","bien");return}r.movs>=r.n?g("No cuadra y ya no te quedan movimientos. Prueba con «Empezar de nuevo».","mal"):_();return}else{if(!a)return;if(r.movs>=r.n){g("Ya has gastado tus movimientos. Prueba con «Empezar de nuevo».","mal");return}r.mano=e}q(),_()}var Ce={cerillas:["Toca una cerilla y luego un hueco libre (punteado) para cambiarla de sitio. Cuenta como un movimiento.","El objetivo es que la cuenta sea cierta moviendo solo las cerillas que dice. El signo igual no se toca.","Con una cerilla vertical, un «−» se convierte en «+» y al revés."],jeroglificos:["Cada dibujo suena a una parte de la palabra; al juntar las partes sale una palabra.","Escribe la palabra (da igual si pones tildes o mayúsculas)."],acertijos:["Lee con cuidado: muchas veces la trampa está en las palabras.","Tienes dos oportunidades por acertijo."],sucesiones:["Descubre la regla de la serie y escribe el número que falta.","La pista te da las diferencias entre números seguidos."]};m("btn-ayuda").addEventListener("click",()=>ae({titulo:"Cómo se juega",texto:u?L(u.tipo).desc+".":"",datos:u?Ce[u.tipo]:[],botones:[{texto:"Entendido",principal:!0}]}));m("btn-menu").addEventListener("click",()=>{I(),J()});fe()?(ne(),pe("Sigues donde lo dejaste")):(Q(A),J());window.__ingenio={estado:()=>u,item:()=>r,tocar:ie,nuevaRonda:R,solucion:P};})();
+</script>
+</body>
+</html>
