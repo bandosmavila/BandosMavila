@@ -2690,17 +2690,20 @@ function mostrarPremiosSemana() {
 
 function cargarEconomico(resumen, operaciones, paganinis, config) {
   operacionesGlobal = operaciones;
-  const conteoPorSemana = {};
-  const bonolotoJugado = {};
-  const soloLoteria = {};
+  const llenoUlt = v => v !== null && v !== undefined && String(v).trim() !== '';
+  const filasPorSemanaUlt = {};
   operaciones.forEach(r => {
     const s = parseInt(r[0]);
     if (isNaN(s)) return;
-    conteoPorSemana[s] = (conteoPorSemana[s] || 0) + 1;
-    if (String(r[2] || '').trim().toUpperCase().replace('Í','I') === 'LOTERIA') soloLoteria[s] = true;
-    if (String(r[2]).toUpperCase() === 'BONOLOTO' && numOp(r[3]) > 0) bonolotoJugado[s] = true;
+    (filasPorSemanaUlt[s] = filasPorSemanaUlt[s] || []).push(r);
   });
-  const semanasCompletas = Object.keys(conteoPorSemana).map(Number).filter(s => (conteoPorSemana[s] === 5 && bonolotoJugado[s]) || (conteoPorSemana[s] === 1 && soloLoteria[s]));
+  // Semanas 1-52: todas sus filas con coste y premio rellenos (el 0 cuenta).
+  // Semana extra (53): basta con que alguna fila tenga coste o premio.
+  const semanasCompletas = Object.keys(filasPorSemanaUlt).map(Number).filter(s => {
+    const f = filasPorSemanaUlt[s];
+    return s > 52 ? f.some(r => llenoUlt(r[3]) || llenoUlt(r[4]))
+                  : f.every(r => llenoUlt(r[3]) && llenoUlt(r[4]));
+  });
   ultimaSemanaGlobal = semanasCompletas.length ? Math.max(...semanasCompletas) : 1;
   const datos = {};
   resumen.forEach(row => {
