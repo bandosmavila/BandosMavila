@@ -335,15 +335,20 @@ function construirFila1(jornadasRows, calendarioCierreRows, fechasCierreRows, ci
 
 function construirFila2(config, operacionesRows) {
   const operaciones = operacionesRows.slice(1);
-  const conteoPorSemana = {};
-  const bonolotoJugado = {};
+  const lleno = v => v !== null && v !== undefined && String(v).trim() !== '';
+  const filasPorSemana = {};
   operaciones.forEach(r => {
     const s = parseInt(r[0]);
     if (isNaN(s)) return;
-    conteoPorSemana[s] = (conteoPorSemana[s] || 0) + 1;
-    if (String(r[2]).toUpperCase() === 'BONOLOTO' && (parseFloat(String(r[3]||'0').replace(',','.'))||0) > 0) bonolotoJugado[s] = true;
+    (filasPorSemana[s] = filasPorSemana[s] || []).push(r);
   });
-  const semanasCompletas = Object.keys(conteoPorSemana).map(Number).filter(s => conteoPorSemana[s] === 5 && bonolotoJugado[s]);
+  // Semanas 1-52: todas sus filas con coste y premio rellenos (el 0 cuenta).
+  // Semana 53 (extra): basta con que alguna fila tenga coste o premio.
+  const semanasCompletas = Object.keys(filasPorSemana).map(Number).filter(s => {
+    const f = filasPorSemana[s];
+    return s > 52 ? f.some(r => lleno(r[3]) || lleno(r[4]))
+                  : f.every(r => lleno(r[3]) && lleno(r[4]));
+  });
   const ultima = semanasCompletas.length ? Math.max(...semanasCompletas) : 0;
 
   const fechaInicioStr = config['Fecha Inicio'];
