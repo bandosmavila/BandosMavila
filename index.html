@@ -2762,7 +2762,7 @@ function cargarEconomico(resumen, operaciones, paganinis, config) {
   // para no contar de más filas ya presentes en Operaciones sin jugar todavía
   const lleno = v => v !== null && v !== undefined && String(v).trim() !== '';
   const filasSem = {};
-  operaciones.forEach(row => { const s = parseInt(row[0]); if (!isNaN(s)) (filasSem[s] = filasSem[s] || ]).push(row); });
+  operaciones.forEach(row => { const s = parseInt(row[0]); if (!isNaN(s)) (filasSem[s] = filasSem[s] || []).push(row); });
   const semanasJugadas = Object.keys(filasSem).filter(s =>
     Number(s) > 52 ? filasSem[s].some(r => lleno(r[3]) || lleno(r[4]))
                    : filasSem[s].every(r => lleno(r[3]) && lleno(r[4]))
